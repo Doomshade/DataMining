@@ -1,9 +1,9 @@
-package git.doomshade.datamining.data;
+package git.doomshade.datamining.app;
 
 /**
  * @author Jakub Šmrha
  * @version 1.0
  * @since 1.0
  */
-public class DataMain {
+public class App {
 }
