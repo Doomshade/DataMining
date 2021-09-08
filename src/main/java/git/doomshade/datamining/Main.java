@@ -16,6 +16,7 @@ public class Main {
     public static void main(String[] args) {
         registerCommands();
         parseAndExecuteCommands(args);
+
     }
 
     private static void registerCommands() {
