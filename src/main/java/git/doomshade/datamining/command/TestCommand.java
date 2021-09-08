@@ -16,7 +16,7 @@ public class TestCommand extends AbstractCommand {
     }
 
     @Override
-    void execute(String param) throws IllegalFormatException {
+    protected void execute(String param) throws IllegalFormatException {
 
     }
 }

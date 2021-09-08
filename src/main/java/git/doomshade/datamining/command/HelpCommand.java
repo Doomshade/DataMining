@@ -18,7 +18,7 @@ public class HelpCommand extends AbstractCommand {
     }
 
     @Override
-    void execute(String param) throws IllegalFormatException {
+    protected void execute(String param) throws IllegalFormatException {
         if (param.isEmpty() || param.equalsIgnoreCase(ALL_COMMANDS)) {
             System.out.println("All known commands:");
             for (AbstractCommand cmd : CommandManager.getCommands()) {

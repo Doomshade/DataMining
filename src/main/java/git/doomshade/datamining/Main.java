@@ -1,5 +1,6 @@
 package git.doomshade.datamining;
 
+import git.doomshade.datamining.command.CommandManager;
 import git.doomshade.datamining.command.HelpCommand;
 import git.doomshade.datamining.command.TestCommand;
 
@@ -15,12 +16,11 @@ public class Main {
 
     public static void main(String[] args) {
         registerCommands();
-        parseAndExecuteCommands(args);
-
+        CommandManager.parseAndExecuteCommands(args);
     }
 
     private static void registerCommands() {
-        registerCommand(new HelpCommand());
-        registerCommand(new TestCommand());
+        CommandManager.registerCommand(new HelpCommand());
+        CommandManager.registerCommand(new TestCommand());
     }
 }

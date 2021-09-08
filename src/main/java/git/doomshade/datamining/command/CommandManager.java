@@ -6,14 +6,15 @@ import java.util.function.Function;
 /**
  * The command manager
  * <p>
- * A command is in format "-{@literal <cmd>} {@literal <param>}"
+ * A command is in format "-{@literal <cmd>} {@literal <param>}". If the {@literal <param>} is empty, there may be
+ * odd number of arguments
  * <p>
  * A list of valid commands (the parameters are in parentheses):<br>
  * <ul>
- *     <li>-h all -t test&#9&#9(all, test)</li>
- *     <li>-h -all -t test&#9(-all, test)</li>
- *     <li>-h all -t -test&#9(all, -test)</li>
- *     <li>-h -all -t -test&#9(-all, -test)</li>
+ *     <li>-run -h all -t test&#9(all, test)</li>
+ *     <li>-run -h -all -t test&#9(-all, test)</li>
+ *     <li>-run -h all -t -test&#9(all, -test)</li>
+ *     <li>-run -h -all -t -test&#9(-all, -test)</li>
  * </ul>
  *
  * @author Jakub Šmrha
@@ -82,7 +83,7 @@ public final class CommandManager {
         final AbstractCommand[] cmds = new AbstractCommand[len];
         final String[] params = new String[len];
 
-        for (int i = 0; i < args.length; i += 2) {
+        for (int i = 0; i < args.length; ) {
             AbstractCommand cmd = NAME_COMMAND_MAP.get(args[i].substring(1));
             if (cmd == null) {
                 cmd = ABBREV_COMMAND_MAP.get(args[i].charAt(1));
@@ -92,6 +93,7 @@ public final class CommandManager {
             }
             cmds[i / 2] = cmd;
             params[i / 2] = args[i + 1];
+            i += 2;
         }
 
         for (int i = 0; i < cmds.length; i++) {

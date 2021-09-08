@@ -82,7 +82,7 @@ public abstract class AbstractCommand {
      *
      * @throws IllegalFormatException if the parameter has an invalid format
      */
-    abstract void execute(String param) throws IllegalFormatException;
+    protected abstract void execute(String param) throws IllegalFormatException;
 
     final String getCommand() {
         return command;

@@ -6,4 +6,7 @@ package git.doomshade.datamining.app;
  * @since 1.0
  */
 public class App {
+    public static void registerCommands() {
+
+    }
 }
