@@ -1,4 +1,4 @@
-package git.jsmahy.datamining.command;
+package git.doomshade.datamining.command;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

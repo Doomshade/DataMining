@@ -1,10 +1,10 @@
-package git.jsmahy.datamining;
+package git.doomshade.datamining;
 
-import git.jsmahy.datamining.command.HelpCommand;
-import git.jsmahy.datamining.command.TestCommand;
+import git.doomshade.datamining.command.HelpCommand;
+import git.doomshade.datamining.command.TestCommand;
 
-import static git.jsmahy.datamining.command.CommandManager.parseAndExecuteCommands;
-import static git.jsmahy.datamining.command.CommandManager.registerCommand;
+import static git.doomshade.datamining.command.CommandManager.parseAndExecuteCommands;
+import static git.doomshade.datamining.command.CommandManager.registerCommand;
 
 /**
  * @author Jakub Šmrha

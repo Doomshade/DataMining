@@ -1,4 +1,4 @@
-package git.jsmahy.datamining.util;
+package git.doomshade.datamining.util;
 
 /**
  * A basic key-value pair class
