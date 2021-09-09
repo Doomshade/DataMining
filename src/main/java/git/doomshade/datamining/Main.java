@@ -20,7 +20,7 @@ public class Main {
     }
 
     private static void registerCommands() {
-        CommandManager.registerCommand(new HelpCommand());
-        CommandManager.registerCommand(new TestCommand());
+        registerCommand(new HelpCommand());
+        registerCommand(new TestCommand());
     }
 }

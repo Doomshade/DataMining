@@ -1,6 +1,6 @@
 package git.doomshade.datamining.command;
 
-import git.doomshade.datamining.command.AbstractCommand;
+import git.doomshade.datamining.app.App;
 
 import java.util.IllegalFormatException;
 
@@ -15,6 +15,6 @@ public class AppRunCommand extends AbstractCommand {
 
     @Override
     protected void execute(String param) throws IllegalFormatException {
-
+        App.exec(param);
     }
 }
