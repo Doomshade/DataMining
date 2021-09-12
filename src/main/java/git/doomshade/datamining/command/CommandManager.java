@@ -1,13 +1,18 @@
 package git.doomshade.datamining.command;
 
+import git.doomshade.datamining.event.CommandEvent;
+import git.doomshade.datamining.event.EventManager;
+import git.doomshade.datamining.util.Pair;
+import org.apache.commons.cli.*;
+
 import java.util.*;
 import java.util.function.Function;
 
 /**
  * The command manager
  * <p>
- * A command is in format "-{@literal <cmd>} {@literal <param>}". If the {@literal <param>} is empty, there may be
- * odd number of arguments
+ * A command is in format "-{@literal <cmd>} {@literal <param>}". If the {@literal <param>} is empty, there may be odd
+ * number of arguments
  * <p>
  * A list of valid commands (the parameters are in parentheses):<br>
  * <ul>
@@ -24,37 +29,10 @@ public final class CommandManager {
     private static final Map<Character, AbstractCommand> ABBREV_COMMAND_MAP = new HashMap<>();
     private static final Map<String, AbstractCommand> NAME_COMMAND_MAP = new HashMap<>();
     private static final Map<Class<? extends AbstractCommand>, AbstractCommand> CLASS_COMMAND_MAP = new HashMap<>();
-
     private static final char PARAM_PREFIX = '-';
     private static final String OUTPUT_FORMAT = "%c%s ('-%c') [%s] - %s%n";
-
-    /**
-     * Registers a command for execution
-     *
-     * @param cmd the command to register
-     *
-     * @throws IllegalArgumentException if the command is {@code null} or the command has already been registered
-     */
-    public static void registerCommand(AbstractCommand cmd) throws IllegalArgumentException {
-        if (cmd == null) {
-            throw new IllegalArgumentException("Command cannot be null!");
-        }
-        putIfAbsentOrThrowException(NAME_COMMAND_MAP, cmd.getCommand(), cmd,
-                c -> String.format("%s has the same ID as %s!", cmd, c));
-        putIfAbsentOrThrowException(CLASS_COMMAND_MAP, cmd.getClass(), cmd,
-                c -> String.format("%s has already been registered!", cmd));
-        putIfAbsentOrThrowException(ABBREV_COMMAND_MAP, cmd.getAbbreviation(), cmd,
-                c -> String.format("%s has the same abbreviation as %s!", cmd, c));
-    }
-
-    private static <K, V> void putIfAbsentOrThrowException(Map<K, V> map, K key, V value,
-                                                           Function<V, String> exceptionDescription)
-            throws IllegalArgumentException {
-        final V v = map.putIfAbsent(key, value);
-        if (v != null) {
-            throw new IllegalArgumentException(exceptionDescription.apply(v));
-        }
-    }
+    private static final Options OPTIONS = new Options();
+    private static final Map<Option, Runnable> HANDLER_LIST = new HashMap<>();
 
     /**
      * Attempts to parse and execute commands based on the arguments provided from the CLI
@@ -64,7 +42,17 @@ public final class CommandManager {
      * @throws IllegalArgumentException if the amount of arguments is invalid
      * @throws IllegalFormatException   when a command has a parameter with invalid formatting
      */
-    public static void parseAndExecuteCommands(String[] args) throws IllegalArgumentException, IllegalFormatException {
+    public static void parseAndExecuteCommands(String[] args)
+            throws IllegalArgumentException, IllegalFormatException, ParseException {
+        CommandLineParser parser = new DefaultParser();
+        CommandLine c = parser.parse(OPTIONS, args);
+        for (Option o : c.getOptions()) {
+            final Runnable r = HANDLER_LIST.get(o);
+            if (r != null) {
+                r.run();
+            }
+        }
+        /*
         if (args == null) {
             throw new IllegalArgumentException("Arguments cannot be null!");
         }
@@ -78,27 +66,38 @@ public final class CommandManager {
             throw new IllegalArgumentException("Invalid amount of arguments!");
         }
 
-        // the length has to be divisible by two otherwise an IllegalArgumentException is thrown
-        final int len = args.length / 2;
-        final AbstractCommand[] cmds = new AbstractCommand[len];
-        final String[] params = new String[len];
+        final Collection<Pair<AbstractCommand, String>> comds = new ArrayList<>(args.length / 2);
 
-        for (int i = 0; i < args.length; ) {
-            AbstractCommand cmd = NAME_COMMAND_MAP.get(args[i].substring(1));
+        // increment by two in args because of command and argument
+        for (int i = 0; i < args.length; i += 2) {
+            final String strCmd = args[i];
+            if (strCmd == null) {
+                continue;
+            }
+
+            // gets rid of the "-" at the start
+            final String actualCommand = strCmd.substring(strCmd.indexOf(PARAM_PREFIX));
+
+            // look up the command
+            AbstractCommand cmd = NAME_COMMAND_MAP.get(actualCommand);
             if (cmd == null) {
-                cmd = ABBREV_COMMAND_MAP.get(args[i].charAt(1));
+                cmd = ABBREV_COMMAND_MAP.get(actualCommand.charAt(0));
                 if (cmd == null) {
-                    throw new IllegalArgumentException(String.format("%s is an invalid command!", args[i]));
+                    throw new IllegalArgumentException(String.format("%s is an invalid command!", actualCommand));
                 }
             }
-            cmds[i / 2] = cmd;
-            params[i / 2] = args[i + 1];
-            i += 2;
+
+            final String param = args[i + 1];
+            comds.add(new Pair<>(cmd, param));
         }
 
-        for (int i = 0; i < cmds.length; i++) {
-            cmds[i].execute(params[i]);
-        }
+        for (Pair<AbstractCommand, String> p : comds) {
+            final AbstractCommand cmd = p.key;
+            final String param = p.value;
+            final CommandEvent event = new CommandEvent(cmd, param);
+            EventManager.fireEvent(event);
+            cmd.execute(param);
+        }*/
     }
 
     /**
@@ -122,14 +121,14 @@ public final class CommandManager {
      * @param cmds   the commands
      * @param params the parameters
      *
-     * @throws IllegalStateException if the command length does not equal param length
+     * @throws IllegalArgumentException if the command length does not equal param length
      */
     private static void sort(AbstractCommand[] cmds, String[] params) throws IllegalStateException {
         if (cmds == null || params == null) {
             return;
         }
         if (cmds.length != params.length) {
-            throw new IllegalStateException("Command and parameter length do not equal!");
+            throw new IllegalArgumentException("Command and parameter length do not equal!");
         }
 
         // create a copy of the commands and params to a new list that will get sorted later on
@@ -205,5 +204,56 @@ public final class CommandManager {
                 cmd.getAbbreviation(),
                 cmd.getParameter(),
                 cmd.getInfo());
+    }
+
+    /**
+     * Registers all commands
+     */
+    public static void registerCommands() {
+        Option appRun = new Option("s", "start", false, "Runs the app");
+        HANDLER_LIST.put(appRun, () -> System.out.println("RUN"));
+        Option dataFetch = new Option("d", "data", true, "Fetches data");
+        HANDLER_LIST.put(dataFetch, () -> System.out.println("DATA"));
+        Option help = new Option("h", "help", true, "shows help");
+        HANDLER_LIST.put(help, () -> System.out.println("HELP"));
+        Option test = new Option("t", "test", true, "test");
+        HANDLER_LIST.put(test, () -> System.out.println("TEST"));
+
+        OPTIONS.addOption(appRun)
+                .addOption(dataFetch)
+                .addOption(help)
+                .addOption(test);
+        /*registerCommand(new AppRunCommand());
+        registerCommand(new DataFetchCommand());
+        registerCommand(new HelpCommand());
+        registerCommand(new TestCommand());*/
+    }
+
+    /**
+     * Registers a command for execution
+     *
+     * @param cmd the command to register
+     *
+     * @throws IllegalArgumentException if the command is {@code null} or the command has already been registered
+     */
+    public static void registerCommand(AbstractCommand cmd) throws IllegalArgumentException {
+        if (cmd == null) {
+            throw new IllegalArgumentException("Command cannot be null!");
+        }
+        putIfAbsentOrThrowException(NAME_COMMAND_MAP, cmd.getCommand(), cmd,
+                c -> String.format("%s has the same ID as %s!", cmd, c));
+        putIfAbsentOrThrowException(CLASS_COMMAND_MAP, cmd.getClass(), cmd,
+                c -> String.format("%s has already been registered!", cmd));
+        putIfAbsentOrThrowException(ABBREV_COMMAND_MAP, cmd.getAbbreviation(), cmd,
+                c -> String.format("%s has the same abbreviation as %s!", cmd, c));
+    }
+
+    private static <K, V> void putIfAbsentOrThrowException(Map<K, V> map, K key, V value,
+                                                           Function<V, String> exceptionDescription)
+            throws IllegalArgumentException {
+        final V v = map.putIfAbsent(key, value);
+        if (v != null) {
+            throw new IllegalArgumentException(exceptionDescription.apply(v));
+        }
     }
 }

@@ -1,7 +1,5 @@
 package git.doomshade.datamining.command;
 
-import git.doomshade.datamining.command.AbstractCommand;
-
 import java.util.IllegalFormatException;
 
 /**
@@ -15,6 +13,5 @@ public class DataFetchCommand extends AbstractCommand {
 
     @Override
     protected void execute(String param) throws IllegalFormatException {
-
     }
 }

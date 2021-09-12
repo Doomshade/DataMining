@@ -1,16 +1,10 @@
 package git.doomshade.datamining;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.squareup.okhttp.*;
-import git.doomshade.datamining.command.CommandManager;
-import git.doomshade.datamining.command.HelpCommand;
-import git.doomshade.datamining.command.TestCommand;
-import okio.BufferedSink;
+import com.google.gson.Gson;
+import org.apache.commons.cli.ParseException;
 
-import java.io.IOException;
-
-import static git.doomshade.datamining.command.CommandManager.registerCommand;
+import static git.doomshade.datamining.command.CommandManager.parseAndExecuteCommands;
+import static git.doomshade.datamining.command.CommandManager.registerCommands;
 
 /**
  * @author Jakub Šmrha
@@ -19,10 +13,14 @@ import static git.doomshade.datamining.command.CommandManager.registerCommand;
  */
 public class Main {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws ParseException {
         registerCommands();
-        CommandManager.parseAndExecuteCommands(args);
-        /*OkHttpClient client = new OkHttpClient();
+        parseAndExecuteCommands(args);
+    }
+
+
+
+    /*OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder()
                 .url("https://en.wikipedia.org/api/rest_v1/page/summary/Apple_Inc.")
                 .get()
@@ -43,11 +41,4 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         }*/
-
-    }
-
-    private static void registerCommands() {
-        registerCommand(new HelpCommand());
-        registerCommand(new TestCommand());
-    }
 }
