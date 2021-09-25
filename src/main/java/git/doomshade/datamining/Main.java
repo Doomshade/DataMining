@@ -1,7 +1,10 @@
 package git.doomshade.datamining;
 
-import com.google.gson.Gson;
+import git.doomshade.datamining.data.RequestHandlerRegistry;
+import git.doomshade.datamining.data.handlers.DBPediaRequestHandler;
 import org.apache.commons.cli.ParseException;
+
+import java.util.logging.Logger;
 
 import static git.doomshade.datamining.command.CommandManager.parseAndExecuteCommands;
 import static git.doomshade.datamining.command.CommandManager.registerCommands;
@@ -12,13 +15,21 @@ import static git.doomshade.datamining.command.CommandManager.registerCommands;
  * @since 1.0
  */
 public class Main {
+    private static final Logger logger = Logger.getLogger(Main.class.getSimpleName());
 
     public static void main(String[] args) throws ParseException {
         registerCommands();
+        registerRequestHandlers();
         parseAndExecuteCommands(args);
     }
 
+    private static void registerRequestHandlers() {
+        RequestHandlerRegistry.register(new DBPediaRequestHandler());
+    }
 
+    public static Logger getLogger() {
+        return logger;
+    }
 
     /*OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder()

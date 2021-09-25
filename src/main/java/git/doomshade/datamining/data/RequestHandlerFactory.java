@@ -1,6 +1,6 @@
 package git.doomshade.datamining.data;
 
-import git.doomshade.datamining.data.dbpedia.DBPediaRequestHandler;
+import git.doomshade.datamining.data.handlers.DBPediaRequestHandler;
 
 import static git.doomshade.datamining.data.RequestHandlerRegistry.getDataRequestHandler;
 

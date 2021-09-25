@@ -1,6 +1,6 @@
 package git.doomshade.datamining.data;
 
-import git.doomshade.datamining.data.dbpedia.DBPediaRequestHandler;
+import git.doomshade.datamining.data.handlers.DBPediaRequestHandler;
 
 /**
  * @author Jakub Šmrha
@@ -8,17 +8,20 @@ import git.doomshade.datamining.data.dbpedia.DBPediaRequestHandler;
  */
 public class DBPediaQueryTest {
 
+    public static final String SUCCESSOR = "successor";
+    public static final String PREDECESSOR = "predecessor";
+
     public static void main(String[] args) {
         RequestHandlerRegistry.register(new DBPediaRequestHandler());
-        String request = "" +
-                "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
-                "PREFIX dbo: <https://dbpedia.org/ontology/>\n" +
-                "SELECT *" +
-                "WHERE\n" +
-                "{\n" +
-                "  ?athlete  rdfs:label      'Cristiano Ronaldo'@en ;\n" +
-                "}";
-        final DBDataResult query = RequestHandlerFactory.getDBPediaRequestHandler().query("http://dbpedia.org/resource/Charles_IV,_Holy_Roman_Emperor");
-        System.out.println(query);
+        final String CHARLES = "Charles_IV,_Holy_Roman_Emperor";
+        final String LOUIS_XVI = "Louis_XVI";
+        final String PHILIP_II = "Philip_II_of_France";
+        Ontology query = RequestHandlerFactory.getDBPediaRequestHandler().query(PHILIP_II, "http://dbpedia" +
+                ".org/ontology/", SUCCESSOR);
+        query.printOntology(System.out);
+        query = RequestHandlerFactory.getDBPediaRequestHandler().query("Windows_10", "http://dbpedia.org/property/",
+                "precededBy");
+        query.printOntology(System.out);
+        //System.out.println(query);
     }
 }

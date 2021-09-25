@@ -3,6 +3,8 @@ package git.doomshade.datamining.data;
 import git.doomshade.datamining.data.exception.InvalidQueryException;
 
 /**
+ * A handler for query requests
+ *
  * @author Jakub Šmrha
  * @version 1.0
  */
@@ -11,11 +13,14 @@ public interface IRequestHandler {
     /**
      * Queries a web page based on the handler implementation
      *
-     * @param request the request to send to the web page
+     * @param request   the request to send to the web page, e.g. {@code Windows_10}
+     * @param namespace the namespace, e.g. <a href="https://dbpedia.org/property/">a property</a> or <a
+     *                  href="https://dbpedia.org/ontology/">an ontology</a>
+     * @param link      the link to create the ontology for, e.g. {@code precededBy}
      *
-     * @return the result of the query
+     * @return the ontology
      *
-     * @throws InvalidQueryException if the query is invalid
+     * @throws InvalidQueryException if the request is invalid
      */
-    DBDataResult query(String request) throws InvalidQueryException;
+    Ontology query(String request, String namespace, String link) throws InvalidQueryException;
 }

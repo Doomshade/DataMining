@@ -1,6 +1,8 @@
 package git.doomshade.datamining.data.exception;
 
 /**
+ * An invalid query exception
+ *
  * @author Jakub Šmrha
  * @version 1.0
  */
