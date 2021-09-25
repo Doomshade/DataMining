@@ -10,6 +10,10 @@ import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.*;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 /**
  * The DBPedia {@link IRequestHandler}
  *
@@ -25,7 +29,7 @@ public class DBPediaRequestHandler implements IRequestHandler {
         //final OntModel testm = ModelFactory.createOntologyModel(ProfileRegistry.RDFS_LANG);
         //System.out.println(testm);
         try {
-            model.read("http://dbpedia.org/resource/Charles_IV,_Holy_Roman_Emperor");
+            model.read(request);
             model.write(System.out);
         } catch (Exception e) {
             throw new InvalidQueryException(e);
@@ -48,16 +52,17 @@ public class DBPediaRequestHandler implements IRequestHandler {
             public boolean test(Statement s) {
                 final Property pred = s.getPredicate();
                 final Resource subj = s.getSubject();
-                final boolean isCharles = subj.getURI().equals("http://dbpedia.org/resource/Charles_IV," +
-                        "_Holy_Roman_Emperor");
+                final boolean isCharles = subj.getURI().equals(request);
 
                 final boolean isSuccessor = pred.equals(model.getProperty("http://dbpedia.org/ontology/", "successor"))
                         || pred.equals(model.getResource("http://dbpedia.org/property/successor"));
                 return isCharles && isSuccessor;
             }
         };
+        Set<String> successors = new HashSet<>();
         for (Statement n :
                 model.listStatements(sel).toList()) {
+            successors.add(n.getObject().toString());
             System.out.println("XXXX");
             System.out.println("Subj: " + n.getSubject());
 
@@ -73,8 +78,10 @@ public class DBPediaRequestHandler implements IRequestHandler {
             System.out.println("XXXX");
             System.out.println();
         }
+        String s = String.join(", ", successors);
+        return new DBDataResult(s, RDFFormat.JSON);
         //System.out.println(model.getProperty("https://dbpedia.org/ontology/child").getProperty(RDFS.label));
-        try (QueryExecution query = QueryExecutionFactory.sparqlService(SERVICE, request)) {
+        /*try (QueryExecution query = QueryExecutionFactory.sparqlService(SERVICE, request)) {
 
             final ResultSet set = query.execSelect();
 
@@ -98,6 +105,6 @@ public class DBPediaRequestHandler implements IRequestHandler {
             return new DBDataResult(sb.toString(), RDFFormat.JSON);
         } catch (NullPointerException ex) {
             throw new InvalidQueryException(ex);
-        }
+        }*/
     }
 }
