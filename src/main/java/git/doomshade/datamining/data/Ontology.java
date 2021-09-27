@@ -13,16 +13,13 @@ import java.util.List;
  * @version 1.0
  */
 public final class Ontology {
-    private static final int ROOT_DEPTH = 0;
+    public static final int ROOT_DEPTH = 0;
     private final Link root;
-    private final List<Collection<Link>> DEPTH_LINKS = new LinkedList<>();
-
-    private int maxDepth = ROOT_DEPTH;
+    private final List<Collection<Link>> LINKS = new LinkedList<>();
 
     public Ontology(RDFNode root) {
         this.root = new Link(root);
-        this.root.depth = ROOT_DEPTH;
-        DEPTH_LINKS.add(Collections.singletonList(this.root));
+        LINKS.add(Collections.singletonList(this.root));
     }
 
     public Link getRoot() {
@@ -32,7 +29,7 @@ public final class Ontology {
     public void printOntology(PrintStream out) {
         out.println("Printing ontology");
 
-        for (Collection<Link> deepestLinks : DEPTH_LINKS) {
+        for (Collection<Link> deepestLinks : LINKS) {
             for (Link link : deepestLinks) {
                 out.println(link);
             }
@@ -40,50 +37,49 @@ public final class Ontology {
     }
 
     public final class Link {
-        private final List<Link> next = new LinkedList<>();
         private final RDFNode node;
-        private Link previous;
-        private int depth;
+        private Link parent = null;
 
         public Link(RDFNode node) {
             this.node = node;
         }
 
-        public Collection<Link> next() {
-            return Collections.unmodifiableCollection(next);
+        /**
+         * @return the parent of this link or {@code null} if no parent is present :((
+         */
+        public Link getParent() {
+            return parent;
         }
 
-        public int getDepth() {
-            return depth;
-        }
-
-        public Link getPrevious() {
-            return previous;
-        }
-
-        public void addLink(Link link) {
+        /**
+         * Adds a child link to this one
+         *
+         * @param link the link to add
+         */
+        public void addChild(Link link, int depth) {
             if (link == null) {
                 return;
             }
-            link.depth = depth + 1;
-            link.previous = this;
-            if (DEPTH_LINKS.size() <= link.depth) {
+            // set the child's depth to this + 1 and the parent to this
+            link.parent = this;
+
+            // if this is a new deepest link create a new collection of links and add it to the depth links
+            if (LINKS.size() <= depth) {
                 Collection<Link> links = new LinkedList<>();
                 links.add(link);
-                DEPTH_LINKS.add(links);
-            } else {
-                DEPTH_LINKS.get(link.depth).add(link);
+                LINKS.add(links);
             }
-            maxDepth = Math.max(maxDepth, link.depth);
-            next.add(link);
+            // else add the link to its corresponding depth in the LINKS list
+            else {
+                LINKS.get(depth).add(link);
+            }
         }
 
         @Override
         public String toString() {
             return "Link{" +
                     "node=" + node +
-                    (previous != null ? ", prev=" + previous.getNode() : "") +
-                    ", depth=" + depth +
+                    (parent != null ? ", parent=" + parent.getNode() : "") +
                     '}';
         }
 

@@ -16,12 +16,13 @@ public class DBPediaQueryTest {
         final String CHARLES = "Charles_IV,_Holy_Roman_Emperor";
         final String LOUIS_XVI = "Louis_XVI";
         final String PHILIP_II = "Philip_II_of_France";
-        Ontology query = RequestHandlerFactory.getDBPediaRequestHandler().query(PHILIP_II, "http://dbpedia" +
-                ".org/ontology/", SUCCESSOR);
+        final String POPE = "Pope_Francis";
+        Ontology query = RequestHandlerFactory.getDBPediaRequestHandler().query(POPE, "http://dbpedia" +
+                ".org/ontology/", PREDECESSOR);
         query.printOntology(System.out);
-        query = RequestHandlerFactory.getDBPediaRequestHandler().query("Windows_10", "http://dbpedia.org/property/",
+        /*query = RequestHandlerFactory.getDBPediaRequestHandler().query("Windows_10", "http://dbpedia.org/property/",
                 "precededBy");
-        query.printOntology(System.out);
+        query.printOntology(System.out);*/
         //System.out.println(query);
     }
 }

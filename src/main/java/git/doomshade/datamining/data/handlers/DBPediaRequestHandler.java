@@ -61,11 +61,9 @@ public class DBPediaRequestHandler implements IRequestHandler {
         this.usedURIs.clear();
 
         // now iterate recursively
-        // this could be done with a stack/queue on heap, but I don't think the stack will ever overflow
-        dfs(model, selector, ontology.getRoot());
+        dfs(model, selector, ontology.getRoot(), Ontology.ROOT_DEPTH);
 
         return ontology;
-        //return getDbQueryResult(request, model);
 
     }
 
@@ -76,19 +74,24 @@ public class DBPediaRequestHandler implements IRequestHandler {
      * @param selector the selector
      * @param prev     the previous link
      */
-    private void dfs(Model model, Selector selector, Ontology.Link prev) {
+    private void dfs(Model model, Selector selector, Ontology.Link prev, int depth) {
+        // list all statements based on the selector
+        // only one statement should be found based on that selector
         for (final Statement stmt : model.listStatements(selector).toList()) {
             final RDFNode object = stmt.getObject();
+
+            // create a link and add the link to the prev as a child with a depth + 1
             Ontology.Link link = this.currOntology.new Link(object);
-            prev.addLink(link);
+            prev.addChild(link, depth + 1);
             Main.getLogger().info(link.toString());
-            if (object.isResource()) {
+
+            // the node is a resource -> means the ontology continues -> we search deeper
+            if (object.isURIResource()) {
                 final String URI = object.asResource().getURI();
                 final Model nextModel = model.read(URI);
                 if (usedURIs.add(URI)) {
-                    dfs(nextModel,
-                            getSelector(object.asResource(), nextModel.getProperty(currNamespace, currLink)),
-                            link);
+                    final Selector sel = getSelector(object.asResource(), nextModel.getProperty(currNamespace, currLink));
+                    dfs(nextModel, sel, link, depth + 1);
                 }
             }
         }
