@@ -1,6 +1,7 @@
 package git.doomshade.datamining.data;
 
 import git.doomshade.datamining.data.exception.InvalidQueryException;
+import org.apache.jena.rdf.model.Model;
 
 /**
  * A handler for query requests
@@ -17,10 +18,13 @@ public interface IRequestHandler {
      * @param namespace the namespace, e.g. <a href="https://dbpedia.org/property/">a property</a> or <a
      *                  href="https://dbpedia.org/ontology/">an ontology</a>
      * @param link      the link to create the ontology for, e.g. {@code precededBy}
-     *
      * @return the ontology
-     *
      * @throws InvalidQueryException if the request is invalid
      */
     Ontology query(String request, String namespace, String link) throws InvalidQueryException;
+
+    /**
+     * @return the model used in this query
+     */
+    Model getModel();
 }

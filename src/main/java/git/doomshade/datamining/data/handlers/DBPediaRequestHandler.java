@@ -4,10 +4,13 @@ import git.doomshade.datamining.Main;
 import git.doomshade.datamining.data.IRequestHandler;
 import git.doomshade.datamining.data.Ontology;
 import git.doomshade.datamining.data.exception.InvalidQueryException;
+import org.apache.jena.ontology.OntModel;
+import org.apache.jena.ontology.OntModelSpec;
 import org.apache.jena.rdf.model.*;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Locale;
 
 /**
  * The DBPedia {@link IRequestHandler}
@@ -20,32 +23,39 @@ public class DBPediaRequestHandler implements IRequestHandler {
     private static final String DBPEDIA_SITE = "http://dbpedia.org/resource/";
     private final Collection<String> usedURIs = new HashSet<>();
     private String currLink = "";
-    private String currNamespace = "";
     private Ontology currOntology = null;
+    private String currNamespace = "";
+    private Model model = null;
 
     /**
      * Constructs a simple {@link Selector} from a subject, a predicate, and a null RDFNode
      *
      * @param subject   the subject
      * @param predicate the predicate
-     *
      * @return a simple selector
      */
     private static Selector getSelector(Resource subject, Property predicate) {
-        return new SimpleSelector(subject, predicate, (RDFNode) null);
+
+        return new SimpleSelector(subject, predicate, (RDFNode) null) {
+            @Override
+            public boolean selects(Statement s) {
+                return !s.getObject().isLiteral() || s.getLanguage().equalsIgnoreCase(Locale.ENGLISH.getLanguage());
+            }
+        };
     }
 
     @Override
     public Ontology query(String r, String namespace, String link) throws InvalidQueryException {
         // create the root request and model
         final String request = DBPEDIA_SITE.concat(r);
-        final Model model = ModelFactory.createDefaultModel();
+        final OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
         try {
             model.read(request);
         } catch (Exception e) {
             throw new InvalidQueryException(e);
         }
 
+        System.out.println(model);
         // root subject and predicate
         final Resource subject = model.getResource(request);
         final Property predicate = model.getProperty(namespace, link);
@@ -58,10 +68,11 @@ public class DBPediaRequestHandler implements IRequestHandler {
         this.currLink = link;
         this.currOntology = ontology;
         this.currNamespace = namespace;
+        this.model = model;
         this.usedURIs.clear();
 
         // now iterate recursively
-        dfs(model, selector, ontology.getRoot(), Ontology.ROOT_DEPTH);
+        dfs(model, selector, ontology.getStart());
 
         return ontology;
 
@@ -74,27 +85,33 @@ public class DBPediaRequestHandler implements IRequestHandler {
      * @param selector the selector
      * @param prev     the previous link
      */
-    private void dfs(Model model, Selector selector, Ontology.Link prev, int depth) {
+    private void dfs(Model model, Selector selector, Ontology.Link prev) {
         // list all statements based on the selector
         // only one statement should be found based on that selector
         for (final Statement stmt : model.listStatements(selector).toList()) {
             final RDFNode object = stmt.getObject();
 
-            // create a link and add the link to the prev as a child with a depth + 1
-            Ontology.Link link = this.currOntology.new Link(object);
-            prev.addChild(link, depth + 1);
-            Main.getLogger().info(link.toString());
+            // create a link and add a new edge going from previous to this
+            Ontology.Link next = currOntology.createLink(object);
+            currOntology.addEdge(prev, next);
+            Main.getLogger().info(next.toString());
 
             // the node is a resource -> means the ontology continues -> we search deeper
             if (object.isURIResource()) {
                 final String URI = object.asResource().getURI();
-                final Model nextModel = model.read(URI);
+                model.read(URI);
+                System.out.println(model);
                 if (usedURIs.add(URI)) {
-                    final Selector sel = getSelector(object.asResource(), nextModel.getProperty(currNamespace, currLink));
-                    dfs(nextModel, sel, link, depth + 1);
+                    final Selector sel = getSelector(object.asResource(), model.getProperty(currNamespace, currLink));
+                    dfs(model, sel, next);
                 }
             }
         }
+    }
+
+    @Override
+    public Model getModel() {
+        return model;
     }
 
     /*private DBQueryResult getDbQueryResult(String request, Model model) {

@@ -13,12 +13,10 @@ public class DBPediaQueryTest {
 
     public static void main(String[] args) {
         RequestHandlerRegistry.register(new DBPediaRequestHandler());
-        final String CHARLES = "Charles_IV,_Holy_Roman_Emperor";
-        final String LOUIS_XVI = "Louis_XVI";
-        final String PHILIP_II = "Philip_II_of_France";
-        final String POPE = "Pope_Francis";
-        Ontology query = RequestHandlerFactory.getDBPediaRequestHandler().query(POPE, "http://dbpedia" +
-                ".org/ontology/", PREDECESSOR);
+        if (args.length < 3) {
+            return;
+        }
+        Ontology query = RequestHandlerFactory.getDBPediaRequestHandler().query(args[0], args[1], args[2]);
         query.printOntology(System.out);
         /*query = RequestHandlerFactory.getDBPediaRequestHandler().query("Windows_10", "http://dbpedia.org/property/",
                 "precededBy");
