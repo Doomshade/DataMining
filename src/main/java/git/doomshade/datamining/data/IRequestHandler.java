@@ -1,6 +1,8 @@
 package git.doomshade.datamining.data;
 
 import git.doomshade.datamining.data.exception.InvalidQueryException;
+import javafx.concurrent.Service;
+import javafx.concurrent.Task;
 import org.apache.jena.rdf.model.Model;
 
 /**
@@ -21,7 +23,7 @@ public interface IRequestHandler {
      * @return the ontology
      * @throws InvalidQueryException if the request is invalid
      */
-    Ontology query(String request, String namespace, String link) throws InvalidQueryException;
+    Service<Ontology> query(String request, String namespace, String link) throws InvalidQueryException;
 
     /**
      * @return the model used in this query

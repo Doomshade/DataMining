@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane fx:id="anchorPane" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/11.0.2" xmlns:fx="http://javafx.com/fxml/1" fx:controller="git.doomshade.datamining.app.controller.MainMenuController">
+    <children>
+      <VBox layoutX="207.0" layoutY="188.0">
+         <children>
+              <HBox fx:id="hbox" spacing="5">
+                  <children>
+                      <JFXTextField fx:id="searchField" promptText="%search-field" text="Charles_IV,_Holy_Roman_Emperor" />
+                      <JFXButton fx:id="testbtn" mnemonicParsing="false" onMouseClicked="#search" text="%search" />
+                  </children>
+              </HBox>
+            <JFXTextArea fx:id="textArea" editable="false" prefHeight="146.0" prefWidth="200.0" />
+         </children>
+      </VBox>
+      <JFXSpinner fx:id="progress" layoutX="275.0" layoutY="163.0" visible="false" />
+    </children>
+
+</AnchorPane>

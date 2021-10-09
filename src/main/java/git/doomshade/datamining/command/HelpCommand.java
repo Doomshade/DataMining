@@ -19,7 +19,7 @@ public class HelpCommand extends AbstractCommand {
 
     @Override
     protected void execute(String param) throws IllegalFormatException {
-        if (param.isEmpty() || param.equalsIgnoreCase(ALL_COMMANDS)) {
+        /*if (param.isEmpty() || param.equalsIgnoreCase(ALL_COMMANDS)) {
             System.out.println("All known commands:");
             for (AbstractCommand cmd : CommandManager.getCommands()) {
                 CommandManager.printCommand(cmd);
@@ -28,7 +28,7 @@ public class HelpCommand extends AbstractCommand {
         }
 
         // print the command info if the command exists, print error otherwise
-        CommandManager.getCommand(param).ifPresentOrElse(CommandManager::printCommand, () -> printError(param));
+        CommandManager.getCommand(param).ifPresentOrElse(CommandManager::printCommand, () -> printError(param));*/
     }
 
     private static void printError(String cmd) throws IllegalFormatException {

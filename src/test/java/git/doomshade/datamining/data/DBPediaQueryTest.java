@@ -16,8 +16,8 @@ public class DBPediaQueryTest {
         if (args.length < 3) {
             return;
         }
-        Ontology query = RequestHandlerFactory.getDBPediaRequestHandler().query(args[0], args[1], args[2]);
-        query.printOntology(System.out);
+        /*Ontology query = RequestHandlerFactory.getDBPediaRequestHandler().query(args[0], args[1], args[2]);
+        query.printOntology(System.out);*/
         /*query = RequestHandlerFactory.getDBPediaRequestHandler().query("Windows_10", "http://dbpedia.org/property/",
                 "precededBy");
         query.printOntology(System.out);*/

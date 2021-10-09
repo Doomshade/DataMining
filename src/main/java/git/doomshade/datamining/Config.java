@@ -17,9 +17,9 @@ public final class Config {
     private static final String FILENAME = "config.properties";
 
     static {
+        File f = new File(FILENAME);
+        InputStream in = null;
         try {
-            File f = new File(FILENAME);
-            InputStream in;
             if (!f.exists()) {
                 in = Main.class.getResourceAsStream(FILENAME);
             } else {
@@ -30,12 +30,20 @@ public final class Config {
             Main.getLogger().throwing(Config.class.getSimpleName(), "", e);
         } finally {
             PROPERTIES = new Properties(DEFAULT_PROPERTIES);
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (IOException e) {
+                    Main.getLogger().throwing(Config.class.getSimpleName(), "", e);
+                }
+            }
         }
     }
 
     public static void setupConfig(File file) throws IOException {
-        InputStream in = new FileInputStream(file);
-        PROPERTIES.load(in);
+        try (InputStream in = new FileInputStream(file)) {
+            PROPERTIES.load(in);
+        }
     }
 
     public static int getMaxDepth() {

@@ -8,7 +8,9 @@ import git.doomshade.datamining.event.EventManager;
  */
 public class App {
 
+
     public static void exec(String param) {
         EventManager em;
+        EventManager eme;
     }
 }

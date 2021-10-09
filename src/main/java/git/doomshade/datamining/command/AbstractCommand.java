@@ -4,7 +4,6 @@ import java.util.IllegalFormatException;
 
 /**
  * The abstract class for commands. To register a new command use
- * {@link CommandManager#registerCommand(AbstractCommand)}
  *
  * @author Jakub Šmrha
  * @version 1.0
