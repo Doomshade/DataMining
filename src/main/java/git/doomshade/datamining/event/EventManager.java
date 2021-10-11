@@ -16,7 +16,8 @@ import java.util.Map;
  */
 public class EventManager {
     // we map events to the listeners, this reduces the search by a lot
-    private static final Map<Class<? extends AbstractEvent>, Collection<Object>> EVENT_HANDLERS = new LinkedHashMap<>();
+    private static final Map<Class<? extends AbstractEvent>, Collection<Object>> EVENT_HANDLERS =
+            new LinkedHashMap<>();
 
     /**
      * Fires an event for listeners to listen to
@@ -58,7 +59,8 @@ public class EventManager {
      *
      * @param m the method to check for
      *
-     * @return {@code true} if the method is annotated with {@link EventHandler} and the first parameter is {@link
+     * @return {@code true} if the method is annotated with {@link EventHandler} and the first
+     * parameter is {@link
      * AbstractEvent}
      */
     private static boolean isEventMethod(Method m) {
@@ -78,7 +80,7 @@ public class EventManager {
             if (!isEventMethod(m)) {
                 continue;
             }
-            final Class<? extends AbstractEvent> eventClass =
+            @SuppressWarnings("all") final Class<? extends AbstractEvent> eventClass =
                     (Class<? extends AbstractEvent>) m.getParameters()[0].getType();
             Collection<Object> listeners = EVENT_HANDLERS.getOrDefault(eventClass, new HashSet<>());
             listeners.add(listener);

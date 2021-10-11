@@ -12,7 +12,7 @@ import java.util.HashSet;
 import java.util.Locale;
 
 /**
- * The DBPedia {@link IRequestHandler}
+ * The DBPedia {@link IRequestHandler}.
  *
  * @author Jakub Šmrha
  * @version 1.0
@@ -26,7 +26,8 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
     private Request request = null;
 
     /**
-     * Constructs a simple {@link Selector} from a subject, a predicate, and a null RDFNode
+     * Constructs a simple {@link Selector} from a subject, a predicate, and a
+     * null RDFNode
      *
      * @param subject   the subject
      * @param predicate the predicate
@@ -38,7 +39,9 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
         return new SimpleSelector(subject, predicate, (RDFNode) null) {
             @Override
             public boolean selects(Statement s) {
-                return !s.getObject().isLiteral() || s.getLanguage().equalsIgnoreCase(Locale.ENGLISH.getLanguage());
+                return !s.getObject().isLiteral() ||
+                        s.getLanguage()
+                                .equalsIgnoreCase(Locale.ENGLISH.getLanguage());
             }
         };
     }
@@ -52,7 +55,8 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
         requesting = true;
         // create the root request and model
         final String r = DBPEDIA_SITE.concat(request.getRequestPage());
-        final OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
+        final OntModel model =
+                ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
         try {
             model.read(r);
             //System.out.println(model);
@@ -64,13 +68,15 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
         //System.out.println(model);
         // root subject and predicate
         final Resource subject = model.getResource(r);
-        final Property predicate = model.getProperty(request.getNamespace(), request.getLink());
+        final Property predicate =
+                model.getProperty(request.getNamespace(), request.getLink());
         final Selector selector = getSelector(subject, predicate);
 
         // root link
         final Ontology ontology = new Ontology(subject);
 
-        // prepare the fields, don't put them as parameters, it will just fill stack with duplicates
+        // prepare the fields, don't put them as parameters, it will just
+        // fill stack with duplicates
         this.request = request;
         this.currOntology = ontology;
         this.model = model;
@@ -94,31 +100,36 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
         // only one statement should be found based on that selector
         for (final Statement stmt : model.listStatements(selector).toList()) {
             final RDFNode object = stmt.getObject();
-            // check whether the object meets requirements, i.e. check restrictions
+            // check whether the object meets requirements, i.e. check
+            // restrictions
             if (!meetsRequirements(model, object)) {
                 return;
             }
             // create a link and add a new edge going from previous to this
             final Ontology.Link next = createLink(prev, object);
 
-            // the node is a resource -> means the ontology continues -> we search deeper
+            // the node is a resource -> means the ontology continues -> we
+            // search deeper
             if (object.isURIResource()) {
                 searchFurther(model, object.asResource(), next);
             }
         }
     }
 
-    private void searchFurther(final Model model, final Resource resource, final Ontology.Link next) {
+    private void searchFurther(final Model model, final Resource resource,
+                               final Ontology.Link next) {
         updateModel(model, resource);
         //System.out.println(model);
         if (usedURIs.add(resource.getURI())) {
-            final Selector sel = getSelector(resource, model.getProperty(request.getNamespace(),
-                    request.getLink()));
+            final Selector sel = getSelector(resource,
+                    model.getProperty(request.getNamespace(),
+                            request.getLink()));
             dfs(model, sel, next);
         }
     }
 
-    private Ontology.Link createLink(final Ontology.Link prev, final RDFNode object) {
+    private Ontology.Link createLink(final Ontology.Link prev,
+                                     final RDFNode object) {
         Ontology.Link next = currOntology.createLink(object);
         currOntology.addEdge(prev, next);
         Main.getLogger().info(next.toString());
@@ -132,8 +143,9 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
         final Resource resource = object.asResource();
         updateModel(model, resource);
         for (Restriction r : request.getRestrictions()) {
-            final Selector sel = getSelector(resource, model.getProperty(r.getNamespace(),
-                    r.getLink()));
+            final Selector sel =
+                    getSelector(resource, model.getProperty(r.getNamespace(),
+                            r.getLink()));
             if (!model.listStatements(sel).hasNext()) {
                 // don't continue in the search
                 return false;
@@ -161,8 +173,11 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
                 final Resource subj = s.getSubject();
                 final boolean isCharles = subj.getURI().equals(request);
 
-                final boolean isSuccessor = pred.equals(model.getProperty("http://dbpedia.org/ontology/", "successor"))
-                        || pred.equals(model.getResource("http://dbpedia.org/property/successor"));
+                final boolean isSuccessor = pred.equals(model.getProperty
+                ("http://dbpedia
+                .org/ontology/", "successor"))
+                        || pred.equals(model.getResource("http://dbpedia
+                        .org/property/successor"));
                 return isCharles && isSuccessor;
             }
         };
@@ -182,18 +197,24 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
         return new DBQueryResult(s, RDFFormat.JSON);
     }*/
 
-    /*private void printOut(Model model, Resource subject, String title, String type) {
+    /*private void printOut(Model model, Resource subject, String title,
+    String type) {
         System.out.println(title);
-        final Property ontPred = model.getProperty("http://dbpedia.org/ontology/", type);
-        final Property propPred = model.getProperty("http://dbpedia.org/property/", type);
-        System.out.println(model.listObjectsOfProperty(subject, ontPred).toList());
-        System.out.println(model.listObjectsOfProperty(subject, propPred).toList());
+        final Property ontPred = model.getProperty("http://dbpedia
+        .org/ontology/", type);
+        final Property propPred = model.getProperty("http://dbpedia
+        .org/property/", type);
+        System.out.println(model.listObjectsOfProperty(subject, ontPred)
+        .toList());
+        System.out.println(model.listObjectsOfProperty(subject, propPred)
+        .toList());
         System.out.println();
     }*/
 
 
     //System.out.println(model.getProperty("https://dbpedia.org/ontology/child").getProperty(RDFS.label));
-        /*try (QueryExecution query = QueryExecutionFactory.sparqlService(SERVICE, request)) {
+        /*try (QueryExecution query = QueryExecutionFactory.sparqlService
+        (SERVICE, request)) {
 
             final ResultSet set = query.execSelect();
 
