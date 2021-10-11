@@ -9,14 +9,12 @@ import javafx.concurrent.Task;
  * @version 1.0
  */
 public abstract class AbstractRequestHandler extends Service<Ontology> implements IRequestHandler {
-    private String request, namespace, link;
+    private Request request;
 
     @Override
-    public final Service<Ontology> query(final String request, final String namespace, final String link)
+    public final Service<Ontology> query(final Request request)
             throws InvalidQueryException {
         this.request = request;
-        this.namespace = namespace;
-        this.link = link;
         return this;
     }
 
@@ -25,13 +23,12 @@ public abstract class AbstractRequestHandler extends Service<Ontology> implement
         return new Task<>() {
             @Override
             protected Ontology call() {
-                return query0(request, namespace, link);
+                return query0(request);
             }
         };
     }
 
 
-
-    protected abstract Ontology query0(final String request, final String namespace, final String link)
+    protected abstract Ontology query0(final Request request)
             throws InvalidQueryException;
 }

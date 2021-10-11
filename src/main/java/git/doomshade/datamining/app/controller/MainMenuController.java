@@ -5,10 +5,9 @@ import com.jfoenix.controls.JFXSpinner;
 import com.jfoenix.controls.JFXTextArea;
 import com.jfoenix.controls.JFXTextField;
 import git.doomshade.datamining.data.Ontology;
+import git.doomshade.datamining.data.Request;
 import git.doomshade.datamining.data.RequestHandlerFactory;
 import javafx.concurrent.Service;
-import javafx.concurrent.WorkerStateEvent;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.input.MouseEvent;
@@ -48,9 +47,12 @@ public class MainMenuController implements Initializable {
 
 
         String ontology = searchField.getText();
-        Service<Ontology> query = RequestHandlerFactory.getDBPediaRequestHandler().query(ontology, "http" +
-                "://dbpedia" +
-                ".org/ontology/", "successor");
+        Request request = new Request(
+                ontology,
+                "http://dbpedia.org/ontology/",
+                "successor"
+        );
+        Service<Ontology> query = RequestHandlerFactory.getDBPediaRequestHandler().query(request);
 
         query.setOnSucceeded(x -> {
             setVisibilityAndOpacity(false, 1);
@@ -70,7 +72,7 @@ public class MainMenuController implements Initializable {
         progress.progressProperty().bind(query.progressProperty());
     }
 
-    private void setVisibilityAndOpacity(boolean disabled, double opacity){
+    private void setVisibilityAndOpacity(boolean disabled, double opacity) {
         testbtn.setDisable(disabled);
         progress.setVisible(disabled);
         searchField.setDisable(disabled);

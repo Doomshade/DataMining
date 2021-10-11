@@ -1,11 +1,8 @@
 package git.doomshade.datamining.data.handlers;
 
 import git.doomshade.datamining.Main;
-import git.doomshade.datamining.data.AbstractRequestHandler;
-import git.doomshade.datamining.data.IRequestHandler;
-import git.doomshade.datamining.data.Ontology;
+import git.doomshade.datamining.data.*;
 import git.doomshade.datamining.data.exception.InvalidQueryException;
-import javafx.concurrent.Task;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntModelSpec;
 import org.apache.jena.rdf.model.*;
@@ -21,20 +18,19 @@ import java.util.Locale;
  * @version 1.0
  */
 public class DBPediaRequestHandler extends AbstractRequestHandler {
-    private static final String SERVICE = "https://dbpedia.org/sparql";
     private static final String DBPEDIA_SITE = "http://dbpedia.org/resource/";
-    private final Collection<String> usedURIs = new HashSet<>();
-    private String currLink = "";
-    private Ontology currOntology = null;
-    private String currNamespace = "";
-    private Model model = null;
     private static boolean requesting = false;
+    private final Collection<String> usedURIs = new HashSet<>();
+    private Ontology currOntology = null;
+    private Model model = null;
+    private Request request = null;
 
     /**
      * Constructs a simple {@link Selector} from a subject, a predicate, and a null RDFNode
      *
      * @param subject   the subject
      * @param predicate the predicate
+     *
      * @return a simple selector
      */
     private static Selector getSelector(Resource subject, Property predicate) {
@@ -48,17 +44,18 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
     }
 
     @Override
-    protected synchronized Ontology query0(final String r, final String namespace, final String link)
+    protected synchronized Ontology query0(final Request request)
             throws InvalidQueryException {
-        if (requesting){
+        if (requesting) {
             throw new IllegalStateException("Already requesting!");
         }
         requesting = true;
         // create the root request and model
-        final String request = DBPEDIA_SITE.concat(r);
+        final String r = DBPEDIA_SITE.concat(request.getRequestPage());
         final OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
         try {
-            model.read(request);
+            model.read(r);
+            //System.out.println(model);
         } catch (Exception e) {
             requesting = false;
             throw new InvalidQueryException(e);
@@ -66,17 +63,16 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
 
         //System.out.println(model);
         // root subject and predicate
-        final Resource subject = model.getResource(request);
-        final Property predicate = model.getProperty(namespace, link);
+        final Resource subject = model.getResource(r);
+        final Property predicate = model.getProperty(request.getNamespace(), request.getLink());
         final Selector selector = getSelector(subject, predicate);
 
         // root link
-        Ontology ontology = new Ontology(subject);
+        final Ontology ontology = new Ontology(subject);
 
         // prepare the fields, don't put them as parameters, it will just fill stack with duplicates
-        this.currLink = link;
+        this.request = request;
         this.currOntology = ontology;
-        this.currNamespace = namespace;
         this.model = model;
         this.usedURIs.clear();
 
@@ -98,23 +94,57 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
         // only one statement should be found based on that selector
         for (final Statement stmt : model.listStatements(selector).toList()) {
             final RDFNode object = stmt.getObject();
-
+            // check whether the object meets requirements, i.e. check restrictions
+            if (!meetsRequirements(model, object)) {
+                return;
+            }
             // create a link and add a new edge going from previous to this
-            Ontology.Link next = currOntology.createLink(object);
-            currOntology.addEdge(prev, next);
-            Main.getLogger().info(next.toString());
+            final Ontology.Link next = createLink(prev, object);
 
             // the node is a resource -> means the ontology continues -> we search deeper
             if (object.isURIResource()) {
-                final String URI = object.asResource().getURI();
-                model.read(URI);
-                //System.out.println(model);
-                if (usedURIs.add(URI)) {
-                    final Selector sel = getSelector(object.asResource(), model.getProperty(currNamespace, currLink));
-                    dfs(model, sel, next);
-                }
+                searchFurther(model, object.asResource(), next);
             }
         }
+    }
+
+    private void searchFurther(final Model model, final Resource resource, final Ontology.Link next) {
+        updateModel(model, resource);
+        //System.out.println(model);
+        if (usedURIs.add(resource.getURI())) {
+            final Selector sel = getSelector(resource, model.getProperty(request.getNamespace(),
+                    request.getLink()));
+            dfs(model, sel, next);
+        }
+    }
+
+    private Ontology.Link createLink(final Ontology.Link prev, final RDFNode object) {
+        Ontology.Link next = currOntology.createLink(object);
+        currOntology.addEdge(prev, next);
+        Main.getLogger().info(next.toString());
+        return next;
+    }
+
+    private boolean meetsRequirements(final Model model, final RDFNode object) {
+        if (!object.isURIResource()) {
+            return true;
+        }
+        final Resource resource = object.asResource();
+        updateModel(model, resource);
+        for (Restriction r : request.getRestrictions()) {
+            final Selector sel = getSelector(resource, model.getProperty(r.getNamespace(),
+                    r.getLink()));
+            if (!model.listStatements(sel).hasNext()) {
+                // don't continue in the search
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void updateModel(final Model model, final Resource resource) {
+        String URI = resource.getURI();
+        model.read(URI);
     }
 
     @Override

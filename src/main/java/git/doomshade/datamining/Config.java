@@ -13,7 +13,6 @@ import java.util.Properties;
 public final class Config {
     private static final Properties DEFAULT_PROPERTIES = new Properties();
     private static final Properties PROPERTIES;
-
     private static final String FILENAME = "config.properties";
 
     static {
