@@ -1,18 +1,11 @@
 package git.doomshade.datamining.app.controller;
 
 import com.jfoenix.controls.JFXButton;
-import com.jfoenix.controls.JFXSpinner;
-import com.jfoenix.controls.JFXTextArea;
-import com.jfoenix.controls.JFXTextField;
-import git.doomshade.datamining.data.Ontology;
-import git.doomshade.datamining.data.Request;
-import git.doomshade.datamining.data.RequestHandlerFactory;
-import javafx.concurrent.Service;
+import com.jfoenix.controls.JFXComboBox;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -23,59 +16,35 @@ import java.util.ResourceBundle;
  */
 public class MainMenuController implements Initializable {
     @FXML
-    private JFXSpinner progress;
+    public VBox rootPane;
     @FXML
-    private JFXTextArea textArea;
-
+    public JFXButton createOntologyBtn;
     @FXML
-    private HBox hbox;
-    @FXML
-    private AnchorPane anchorPane;
-
-    @FXML
-    private JFXButton testbtn;
-
-    @FXML
-    private JFXTextField searchField;
+    public JFXButton loadOntologyBtn;
+    public JFXComboBox<String> sourceChooseComboBox;
 
     @Override
     public void initialize(final URL url, final ResourceBundle resourceBundle) {
+        //createOntologyBtn.getStylesheets().add("/css/main.css");
+        sourceChooseComboBox
+                .getItems()
+                .setAll(
+                        resourceBundle.getString("online"),
+                        resourceBundle.getString("offline"));
+        sourceChooseComboBox
+                .getSelectionModel()
+                .selectedItemProperty()
+                .addListener((observable, oldValue, newValue) -> {
+                    System.out.println("Old val: " + oldValue);
+                    System.out.println("New val: " + newValue);
+                });
     }
 
-    public void search(final MouseEvent mouseEvent) {
-        setVisibilityAndOpacity(true, 0.2);
+    public void handleCreateOntologyBtn(final MouseEvent mouseEvent) {
 
-
-        String ontology = searchField.getText();
-        Request request = new Request(
-                ontology,
-                "http://dbpedia.org/ontology/",
-                "successor"
-        );
-        Service<Ontology> query = RequestHandlerFactory.getDBPediaRequestHandler().query(request);
-
-        query.setOnSucceeded(x -> {
-            setVisibilityAndOpacity(false, 1);
-            final Ontology ont = (Ontology) x.getSource().getValue();
-            //query.getException().printStackTrace();
-            ont.printOntology(System.out);
-            StringBuilder sb = new StringBuilder();
-            ont.printOntology(sb);
-            textArea.textProperty().set(sb.toString());
-
-        });
-        query.setOnFailed(x -> {
-            setVisibilityAndOpacity(false, 1);
-            query.getException().printStackTrace();
-        });
-        query.restart();
-        progress.progressProperty().bind(query.progressProperty());
     }
 
-    private void setVisibilityAndOpacity(boolean disabled, double opacity) {
-        testbtn.setDisable(disabled);
-        progress.setVisible(disabled);
-        searchField.setDisable(disabled);
-        textArea.setDisable(disabled);
+    public void handleLoadOnotologyBtn(final MouseEvent mouseEvent) {
+
     }
 }
