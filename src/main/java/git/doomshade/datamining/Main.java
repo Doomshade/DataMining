@@ -3,15 +3,10 @@ package git.doomshade.datamining;
 import git.doomshade.datamining.data.RequestHandlerRegistry;
 import git.doomshade.datamining.data.handlers.DBPediaRequestHandler;
 import javafx.application.Application;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.apache.commons.cli.ParseException;
 
-import java.io.File;
-import java.net.URL;
-import java.util.ResourceBundle;
 import java.util.logging.Logger;
 
 import static git.doomshade.datamining.command.CommandManager.parseAndExecuteCommands;
@@ -40,9 +35,9 @@ public class Main extends Application {
 
     @Override
     public void start(final Stage stage) throws Exception {
-        Parent root = FXMLLoader.load(getClass().getResource("/fxml/main-menu.fxml"), ResourceBundle.getBundle("lang"));
-        stage.setTitle("Helo World");
-        stage.setScene(new Scene(root));
+        stage.setTitle("BP");
+        final Scene scene = SceneManager.getScene(FXMLScene.MAIN_MENU);
+        stage.setScene(scene);
         stage.show();
 
     }
