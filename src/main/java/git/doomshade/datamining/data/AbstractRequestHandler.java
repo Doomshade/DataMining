@@ -1,6 +1,6 @@
 package git.doomshade.datamining.data;
 
-import git.doomshade.datamining.data.exception.InvalidQueryException;
+import git.doomshade.datamining.exception.InvalidQueryException;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 

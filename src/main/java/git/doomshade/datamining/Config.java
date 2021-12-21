@@ -26,14 +26,14 @@ public final class Config {
             }
             DEFAULT_PROPERTIES.load(in);
         } catch (IOException e) {
-            Main.getLogger().throwing(Config.class.getSimpleName(), "", e);
+            Main.getL().throwing(e);
         } finally {
             PROPERTIES = new Properties(DEFAULT_PROPERTIES);
             if (in != null) {
                 try {
                     in.close();
                 } catch (IOException e) {
-                    Main.getLogger().throwing(Config.class.getSimpleName(), "", e);
+                    Main.getL().throwing(e);
                 }
             }
         }
@@ -50,7 +50,7 @@ public final class Config {
         try {
             return Integer.parseInt(PROPERTIES.getProperty("max-depth", String.valueOf(DEFAULT_DEPTH)));
         } catch (NumberFormatException e) {
-            Main.getLogger().throwing(Config.class.getSimpleName(), "getMaxDepth", e);
+            Main.getL().throwing(e);
         }
         return DEFAULT_DEPTH;
     }

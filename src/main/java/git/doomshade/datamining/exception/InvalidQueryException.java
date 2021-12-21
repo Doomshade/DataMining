@@ -1,4 +1,4 @@
-package git.doomshade.datamining.data.exception;
+package git.doomshade.datamining.exception;
 
 /**
  * An invalid query exception

@@ -14,7 +14,7 @@ import java.util.Map;
  * @version 1.0
  */
 public class Main {
-    private static final SessionFactory ourSessionFactory;
+    /*private static final SessionFactory ourSessionFactory;
 
     static {
         try {
@@ -47,5 +47,5 @@ public class Main {
         } finally {
             session.close();
         }
-    }
+    }*/
 }

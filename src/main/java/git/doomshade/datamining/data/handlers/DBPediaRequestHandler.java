@@ -2,7 +2,7 @@ package git.doomshade.datamining.data.handlers;
 
 import git.doomshade.datamining.Main;
 import git.doomshade.datamining.data.*;
-import git.doomshade.datamining.data.exception.InvalidQueryException;
+import git.doomshade.datamining.exception.InvalidQueryException;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntModelSpec;
 import org.apache.jena.rdf.model.*;
@@ -132,7 +132,7 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
                                      final RDFNode object) {
         Ontology.Link next = currOntology.createLink(object);
         currOntology.addEdge(prev, next);
-        Main.getLogger().info(next.toString());
+        Main.getL().info(next.toString());
         return next;
     }
 
