@@ -7,7 +7,7 @@
 <?import javafx.scene.Group?>
 <StackPane xmlns="http://javafx.com/javafx"
            xmlns:fx="http://javafx.com/fxml"
-           fx:controller="git.doomshade.datamining.app.controller.IBTemplateController"
+           fx:controller="cz.zcu.jsmahy.datamining.app.controller.IBTemplateController"
            minHeight="400.0" minWidth="600.0">
     <VBox spacing="10" fx:id="vbox" minHeight="400.0" minWidth="600.0">
         <children>

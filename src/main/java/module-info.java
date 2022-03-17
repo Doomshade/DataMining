@@ -15,9 +15,9 @@
     requires org.jsoup;
     requires org.apache.logging.log4j;
 
-    exports git.doomshade.datamining;
-    exports git.doomshade.datamining.app.controller;
+    exports cz.zcu.jsmahy.datamining;
+    exports cz.zcu.jsmahy.datamining.app.controller;
 
-    opens git.doomshade.datamining;
-    opens git.doomshade.datamining.app.controller;
+    opens cz.zcu.jsmahy.datamining;
+    opens cz.zcu.jsmahy.datamining.app.controller;
 }
