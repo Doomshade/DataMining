@@ -20,4 +20,6 @@
 
     opens cz.zcu.jsmahy.datamining;
     opens cz.zcu.jsmahy.datamining.app.controller;
+	exports cz.zcu.jsmahy.datamining.config;
+	opens cz.zcu.jsmahy.datamining.config;
 }

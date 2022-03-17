@@ -1,6 +1,7 @@
 package cz.zcu.jsmahy.datamining;
 
 import cz.zcu.jsmahy.datamining.command.CommandManager;
+import cz.zcu.jsmahy.datamining.config.Config;
 import cz.zcu.jsmahy.datamining.data.RequestHandlerRegistry;
 import cz.zcu.jsmahy.datamining.data.handlers.DBPediaRequestHandler;
 import javafx.application.Application;
@@ -16,31 +17,28 @@ import org.apache.logging.log4j.Logger;
  * @since 1.0
  */
 public class Main extends Application {
-    private static final Logger L = LogManager.getLogger();
+	private static final Logger L = LogManager.getLogger(Main.class);
 
-    public static void main(String[] args) throws ParseException {
-        registerRequestHandlers();
-        CommandManager.parseAndExecuteCommands(args);
-        launch(args);
-    }
+	public static void main(String[] args) throws ParseException {
+		registerRequestHandlers();
+		CommandManager.parseAndExecuteCommands(args);
+		launch(args);
+	}
 
-    private static void registerRequestHandlers() {
-        RequestHandlerRegistry.register(new DBPediaRequestHandler());
-    }
+	private static void registerRequestHandlers() {
+		RequestHandlerRegistry.register(new DBPediaRequestHandler());
+	}
 
-    public static Logger getL() {
-        return L;
-    }
+	@Override
+	public void start(final Stage stage) throws Exception {
+		stage.setTitle("BP");
+		//InfoboxManager.downloadTemplates("default-infoboxes");
+		final Scene scene = SceneManager.getScene(FXMLScene.IB_TEMPLATE_MENU);
+		stage.setScene(scene);
+		stage.show();
+		Config.getInstance();
 
-    @Override
-    public void start(final Stage stage) throws Exception {
-        stage.setTitle("BP");
-        //InfoboxManager.downloadTemplates("default-infoboxes");
-        final Scene scene = SceneManager.getScene(FXMLScene.IB_TEMPLATE_MENU);
-        stage.setScene(scene);
-        stage.show();
-
-    }
+	}
 
     /*OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder()
