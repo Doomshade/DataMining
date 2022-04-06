@@ -2,8 +2,10 @@ package cz.zcu.jsmahy.datamining.command;
 
 import org.apache.commons.cli.*;
 
-import java.util.*;
-import java.util.function.Function;
+import java.util.HashMap;
+import java.util.IllegalFormatException;
+import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * The command manager
@@ -23,49 +25,64 @@ import java.util.function.Function;
  * @version 1.0
  */
 public final class CommandManager {
-    private static final Options OPTIONS = new Options();
-    private static final Map<Option, Runnable> HANDLER_LIST = new HashMap<>();
+	private static final Options                         OPTIONS      = new Options();
+	private static final Map<Option, Consumer<String[]>> HANDLER_LIST = new HashMap<>();
 
-    static {
-        registerCommands();
-    }
+	static {
+		registerCommands();
+	}
 
-    /**
-     * Attempts to parse and execute commands based on the arguments provided from the CLI
-     *
-     * @param args the CLI arguments
-     *
-     * @throws IllegalArgumentException if the amount of arguments is invalid
-     * @throws IllegalFormatException   when a command has a parameter with invalid formatting
-     */
-    public static void parseAndExecuteCommands(String[] args)
-            throws IllegalArgumentException, IllegalFormatException, ParseException {
-        CommandLineParser parser = new DefaultParser();
-        CommandLine c = parser.parse(OPTIONS, args);
-        for (Option o : c.getOptions()) {
-            final Runnable r = HANDLER_LIST.get(o);
-            if (r != null) {
-                r.run();
-            }
-        }
-    }
+	/**
+	 * Attempts to parse and execute commands based on the arguments provided from the CLI
+	 *
+	 * @param args the CLI arguments
+	 *
+	 * @throws IllegalArgumentException if the amount of arguments is invalid
+	 * @throws IllegalFormatException   when a command has a parameter with invalid formatting
+	 */
+	public static void parseAndExecuteCommands(String[] args) throws
+			IllegalArgumentException,
+			IllegalFormatException,
+			ParseException {
+		CommandLineParser parser = new DefaultParser();
+		CommandLine c = parser.parse(OPTIONS, args);
+		for (Option o : c.getOptions()) {
+			final Consumer<String[]> r = HANDLER_LIST.get(o);
+			if (r != null) {
+				r.accept(o.getValues());
+			}
+		}
+	}
 
-    /**
-     * Registers all commands
-     */
-    private static void registerCommands() {
-        Option appRun = new Option("s", "start", false, "Runs the app");
-        HANDLER_LIST.put(appRun, () -> System.out.println("RUN"));
-        Option dataFetch = new Option("d", "data", true, "Fetches data");
-        HANDLER_LIST.put(dataFetch, () -> System.out.println("DATA"));
-        Option help = new Option("h", "help", true, "shows help");
-        HANDLER_LIST.put(help, () -> System.out.println("HELP"));
-        Option test = new Option("t", "test", true, "test");
-        HANDLER_LIST.put(test, () -> System.out.println("TEST"));
+	/**
+	 * Registers all commands
+	 */
+	private static void registerCommands() {
+		HANDLER_LIST.put(new Option("s", "start", false, "Runs the app"), CommandManager::handleAppRun);
+		HANDLER_LIST.put(new Option("d", "data", true, "Fetches data"), CommandManager::handleDataFetch);
+		HANDLER_LIST.put(new Option("h", "help", true, "shows help"), CommandManager::handleHelp);
+		HANDLER_LIST.put(new Option("t", "test", true, "test"), CommandManager::handleTest);
 
-        OPTIONS.addOption(appRun)
-                .addOption(dataFetch)
-                .addOption(help)
-                .addOption(test);
-    }
+		for (Option opt : HANDLER_LIST.keySet()) {
+			OPTIONS.addOption(opt);
+		}
+	}
+
+
+	private static void handleAppRun(String[] args) {
+		System.out.println("RUN");
+	}
+
+	private static void handleDataFetch(String[] args) {
+		System.out.println("DATA");
+	}
+
+	private static void handleHelp(String[] args) {
+		System.out.println("HELP");
+	}
+
+	private static void handleTest(String[] args) {
+		System.out.println("TEST");
+	}
+
 }

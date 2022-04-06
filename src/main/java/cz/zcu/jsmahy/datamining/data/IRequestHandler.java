@@ -12,19 +12,19 @@ import org.apache.jena.rdf.model.Model;
  */
 public interface IRequestHandler {
 
-    /**
-     * Queries a web page based on the handler implementation
-     *
-     * @param request the request to send to the web page
-     *
-     * @return the ontology
-     *
-     * @throws InvalidQueryException if the request is invalid
-     */
-    Service<Ontology> query(Request request) throws InvalidQueryException;
+	/**
+	 * @return the model used in this query
+	 */
+	Model getModel();
 
-    /**
-     * @return the model used in this query
-     */
-    Model getModel();
+	/**
+	 * Queries a web page based on the handler implementation
+	 *
+	 * @param request the request to send to the web page
+	 *
+	 * @return the ontology
+	 *
+	 * @throws InvalidQueryException if the request is invalid
+	 */
+	Service<Ontology> query(ISparqlRequest request) throws InvalidQueryException;
 }

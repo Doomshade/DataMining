@@ -2,6 +2,7 @@ package cz.zcu.jsmahy.datamining.data.handlers;
 
 import cz.zcu.jsmahy.datamining.data.*;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
+import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntModelSpec;
 import org.apache.jena.rdf.model.*;
@@ -19,148 +20,149 @@ import java.util.Locale;
  * @version 1.0
  */
 public class DBPediaRequestHandler extends AbstractRequestHandler {
-	private static final Logger             L            = LogManager.getLogger(DBPediaRequestHandler.class);
-	private static final String             DBPEDIA_SITE = "http://dbpedia.org/resource/";
-	private static       boolean            requesting   = false;
-	private final        Collection<String> usedURIs     = new HashSet<>();
-	private              Ontology           currOntology = null;
-	private              Model              model        = null;
-	private              Request            request      = null;
+    private static final Logger L = LogManager.getLogger(DBPediaRequestHandler.class);
+    private static final String DBPEDIA_SITE = "http://dbpedia.org/resource/";
+    private static boolean requesting = false;
+    private final Collection<String> usedURIs = new HashSet<>();
+    private Ontology currOntology = null;
+    private Model model = null;
+    private ISparqlRequest request = null;
 
-	/**
-	 * Constructs a simple {@link Selector} from a subject, a predicate, and a null RDFNode
-	 *
-	 * @param subject   the subject
-	 * @param predicate the predicate
-	 *
-	 * @return a simple selector
-	 */
-	private static Selector getSelector(Resource subject, Property predicate) {
+    /**
+     * Constructs a simple {@link Selector} from a subject, a predicate, and a null RDFNode
+     *
+     * @param subject   the subject
+     * @param predicate the predicate
+     * @return a simple selector
+     */
+    private static Selector getSelector(Resource subject, Property predicate) {
+        return new SimpleSelector(subject, predicate, (RDFNode) null) {
+            @Override
+            public boolean selects(Statement s) {
+                return !s.getObject()
+                        .isLiteral() || s.getLanguage()
+                        .equalsIgnoreCase(Locale.ENGLISH.getLanguage());
+            }
+        };
+    }
 
-		return new SimpleSelector(subject, predicate, (RDFNode) null) {
-			@Override
-			public boolean selects(Statement s) {
-				return !s.getObject()
-				         .isLiteral() || s.getLanguage()
-				                          .equalsIgnoreCase(Locale.ENGLISH.getLanguage());
-			}
-		};
-	}
+    @Override
+    protected synchronized Ontology query0(final ISparqlRequest request) throws InvalidQueryException {
+        if (requesting) {
+            throw new IllegalStateException("Already requesting!");
+        }
+        requesting = true;
+        // create the root request and model
+        final String r = DBPEDIA_SITE.concat(request.getRequestPage());
+        final OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
+        try {
+            L.debug(String.format("Requesting %s", r));
+            model.read(r);
+            //System.out.println(model);
+        } catch (HttpException e) {
+            requesting = false;
+            throw L.throwing(e);
+        } catch (Exception e) {
+            requesting = false;
+            throw new InvalidQueryException(e);
+        }
 
-	@Override
-	protected synchronized Ontology query0(final Request request) throws InvalidQueryException {
-		if (requesting) {
-			throw new IllegalStateException("Already requesting!");
-		}
-		requesting = true;
-		// create the root request and model
-		final String r = DBPEDIA_SITE.concat(request.getRequestPage());
-		final OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
-		try {
-			model.read(r);
-			//System.out.println(model);
-		} catch (Exception e) {
-			requesting = false;
-			throw new InvalidQueryException(e);
-		}
+        // root subject and predicate
+        final Resource subject = model.getResource(r);
+        final Property predicate = model.getProperty(request.getNamespace(), request.getLink());
+        final Selector selector = getSelector(subject, predicate);
 
-		//System.out.println(model);
-		// root subject and predicate
-		final Resource subject = model.getResource(r);
-		final Property predicate = model.getProperty(request.getNamespace(), request.getLink());
-		final Selector selector = getSelector(subject, predicate);
+        // root link
+        final Ontology ontology = new Ontology(subject);
 
-		// root link
-		final Ontology ontology = new Ontology(subject);
+        // prepare the fields, don't put them as parameters, it will just
+        // fill stack with duplicates
+        this.request = request;
+        this.currOntology = ontology;
+        this.model = model;
+        this.usedURIs.clear();
 
-		// prepare the fields, don't put them as parameters, it will just
-		// fill stack with duplicates
-		this.request      = request;
-		this.currOntology = ontology;
-		this.model        = model;
-		this.usedURIs.clear();
+        // now iterate recursively
+        L.debug("Searching...");
+        dfs(model, selector, ontology.getStart());
+        requesting = false;
+        return ontology;
+    }
 
-		// now iterate recursively
-		dfs(model, selector, ontology.getStart());
-		requesting = false;
-		return ontology;
-	}
+    /**
+     * Performs a DFS on the given model, given selector, and a previous link
+     *
+     * @param model    the model
+     * @param selector the selector
+     * @param prev     the previous link
+     */
+    private void dfs(final Model model, final Selector selector, final Ontology.Link prev) {
+        // list all statements based on the selector
+        // only one statement should be found based on that selector
+        for (final Statement stmt : model.listStatements(selector)
+                .toList()) {
+            final RDFNode object = stmt.getObject();
+            // check whether the object meets requirements (i.e. check restrictions)
+            if (!meetsRequirements(model, object)) {
+                return;
+            }
 
-	/**
-	 * Performs a DFS on the given model, given selector, and a previous link
-	 *
-	 * @param model    the model
-	 * @param selector the selector
-	 * @param prev     the previous link
-	 */
-	private void dfs(Model model, Selector selector, Ontology.Link prev) {
-		// list all statements based on the selector
-		// only one statement should be found based on that selector
-		for (final Statement stmt : model.listStatements(selector)
-		                                 .toList()) {
-			final RDFNode object = stmt.getObject();
-			// check whether the object meets requirements, i.e. check
-			// restrictions
-			if (!meetsRequirements(model, object)) {
-				return;
-			}
-			// create a link and add a new edge going from previous to this
-			final Ontology.Link next = createLink(prev, object);
+            // create a new edge between the previous link and this one
+            final Ontology.Link next = createLink(prev, object);
 
-			// the node is a resource -> means the ontology continues -> we
-			// search deeper
-			if (object.isURIResource()) {
-				searchFurther(model, object.asResource(), next);
-			}
-		}
-	}
+            // the node is a resource -> means the ontology continues -> we search deeper
+            if (object.isURIResource()) {
+                searchFurther(model, object.asResource(), next);
+            }
+        }
+    }
 
-	private void searchFurther(
-			final Model model, final Resource resource, final Ontology.Link next
-	                          ) {
-		updateModel(model, resource);
-		//System.out.println(model);
-		if (usedURIs.add(resource.getURI())) {
-			final Selector sel = getSelector(resource, model.getProperty(request.getNamespace(), request.getLink()));
-			dfs(model, sel, next);
-		}
-	}
+    private void searchFurther(final Model model, final Resource resource, final Ontology.Link next) {
+        updateModel(model, resource);
+        if (usedURIs.add(resource.getURI())) {
+            final Selector sel = getSelector(resource, model.getProperty(request.getNamespace(), request.getLink()));
+            dfs(model, sel, next);
+        }
+    }
 
-	private Ontology.Link createLink(
-			final Ontology.Link prev, final RDFNode object
-	                                ) {
-		Ontology.Link next = currOntology.createLink(object);
-		currOntology.addEdge(prev, next);
-		L.info(next.toString());
-		return next;
-	}
+    private Ontology.Link createLink(final Ontology.Link prev, final RDFNode object) {
+        final Ontology.Link next = currOntology.createLink(object);
+        currOntology.addEdge(prev, next);
+        L.info(next.toString());
+        return next;
+    }
 
-	private boolean meetsRequirements(final Model model, final RDFNode object) {
-		if (!object.isURIResource()) {
-			return true;
-		}
-		final Resource resource = object.asResource();
-		updateModel(model, resource);
-		for (Restriction r : request.getRestrictions()) {
-			final Selector sel = getSelector(resource, model.getProperty(r.getNamespace(), r.getLink()));
-			if (!model.listStatements(sel)
-			          .hasNext()) {
-				// don't continue in the search
-				return false;
-			}
-		}
-		return true;
-	}
+    private boolean meetsRequirements(final Model model, final RDFNode object) {
+        if (!object.isURIResource()) {
+            return true;
+        }
 
-	private void updateModel(final Model model, final Resource resource) {
-		String URI = resource.getURI();
-		model.read(URI);
-	}
+        final Resource resource = object.asResource();
+        updateModel(model, resource);
 
-	@Override
-	public Model getModel() {
-		return model;
-	}
+        // check for the restrictions on the given request
+        for (final Restriction r : request.getRestrictions()) {
+            final Selector sel = getSelector(resource, model.getProperty(r.getNamespace(), r.getLink()));
+
+            // a statement with the given restriction was not found -> they were not met
+            if (!model.listStatements(sel)
+                    .hasNext()) {
+                // don't continue in the search
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void updateModel(final Model model, final Resource resource) {
+        String URI = resource.getURI();
+        model.read(URI);
+    }
+
+    @Override
+    public Model getModel() {
+        return model;
+    }
 
     /*private DBQueryResult getDbQueryResult(String request, Model model) {
         System.out.println("STMTS:");
@@ -210,7 +212,7 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
     }*/
 
 
-	//System.out.println(model.getProperty("https://dbpedia.org/ontology/child").getProperty(RDFS.label));
+    //System.out.println(model.getProperty("https://dbpedia.org/ontology/child").getProperty(RDFS.label));
         /*try (QueryExecution query = QueryExecutionFactory.sparqlService
         (SERVICE, request)) {
 

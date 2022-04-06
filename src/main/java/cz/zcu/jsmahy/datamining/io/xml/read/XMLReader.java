@@ -4,7 +4,7 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-public class InfoboxHandler extends DefaultHandler {
+public class XMLReader extends DefaultHandler {
 
     private StringBuilder element;
 

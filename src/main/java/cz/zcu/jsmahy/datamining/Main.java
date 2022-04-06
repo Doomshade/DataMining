@@ -2,8 +2,6 @@ package cz.zcu.jsmahy.datamining;
 
 import cz.zcu.jsmahy.datamining.command.CommandManager;
 import cz.zcu.jsmahy.datamining.config.Config;
-import cz.zcu.jsmahy.datamining.data.RequestHandlerRegistry;
-import cz.zcu.jsmahy.datamining.data.handlers.DBPediaRequestHandler;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -20,13 +18,8 @@ public class Main extends Application {
 	private static final Logger L = LogManager.getLogger(Main.class);
 
 	public static void main(String[] args) throws ParseException {
-		registerRequestHandlers();
 		CommandManager.parseAndExecuteCommands(args);
 		launch(args);
-	}
-
-	private static void registerRequestHandlers() {
-		RequestHandlerRegistry.register(new DBPediaRequestHandler());
 	}
 
 	@Override
@@ -36,7 +29,7 @@ public class Main extends Application {
 		final Scene scene = SceneManager.getScene(FXMLScene.IB_TEMPLATE_MENU);
 		stage.setScene(scene);
 		stage.show();
-		Config.getInstance();
+		Config config = Config.getInstance();
 
 	}
 

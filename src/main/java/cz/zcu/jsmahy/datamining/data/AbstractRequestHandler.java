@@ -9,11 +9,10 @@ import javafx.concurrent.Task;
  * @version 1.0
  */
 public abstract class AbstractRequestHandler extends Service<Ontology> implements IRequestHandler {
-    private Request request;
+    private ISparqlRequest request;
 
     @Override
-    public final Service<Ontology> query(final Request request)
-            throws InvalidQueryException {
+    public final Service<Ontology> query(final ISparqlRequest request) throws InvalidQueryException {
         this.request = request;
         return this;
     }
@@ -29,6 +28,5 @@ public abstract class AbstractRequestHandler extends Service<Ontology> implement
     }
 
 
-    protected abstract Ontology query0(final Request request)
-            throws InvalidQueryException;
+    protected abstract Ontology query0(final ISparqlRequest request) throws InvalidQueryException;
 }

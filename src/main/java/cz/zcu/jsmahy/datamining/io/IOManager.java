@@ -10,11 +10,13 @@ import javax.xml.stream.XMLStreamException;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Objects;
+
+import static cz.zcu.jsmahy.datamining.io.IOValidator.validateFileName;
+import static java.util.Objects.requireNonNull;
 
 public final class IOManager {
-    private static final Logger L = LogManager.getRootLogger();
     public static final String INFOBOX_EXT = ".xml";
+    private static final Logger L = LogManager.getRootLogger();
     private static final File DATA_FOLDER = new File("data");
     private static final File INFOBOX_FOLDER = new File(DATA_FOLDER, "infobox");
 
@@ -28,8 +30,8 @@ public final class IOManager {
     }
 
     public static void saveInfoboxData(String fileName, InfoboxTemplate... infoboxTemplates) throws IOException, XMLStreamException {
-        IOValidator.validateFileName(fileName);
-        Objects.requireNonNull(infoboxTemplates);
+        validateFileName(fileName);
+        requireNonNull(infoboxTemplates);
 
         if (!fileName.endsWith(INFOBOX_EXT)) {
             fileName = fileName.concat(INFOBOX_EXT);
@@ -41,7 +43,7 @@ public final class IOManager {
     }
 
     private static File getFile(File folder, String fileName) throws IOException {
-        IOValidator.validateFileName(fileName);
+        validateFileName(fileName);
         File file = new File(getFolder(folder), fileName);
         if (!file.exists()) {
             file.createNewFile();

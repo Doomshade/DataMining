@@ -13,6 +13,4 @@ final class IOValidator {
             throw new IllegalArgumentException("The file name must not be empty!");
         }
     }
-
-
 }
