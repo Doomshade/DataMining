@@ -15,23 +15,23 @@ import org.apache.logging.log4j.Logger;
  * @since 1.0
  */
 public class Main extends Application {
-    private static final Logger LOGGER = LogManager.getLogger(Main.class);
+	private static final Logger LOGGER = LogManager.getLogger(Main.class);
 
-    public static void main(String[] args) throws ParseException {
-        CommandParser.parseAndExecuteCommands(args);
-        launch(args);
-    }
+	public static void main(String[] args) throws ParseException {
+		CommandParser.parseAndExecuteCommands(args);
+		launch(args);
+	}
 
-    @Override
-    public void start(final Stage stage) throws Exception {
-        stage.setTitle("BP");
-        //InfoboxManager.downloadTemplates("default-infoboxes");
-        final Scene scene = SceneManager.getScene(FXMLScene.MAIN_MENU);
-        stage.setScene(scene);
-        stage.show();
-        Config config = Config.getInstance();
+	@Override
+	public void start(final Stage stage) throws Exception {
+		stage.setTitle("BP");
+		//InfoboxManager.downloadTemplates("default-infoboxes");
+		final Scene scene = SceneManager.getScene(FXMLScene.MAIN_MENU);
+		stage.setScene(scene);
+		stage.show();
+		Config config = Config.getInstance();
 
-    }
+	}
 
     /*OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder()

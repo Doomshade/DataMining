@@ -16,21 +16,21 @@ import java.util.Objects;
  * @since 1.0
  */
 public class QueryService extends Service<ResultSet> {
-    private static final Logger LOGGER = LogManager.getLogger(QueryService.class);
-    private final QueryExecution query;
+	private static final Logger LOGGER = LogManager.getLogger(QueryService.class);
+	private final QueryExecution query;
 
-    public QueryService(final QueryExecution query) {
-        this.query = Objects.requireNonNull(query);
-    }
+	public QueryService(final QueryExecution query) {
+		this.query = Objects.requireNonNull(query);
+	}
 
-    @Override
-    protected Task<ResultSet> createTask() {
-        return new Task<>() {
-            @Override
-            protected ResultSet call() {
-                LOGGER.info("Executing query {}", query.getQuery());
-                return query.execSelect();
-            }
-        };
-    }
+	@Override
+	protected Task<ResultSet> createTask() {
+		return new Task<>() {
+			@Override
+			protected ResultSet call() {
+				LOGGER.info("Executing query {}", query.getQuery());
+				return query.execSelect();
+			}
+		};
+	}
 }

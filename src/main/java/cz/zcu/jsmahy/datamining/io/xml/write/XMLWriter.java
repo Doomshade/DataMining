@@ -20,9 +20,9 @@ public final class XMLWriter {
 	private static final Logger L = LogManager.getLogger();
 
 	public static void saveInfoboxData(File file, InfoboxTemplate... infoboxTemplates) throws
-			XMLStreamException,
-			FileNotFoundException,
-			IllegalArgumentException {
+	                                                                                   XMLStreamException,
+	                                                                                   FileNotFoundException,
+	                                                                                   IllegalArgumentException {
 		Validate.validateArguments(new String[] {"file", "infobox template"}, file, infoboxTemplates);
 		FileOutputStream fos = new FileOutputStream(file);
 		XMLStreamWriter out = XMLOutputFactory.newInstance()
@@ -49,7 +49,7 @@ public final class XMLWriter {
 	}
 
 	private static void writeAttributes(XMLStreamWriter out, Collection<String> attributes, boolean required) throws
-			XMLStreamException {
+	                                                                                                          XMLStreamException {
 		for (String attr : attributes) {
 			out.writeEmptyElement(Constants.INFOBOX_ATTRIBUTE);
 			// TODO try to tell if the attribute is required

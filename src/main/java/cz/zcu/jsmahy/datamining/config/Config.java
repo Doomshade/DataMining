@@ -36,7 +36,8 @@ public final class Config {
 	//</editor-fold>
 
 	//<editor-fold desc="Config properties">
-	@Property(key = "max-depth", defaultValue = "10")
+	@Property(key = "max-depth",
+	          defaultValue = "10")
 	@Getter
 	private int maxDepth;
 	//</editor-fold>

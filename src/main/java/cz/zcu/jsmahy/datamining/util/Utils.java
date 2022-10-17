@@ -5,6 +5,6 @@ package cz.zcu.jsmahy.datamining.util;
  * @version 1.0
  */
 public class Utils {
-    public static final String FXML_PATH = "/fxml/";
-    public static final String FXML_EXTENSION = ".fxml";
+	public static final String FXML_PATH = "/fxml/";
+	public static final String FXML_EXTENSION = ".fxml";
 }

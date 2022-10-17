@@ -20,52 +20,53 @@ import java.util.ResourceBundle;
  * @version 1.0
  */
 public class LinkController implements Initializable {
-    public JFXTextField searchField;
-    public JFXButton testbtn;
-    public JFXTextArea textArea;
-    public JFXSpinner progress;
+	public JFXTextField searchField;
+	public JFXButton testbtn;
+	public JFXTextArea textArea;
+	public JFXSpinner progress;
 
-    @Override
-    public void initialize(final URL location, final ResourceBundle resources) {
+	@Override
+	public void initialize(final URL location, final ResourceBundle resources) {
 
-    }
+	}
 
-    @FXML
-    public void search(final MouseEvent mouseEvent) {
-        setVisibilityAndOpacity(true, 0.2);
+	@FXML
+	public void search(final MouseEvent mouseEvent) {
+		setVisibilityAndOpacity(true, 0.2);
 
-        String ontology = searchField.getText();
-        SparqlRequest request = new SparqlRequest(ontology, "http://dbpedia.org/ontology/", "successor");
-        Service<Ontology> query = RequestHandlerFactory.getDBPediaRequestHandler()
-                .query(request);
-        RequestHandlerFactory.setupDefaultServiceHandlers(query);
-        query.setOnSucceeded(x -> {
-            query.getOnSucceeded()
-                    .handle(x);
-            setVisibilityAndOpacity(false, 1);
-            StringBuilder sb = new StringBuilder();
-            System.out.println(x.getSource().getValue());
-            ((Ontology) x.getSource()
-                    .getValue()).printOntology(sb);
-            textArea.textProperty()
-                    .set(sb.toString());
+		String ontology = searchField.getText();
+		SparqlRequest request = new SparqlRequest(ontology, "http://dbpedia.org/ontology/", "successor");
+		Service<Ontology> query = RequestHandlerFactory.getDBPediaRequestHandler()
+		                                               .query(request);
+		RequestHandlerFactory.setupDefaultServiceHandlers(query);
+		query.setOnSucceeded(x -> {
+			query.getOnSucceeded()
+			     .handle(x);
+			setVisibilityAndOpacity(false, 1);
+			StringBuilder sb = new StringBuilder();
+			System.out.println(x.getSource()
+			                    .getValue());
+			((Ontology) x.getSource()
+			             .getValue()).printOntology(sb);
+			textArea.textProperty()
+			        .set(sb.toString());
 
-        });
+		});
 
-        query.setOnFailed(x -> {
-            query.getOnFailed()
-                    .handle(x);
-            setVisibilityAndOpacity(false, 1);
-        });
-        query.restart();
-        progress.progressProperty()
-                .bind(query.progressProperty());
-    }
+		query.setOnFailed(x -> {
+			query.getOnFailed()
+			     .handle(x);
+			setVisibilityAndOpacity(false, 1);
+		});
+		query.restart();
+		progress.progressProperty()
+		        .bind(query.progressProperty());
+	}
 
-    private void setVisibilityAndOpacity(boolean disabled, double opacity) {
-        testbtn.setDisable(disabled);
-        progress.setVisible(disabled);
-        searchField.setDisable(disabled);
-        textArea.setDisable(disabled);
-    }
+	private void setVisibilityAndOpacity(boolean disabled, double opacity) {
+		testbtn.setDisable(disabled);
+		progress.setVisible(disabled);
+		searchField.setDisable(disabled);
+		textArea.setDisable(disabled);
+	}
 }

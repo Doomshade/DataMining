@@ -6,8 +6,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * The registry for {@link IRequestHandler}s. To register a {@link IRequestHandler} use {@link
- * RequestHandlerRegistry#register(IRequestHandler)}
+ * The registry for {@link IRequestHandler}s. To register a {@link IRequestHandler} use
+ * {@link RequestHandlerRegistry#register(IRequestHandler)}
  *
  * @author Jakub Šmrha
  * @version 1.0
@@ -38,12 +38,12 @@ public final class RequestHandlerRegistry {
 	 * @see RequestHandlerFactory
 	 */
 	public static IRequestHandler getDataRequestHandler(Class<? extends IRequestHandler> handlerClass) throws
-			IllegalArgumentException {
+	                                                                                                   IllegalArgumentException {
 		IRequestHandler handler = HANDLERS.get(handlerClass);
 		if (handler == null) {
 			throw new IllegalArgumentException(String.format("%s is not a registered handler!",
 			                                                 handlerClass.getSimpleName()
-			                                                ));
+			));
 		}
 		return handler;
 	}

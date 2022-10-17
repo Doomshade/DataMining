@@ -16,8 +16,8 @@ public final class SparqlRequest implements ISparqlRequest {
 	 */
 	public SparqlRequest(String requestPage, String namespace, String link) {
 		this.requestPage = requestPage;
-		this.namespace   = namespace;
-		this.link        = link;
+		this.namespace = namespace;
+		this.link = link;
 	}
 
 	@Override
