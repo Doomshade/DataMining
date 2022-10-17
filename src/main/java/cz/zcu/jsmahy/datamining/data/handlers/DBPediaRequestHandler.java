@@ -84,7 +84,7 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
 
         // now iterate recursively
         L.debug("Searching...");
-        dfs(model, selector, ontology.getStart());
+        dfs(model, selector, ontology.getRoot());
         requesting = false;
         return ontology;
     }
@@ -96,40 +96,34 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
      * @param selector the selector
      * @param prev     the previous link
      */
-    private void dfs(final Model model, final Selector selector, final Ontology.Link prev) {
+    private void dfs(final Model model, final Selector selector, final RDFNode prev) {
         // list all statements based on the selector
         // only one statement should be found based on that selector
         for (final Statement stmt : model.listStatements(selector)
                 .toList()) {
-            final RDFNode object = stmt.getObject();
-            // check whether the object meets requirements (i.e. check restrictions)
-            if (!meetsRequirements(model, object)) {
+            final RDFNode next = stmt.getObject();
+            // check whether the next meets requirements (i.e. check restrictions)
+            if (!meetsRequirements(model, next)) {
                 return;
             }
 
-            // create a new edge between the previous link and this one
-            final Ontology.Link next = createLink(prev, object);
+            L.debug("Found {}", next);
 
+            // create a new edge between the previous link and this one
+            currOntology.addEdge(prev, next);
             // the node is a resource -> means the ontology continues -> we search deeper
-            if (object.isURIResource()) {
-                searchFurther(model, object.asResource(), next);
+            if (next.isURIResource()) {
+                searchFurther(model, next.asResource(), next);
             }
         }
     }
 
-    private void searchFurther(final Model model, final Resource resource, final Ontology.Link next) {
+    private void searchFurther(final Model model, final Resource resource, final RDFNode next) {
         updateModel(model, resource);
         if (usedURIs.add(resource.getURI())) {
             final Selector sel = getSelector(resource, model.getProperty(request.getNamespace(), request.getLink()));
             dfs(model, sel, next);
         }
-    }
-
-    private Ontology.Link createLink(final Ontology.Link prev, final RDFNode object) {
-        final Ontology.Link next = currOntology.createLink(object);
-        currOntology.addEdge(prev, next);
-        L.info(next.toString());
-        return next;
     }
 
     private boolean meetsRequirements(final Model model, final RDFNode object) {
