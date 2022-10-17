@@ -15,32 +15,38 @@ import org.apache.logging.log4j.Logger;
  * @version 0.0.1
  * @since 11.04.2022
  */
-public class QueryTest {
-	private static final Logger LOGGER = LogManager.getLogger(QueryTest.class);
+public class PredecessorQueryTest {
+	private static final Logger LOGGER = LogManager.getLogger(PredecessorQueryTest.class);
 	private static final String DBPEDIA_SERVICE = "http://dbpedia.org/sparql/";
+	private static final String RESOURCE = "r:Pope_Francis";
 
 	public static void main(String[] args) {
 		// because of some error (regardless of using JavaFX) we have to run this on JavaFX thread
 		PlatformImpl.startup(() -> {
-			// query for all predecessors (recursively) of Charles IV.
-			final String q = "PREFIX rdf: <https://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
-			                 "PREFIX r: <http://dbpedia.org/resource/>\n" +
-			                 "PREFIX dbo: <http://dbpedia.org/ontology/>\n" +
-			                 //"select distinct ?name ?pred\n" +
-			                 "select distinct ?name\n" +
-			                 "{\n" +
-			                 "?pred dbo:predecessor <http://dbpedia.org/resource/Charles_IV,_Holy_Roman_Emperor> .\n" +
-			                 "?pred dbo:predecessor+ ?name\n" +
-			                 "}\n" +
-			                 "order by ?pred";
-			LOGGER.info("Query: {}", q);
+			// query for all predecessors (recursively)
+			//"select distinct ?name ?pred\n" +
+			// TODO: make a (SPARQL)QueryBuilder
+			final String q = new StringBuilder().append("PREFIX rdf: <https://www.w3.org/1999/02/22-rdf-syntax-ns#>\n")
+			                                    .append("PREFIX r: <http://dbpedia.org/resource/>\n")
+			                                    .append("PREFIX dbo: <http://dbpedia.org/ontology/>\n")
+			                                    .append("PREFIX dbp: <http://dbpedia.org/property/>\n")
+			                                    .append("select distinct ?name\n")
+			                                    .append("{\n")
+			                                    .append("?pred dbp:predecessor ")
+			                                    .append(RESOURCE)
+			                                    .append(" .\n")
+			                                    .append("?pred dbp:predecessor+ ?name\n")
+			                                    .append("}\n")
+			                                    .append("order by ?pred")
+			                                    .toString();
+			LOGGER.debug("Raw query:\n{}", q);
 
 			// build the query via Jena
 			final Query query = QueryFactory.create(q);
 			final QueryExecution qe = QueryExecution.service(DBPEDIA_SERVICE)
 			                                        .query(query)
 			                                        .build();
-			LOGGER.info("Executing query at {}", DBPEDIA_SERVICE);
+			LOGGER.info("SPARQL endpoint: {}", DBPEDIA_SERVICE);
 
 			// execute the query on a separate thread via Service
 			final Service<ResultSet> queryService = new QueryService(qe);

@@ -28,7 +28,7 @@ public class QueryService extends Service<ResultSet> {
 		return new Task<>() {
 			@Override
 			protected ResultSet call() {
-				LOGGER.info("Executing query {}", query.getQuery());
+				LOGGER.info("Executing query:\n{}", query.getQuery());
 				return query.execSelect();
 			}
 		};

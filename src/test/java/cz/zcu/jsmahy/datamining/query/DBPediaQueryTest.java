@@ -20,10 +20,10 @@ public class DBPediaQueryTest {
 	public static void main(String[] args) {
 		// start the JavaFX application otherwise we get errors
 		PlatformImpl.startup(() -> {
-			final String requestPage = "Windows_10";
+			final String requestPage = "Pope_Francis";
 			final String namespace = "http://dbpedia.org/property/";
-			final String link = "precededBy";
-			LOGGER.info("Querying {}/{} in namespace {} by link {}", "http://dbpedia.org/resource", requestPage, namespace, link);
+			final String link = "predecessor";
+			LOGGER.info("Querying {}/{} in namespace {} by link {}", namespace, requestPage, namespace, link);
 			final Injector injector = Guice.createInjector(new DBPediaModule());
 			final RequestHandler requestHandler = injector.getInstance(RequestHandler.class);
 			final Service<Ontology> query = requestHandler
