@@ -1,6 +1,6 @@
 package cz.zcu.jsmahy.datamining;
 
-import cz.zcu.jsmahy.datamining.command.CommandManager;
+import cz.zcu.jsmahy.datamining.command.CommandParser;
 import cz.zcu.jsmahy.datamining.config.Config;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -15,23 +15,23 @@ import org.apache.logging.log4j.Logger;
  * @since 1.0
  */
 public class Main extends Application {
-	private static final Logger L = LogManager.getLogger(Main.class);
+    private static final Logger LOGGER = LogManager.getLogger(Main.class);
 
-	public static void main(String[] args) throws ParseException {
-		CommandManager.parseAndExecuteCommands(args);
-		launch(args);
-	}
+    public static void main(String[] args) throws ParseException {
+        CommandParser.parseAndExecuteCommands(args);
+        launch(args);
+    }
 
-	@Override
-	public void start(final Stage stage) throws Exception {
-		stage.setTitle("BP");
-		//InfoboxManager.downloadTemplates("default-infoboxes");
-		final Scene scene = SceneManager.getScene(FXMLScene.IB_TEMPLATE_MENU);
-		stage.setScene(scene);
-		stage.show();
-		Config config = Config.getInstance();
+    @Override
+    public void start(final Stage stage) throws Exception {
+        stage.setTitle("BP");
+        //InfoboxManager.downloadTemplates("default-infoboxes");
+        final Scene scene = SceneManager.getScene(FXMLScene.MAIN_MENU);
+        stage.setScene(scene);
+        stage.show();
+        Config config = Config.getInstance();
 
-	}
+    }
 
     /*OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder()
