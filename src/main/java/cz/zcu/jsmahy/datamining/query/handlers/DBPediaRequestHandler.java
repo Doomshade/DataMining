@@ -14,7 +14,7 @@ import java.util.HashSet;
 import java.util.Locale;
 
 /**
- * The DBPedia {@link IRequestHandler}.
+ * The DBPedia {@link RequestHandler}.
  *
  * @author Jakub Šmrha
  * @version 1.0
@@ -26,7 +26,7 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
 	private final Collection<String> usedURIs = new HashSet<>();
 	private Ontology currOntology = null;
 	private Model model = null;
-	private ISparqlRequest request = null;
+	private SparqlRequest request = null;
 
 	/**
 	 * Constructs a simple {@link Selector} from a subject, a predicate, and a null RDFNode
@@ -48,7 +48,7 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
 	}
 
 	@Override
-	protected synchronized Ontology query0(final ISparqlRequest request) throws InvalidQueryException {
+	protected synchronized Ontology query0(final SparqlRequest request) throws InvalidQueryException {
 		if (requesting) {
 			throw new IllegalStateException("Already requesting!");
 		}
@@ -137,7 +137,7 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
 
 		// check for the restrictions on the given request
 		for (final Restriction r : request.getRestrictions()) {
-			final Selector sel = getSelector(resource, model.getProperty(r.getNamespace(), r.getLink()));
+			final Selector sel = getSelector(resource, model.getProperty(r.getKey(), r.getValue()));
 
 			// a statement with the given restriction was not found -> they were not met
 			if (!model.listStatements(sel)

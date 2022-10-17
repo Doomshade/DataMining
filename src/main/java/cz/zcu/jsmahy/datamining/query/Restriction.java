@@ -3,15 +3,23 @@ package cz.zcu.jsmahy.datamining.query;
 import cz.zcu.jsmahy.datamining.util.Pair;
 
 public final class Restriction extends Pair<String, String> {
-	public Restriction(final String namespace, final String link) {
-		super(namespace, link);
+	public Restriction(final String key, final String value) {
+		super(key, value);
 	}
 
-	public String getNamespace() {
-		return super.key;
+	/**
+	 * @return The namespace.
+	 */
+	@Override
+	public String getKey() {
+		return super.getKey();
 	}
 
-	public String getLink() {
-		return super.value;
+	/**
+	 * @return The link.
+	 */
+	@Override
+	public String getValue() {
+		return super.getValue();
 	}
 }

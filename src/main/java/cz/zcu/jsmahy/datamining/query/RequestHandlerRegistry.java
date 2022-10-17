@@ -6,14 +6,14 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * The registry for {@link IRequestHandler}s. To register a {@link IRequestHandler} use
- * {@link RequestHandlerRegistry#register(IRequestHandler)}
+ * The registry for {@link RequestHandler}s. To register a {@link RequestHandler} use
+ * {@link RequestHandlerRegistry#register(RequestHandler)}
  *
  * @author Jakub Šmrha
  * @version 1.0
  */
 public final class RequestHandlerRegistry {
-	private static final Map<Class<? extends IRequestHandler>, IRequestHandler> HANDLERS = new LinkedHashMap<>();
+	private static final Map<Class<? extends RequestHandler>, RequestHandler> HANDLERS = new LinkedHashMap<>();
 
 	static {
 		register(new DBPediaRequestHandler());
@@ -24,7 +24,7 @@ public final class RequestHandlerRegistry {
 	 *
 	 * @param handler the handler to register
 	 */
-	public static void register(IRequestHandler handler) {
+	public static void register(RequestHandler handler) {
 		HANDLERS.putIfAbsent(handler.getClass(), handler);
 	}
 
@@ -34,12 +34,12 @@ public final class RequestHandlerRegistry {
 	 * @return the handler for data requests
 	 *
 	 * @throws IllegalArgumentException if the data handler has not been registered yet
-	 * @see RequestHandlerRegistry#register(IRequestHandler)
+	 * @see RequestHandlerRegistry#register(RequestHandler)
 	 * @see RequestHandlerFactory
 	 */
-	public static IRequestHandler getDataRequestHandler(Class<? extends IRequestHandler> handlerClass) throws
-	                                                                                                   IllegalArgumentException {
-		IRequestHandler handler = HANDLERS.get(handlerClass);
+	public static RequestHandler getDataRequestHandler(Class<? extends RequestHandler> handlerClass) throws
+	                                                                                                 IllegalArgumentException {
+		RequestHandler handler = HANDLERS.get(handlerClass);
 		if (handler == null) {
 			throw new IllegalArgumentException(String.format("%s is not a registered handler!",
 			                                                 handlerClass.getSimpleName()

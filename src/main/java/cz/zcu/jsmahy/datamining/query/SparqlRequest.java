@@ -1,10 +1,13 @@
 package cz.zcu.jsmahy.datamining.query;
 
+import lombok.Data;
+
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedList;
 
-public final class SparqlRequest implements ISparqlRequest {
+
+@Data
+public final class SparqlRequest {
 	private final String requestPage, namespace, link;
 	private final Collection<Restriction> restrictions = new LinkedList<>();
 
@@ -20,33 +23,22 @@ public final class SparqlRequest implements ISparqlRequest {
 		this.link = link;
 	}
 
-	@Override
+	/**
+	 * Adds a restriction to the request
+	 *
+	 * @param restriction the restriction
+	 */
 	public void addRestriction(Restriction restriction) {
 		this.restrictions.add(restriction);
 	}
 
-	@Override
+	/**
+	 * Adds restrictions to the request
+	 *
+	 * @param restrictions the restrictions
+	 */
 	public void addRestrictions(Iterable<? extends Restriction> restrictions) {
 		restrictions.forEach(this::addRestriction);
 	}
 
-	@Override
-	public Iterable<Restriction> getRestrictions() {
-		return Collections.unmodifiableCollection(restrictions);
-	}
-
-	@Override
-	public String getRequestPage() {
-		return requestPage;
-	}
-
-	@Override
-	public String getNamespace() {
-		return namespace;
-	}
-
-	@Override
-	public String getLink() {
-		return link;
-	}
 }

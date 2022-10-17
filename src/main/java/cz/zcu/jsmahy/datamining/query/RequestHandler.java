@@ -10,7 +10,7 @@ import org.apache.jena.rdf.model.Model;
  * @author Jakub Šmrha
  * @version 1.0
  */
-public interface IRequestHandler {
+public interface RequestHandler {
 
 	/**
 	 * @return the model used in this query
@@ -26,5 +26,5 @@ public interface IRequestHandler {
 	 *
 	 * @throws InvalidQueryException if the request is invalid
 	 */
-	Service<Ontology> query(ISparqlRequest request) throws InvalidQueryException;
+	Service<Ontology> query(SparqlRequest request) throws InvalidQueryException;
 }

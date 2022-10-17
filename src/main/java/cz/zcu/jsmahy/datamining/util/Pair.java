@@ -1,5 +1,8 @@
 package cz.zcu.jsmahy.datamining.util;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
 /**
  * A basic key-value pair class
  *
@@ -7,12 +10,9 @@ package cz.zcu.jsmahy.datamining.util;
  * @version 1.0
  * @since 1.0
  */
+@Data
+@AllArgsConstructor
 public class Pair<K, V> {
-	public final K key;
-	public final V value;
-
-	public Pair(K key, V value) {
-		this.key = key;
-		this.value = value;
-	}
+	private final K key;
+	private final V value;
 }
