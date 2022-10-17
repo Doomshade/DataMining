@@ -1,7 +1,7 @@
-package cz.zcu.jsmahy.datamining.data.handlers;
+package cz.zcu.jsmahy.datamining.query.handlers;
 
-import cz.zcu.jsmahy.datamining.data.*;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
+import cz.zcu.jsmahy.datamining.query.*;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntModelSpec;

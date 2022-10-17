@@ -1,6 +1,6 @@
-package cz.zcu.jsmahy.datamining.data;
+package cz.zcu.jsmahy.datamining.query;
 
-import cz.zcu.jsmahy.datamining.data.handlers.DBPediaRequestHandler;
+import cz.zcu.jsmahy.datamining.query.handlers.DBPediaRequestHandler;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

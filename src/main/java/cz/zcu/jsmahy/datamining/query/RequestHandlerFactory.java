@@ -1,6 +1,6 @@
-package cz.zcu.jsmahy.datamining.data;
+package cz.zcu.jsmahy.datamining.query;
 
-import cz.zcu.jsmahy.datamining.data.handlers.DBPediaRequestHandler;
+import cz.zcu.jsmahy.datamining.query.handlers.DBPediaRequestHandler;
 import javafx.concurrent.Service;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

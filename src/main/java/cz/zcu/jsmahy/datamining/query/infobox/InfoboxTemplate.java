@@ -1,4 +1,4 @@
-package cz.zcu.jsmahy.datamining.data.infobox;
+package cz.zcu.jsmahy.datamining.query.infobox;
 
 import java.io.Serializable;
 import java.util.Collection;

@@ -171,6 +171,12 @@
             <artifactId>jgrapht-io</artifactId>
             <version>1.5.1</version>
         </dependency>
+        <!-- GUICE (DI) -->
+        <dependency>
+            <groupId>com.google.inject</groupId>
+            <artifactId>guice</artifactId>
+            <version>5.1.0</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

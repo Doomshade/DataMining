@@ -1,4 +1,4 @@
-package cz.zcu.jsmahy.datamining.data;
+package cz.zcu.jsmahy.datamining.query;
 
 import org.apache.jena.rdf.model.RDFNode;
 import org.jgrapht.graph.DefaultEdge;

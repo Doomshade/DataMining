@@ -1,6 +1,6 @@
 package cz.zcu.jsmahy.datamining.io;
 
-import cz.zcu.jsmahy.datamining.data.infobox.InfoboxTemplate;
+import cz.zcu.jsmahy.datamining.query.infobox.InfoboxTemplate;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;

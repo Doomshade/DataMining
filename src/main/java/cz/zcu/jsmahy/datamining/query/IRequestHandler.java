@@ -1,4 +1,4 @@
-package cz.zcu.jsmahy.datamining.data;
+package cz.zcu.jsmahy.datamining.query;
 
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import javafx.concurrent.Service;

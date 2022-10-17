@@ -1,4 +1,4 @@
-package cz.zcu.jsmahy.datamining.data;
+package cz.zcu.jsmahy.datamining.query;
 
 import java.util.Collection;
 import java.util.Collections;

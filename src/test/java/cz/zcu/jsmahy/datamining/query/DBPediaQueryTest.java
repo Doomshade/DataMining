@@ -1,4 +1,4 @@
-package cz.zcu.jsmahy.datamining.data;
+package cz.zcu.jsmahy.datamining.query;
 
 import com.sun.javafx.application.PlatformImpl;
 import javafx.concurrent.Service;

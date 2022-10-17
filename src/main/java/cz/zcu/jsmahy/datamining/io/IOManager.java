@@ -1,8 +1,8 @@
 package cz.zcu.jsmahy.datamining.io;
 
-import cz.zcu.jsmahy.datamining.data.Ontology;
-import cz.zcu.jsmahy.datamining.data.infobox.InfoboxTemplate;
 import cz.zcu.jsmahy.datamining.io.xml.write.XMLWriter;
+import cz.zcu.jsmahy.datamining.query.Ontology;
+import cz.zcu.jsmahy.datamining.query.infobox.InfoboxTemplate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
