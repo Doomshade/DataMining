@@ -16,5 +16,4 @@ public class DBPediaModule extends AbstractModule {
 				.to(DBPediaRequestHandler.class);
 	}
 
-
 }
