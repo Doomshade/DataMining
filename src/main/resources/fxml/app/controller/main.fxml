@@ -1,17 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import com.jfoenix.controls.JFXButton?>
 <?import com.jfoenix.controls.JFXListView?>
-<?import javafx.scene.layout.BorderPane?>
+<?import com.jfoenix.controls.JFXSpinner?>
+<?import com.jfoenix.controls.JFXTextField?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.layout.*?>
 <?import javafx.scene.web.WebView?>
-<BorderPane xmlns:fx="http://javafx.com/fxml"
-            fx:id="rootPane"
-            xmlns="http://javafx.com/javafx"
-            fx:controller="cz.zcu.jsmahy.datamining.app.controller.MainController"
-            prefHeight="400.0" prefWidth="600.0">
-    <center>
-        <WebView fx:id="wikiPageWebView"/>
-    </center>
-    <left>
-        <JFXListView fx:id="ontologyListView" onMouseClicked="#handleOntologyClick"/>
-    </left>
-</BorderPane>
+<StackPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="810" prefWidth="1440" xmlns="http://javafx.com/javafx/11.0.2"
+           fx:controller="cz.zcu.jsmahy.datamining.app.controller.MainController">
+    <BorderPane fx:id="rootPane" prefHeight="810" prefWidth="1440">
+        <top>
+            <HBox spacing="5">
+                <BorderPane.margin>
+                    <Insets top="5" bottom="5" left="5" right="5"/>
+                </BorderPane.margin>
+                <JFXTextField fx:id="searchField" promptText="e.g. Pope Francis"/>
+                <JFXButton fx:id="searchButton" onMouseClicked="#search" text="Hledat" buttonType="FLAT"/>
+            </HBox>
+        </top>
+        <center>
+            <WebView fx:id="wikiPageWebView" prefHeight="810" prefWidth="1440">
+                <BorderPane.margin>
+                    <Insets top="5" bottom="5" left="5" right="5"/>
+                </BorderPane.margin>
+            </WebView>
+        </center>
+        <left>
+            <JFXListView fx:id="ontologyListView" onMouseClicked="#handleOntologyClick">
+                <BorderPane.margin>
+                    <Insets top="5" bottom="5" left="5" right="5"/>
+                </BorderPane.margin>
+            </JFXListView>
+        </left>
+    </BorderPane>
+    <JFXSpinner fx:id="progressIndicator" radius="10" visible="false"/>
+</StackPane>

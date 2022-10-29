@@ -1,7 +1,6 @@
 package cz.zcu.jsmahy.datamining;
 
 import cz.zcu.jsmahy.datamining.command.CommandParser;
-import cz.zcu.jsmahy.datamining.config.Config;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -16,6 +15,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class Main extends Application {
 	private static final Logger LOGGER = LogManager.getLogger(Main.class);
+	public static Stage currentStage = null;
 
 	public static void main(String[] args) throws ParseException {
 		CommandParser.parseAndExecuteCommands(args);
@@ -24,13 +24,15 @@ public class Main extends Application {
 
 	@Override
 	public void start(final Stage stage) throws Exception {
+		currentStage = stage;
+		// use resource bundle
 		stage.setTitle("BP");
 		//InfoboxManager.downloadTemplates("default-infoboxes");
-		final Scene scene = SceneManager.getScene(FXMLScene.MAIN_MENU);
+		final Scene scene = SceneManager.getScene(FXMLScene.MAIN);
 		stage.setScene(scene);
+		stage.setMaximized(true);
 		stage.show();
-		Config config = Config.getInstance();
-
+//		Config config = Config.getInstance();
 	}
 
     /*OkHttpClient client = new OkHttpClient();

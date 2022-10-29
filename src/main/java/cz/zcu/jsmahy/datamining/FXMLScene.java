@@ -5,6 +5,7 @@ package cz.zcu.jsmahy.datamining;
  * @version 1.0
  */
 public enum FXMLScene {
+	MAIN("app/controller/main"),
 	MAIN_MENU("app/controller/main-menu"),
 	IB_TEMPLATE_MENU("app/controller/ib-template");
 
@@ -14,7 +15,7 @@ public enum FXMLScene {
 		this.s = s;
 	}
 
-	public String getScene() {
+	public String getScenePath() {
 		return s;
 	}
 }
