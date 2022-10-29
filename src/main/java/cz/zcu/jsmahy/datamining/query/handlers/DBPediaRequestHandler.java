@@ -59,7 +59,6 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
 		try {
 			L.debug(String.format("Requesting %s", r));
 			model.read(r);
-			//System.out.println(model);
 		} catch (HttpException e) {
 			requesting = false;
 			throw L.throwing(e);
@@ -100,6 +99,7 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
 	private void dfs(final Model model, final Selector selector, final RDFNode prev) {
 		// list all statements based on the selector
 		// only one statement should be found based on that selector
+		// FIXME: this creates a list for no reason, just iterate
 		for (final Statement stmt : model.listStatements(selector)
 		                                 .toList()) {
 			final RDFNode next = stmt.getObject();

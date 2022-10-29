@@ -4,7 +4,7 @@ import com.sun.javafx.application.PlatformImpl;
 import javafx.application.Platform;
 import javafx.concurrent.Service;
 import org.apache.jena.query.*;
-import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -18,7 +18,7 @@ import org.apache.logging.log4j.Logger;
 public class PredecessorQueryTest {
 	private static final Logger LOGGER = LogManager.getLogger(PredecessorQueryTest.class);
 	private static final String DBPEDIA_SERVICE = "http://dbpedia.org/sparql/";
-	private static final String RESOURCE = "r:Pope_Francis";
+	private static final String RESOURCE = "r:Windows_10";
 
 	public static void main(String[] args) {
 		// because of some error (regardless of using JavaFX) we have to run this on JavaFX thread
@@ -26,23 +26,23 @@ public class PredecessorQueryTest {
 			// query for all predecessors (recursively)
 			//"select distinct ?name ?pred\n" +
 			// TODO: make a (SPARQL)QueryBuilder
-			final String q = new StringBuilder().append("PREFIX rdf: <https://www.w3.org/1999/02/22-rdf-syntax-ns#>\n")
-			                                    .append("PREFIX r: <http://dbpedia.org/resource/>\n")
-			                                    .append("PREFIX dbo: <http://dbpedia.org/ontology/>\n")
-			                                    .append("PREFIX dbp: <http://dbpedia.org/property/>\n")
-			                                    .append("select distinct ?name\n")
-			                                    .append("{\n")
-			                                    .append("?pred dbp:predecessor ")
-			                                    .append(RESOURCE)
-			                                    .append(" .\n")
-			                                    .append("?pred dbp:predecessor+ ?name\n")
-			                                    .append("}\n")
-			                                    .append("order by ?pred")
-			                                    .toString();
-			LOGGER.debug("Raw query:\n{}", q);
+			final String rawQuery = new StringBuilder().append("PREFIX rdf: <https://www.w3.org/1999/02/22-rdf-syntax-ns#>\n")
+			                                           .append("PREFIX r: <http://dbpedia.org/resource/>\n")
+			                                           .append("PREFIX dbo: <http://dbpedia.org/ontology/>\n")
+			                                           .append("PREFIX dbp: <http://dbpedia.org/property/>\n")
+			                                           .append("select distinct ?name\n")
+			                                           .append("{\n")
+			                                           .append("?pred dbp:precededBy ")
+			                                           .append(RESOURCE)
+			                                           .append(" .\n")
+			                                           .append("?pred dbp:precededBy+ ?name\n")
+			                                           .append("}\n")
+			                                           .append("order by ?pred")
+			                                           .toString();
+			LOGGER.debug("Raw query:\n{}", rawQuery);
 
 			// build the query via Jena
-			final Query query = QueryFactory.create(q);
+			final Query query = QueryFactory.create(rawQuery);
 			final QueryExecution qe = QueryExecution.service(DBPEDIA_SERVICE)
 			                                        .query(query)
 			                                        .build();
@@ -59,7 +59,7 @@ public class PredecessorQueryTest {
 				// print the results
 				while (results.hasNext()) {
 					final QuerySolution soln = results.next();
-					final Resource resource = soln.getResource("name");
+					final RDFNode resource = soln.get("name");
 					// TODO: we can now work with this resource
 					LOGGER.debug(resource);
 				}

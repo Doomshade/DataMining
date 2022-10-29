@@ -14,12 +14,12 @@ import java.util.ResourceBundle;
  * @version 1.0
  */
 public final class SceneManager {
-	 
-	public static Scene getScene(final FXMLScene fxmlScene) throws IOException {
+
+	static Scene getScene(final FXMLScene fxmlScene) throws IOException {
 		final URL fxml = Main.class.getResource(
 				Utils.FXML_PATH
 						.concat(fxmlScene.getScene())
-						.concat(Utils.FXML_EXTENSION));
+						.concat(".fxml"));
 		if (fxml == null) {
 			throw new IOException(String.format("No URL found for the %s scene!", fxmlScene.getScene()));
 		}

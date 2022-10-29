@@ -41,7 +41,8 @@ public class MainMenuController implements Initializable {
 	}
 
 	public void handleCreateOntologyBtn(final MouseEvent mouseEvent) {
-
+		System.out.println(mouseEvent.getX());
+		System.out.println(mouseEvent.getY());
 	}
 
 	public void handleLoadOnotologyBtn(final MouseEvent mouseEvent) {

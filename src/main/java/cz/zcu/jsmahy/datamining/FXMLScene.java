@@ -5,8 +5,8 @@ package cz.zcu.jsmahy.datamining;
  * @version 1.0
  */
 public enum FXMLScene {
-	MAIN_MENU("main-menu"),
-	IB_TEMPLATE_MENU("ib-template");
+	MAIN_MENU("app/controller/main-menu"),
+	IB_TEMPLATE_MENU("app/controller/ib-template");
 
 	private final String s;
 
@@ -18,4 +18,3 @@ public enum FXMLScene {
 		return s;
 	}
 }
-

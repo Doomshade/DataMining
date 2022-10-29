@@ -23,7 +23,7 @@ public class DBPediaQueryTest {
 			final String requestPage = "Pope_Francis";
 			final String namespace = "http://dbpedia.org/property/";
 			final String link = "predecessor";
-			LOGGER.info("Querying {}/{} in namespace {} by link {}", namespace, requestPage, namespace, link);
+			LOGGER.info("Querying {}{} in namespace {} by link {}", namespace, requestPage, namespace, link);
 			final Injector injector = Guice.createInjector(new DBPediaModule());
 			final RequestHandler requestHandler = injector.getInstance(RequestHandler.class);
 			final Service<Ontology> query = requestHandler

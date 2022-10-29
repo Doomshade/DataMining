@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.JFXListView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.web.WebView?>
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:id="rootPane"
+            xmlns="http://javafx.com/javafx"
+            fx:controller="cz.zcu.jsmahy.datamining.app.controller.MainController"
+            prefHeight="400.0" prefWidth="600.0">
+    <center>
+        <WebView fx:id="wikiPageWebView"/>
+    </center>
+    <left>
+        <JFXListView fx:id="ontologyListView" onMouseClicked="#handleOntologyClick"/>
+    </left>
+</BorderPane>
