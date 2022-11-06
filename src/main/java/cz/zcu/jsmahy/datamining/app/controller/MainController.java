@@ -4,7 +4,7 @@ import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXSpinner;
 import com.jfoenix.controls.JFXTextField;
 import cz.zcu.jsmahy.datamining.QueryService;
-import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeFormatCell;
+import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
 import javafx.application.Platform;
 import javafx.beans.Observable;
 import javafx.collections.ObservableList;
@@ -12,12 +12,8 @@ import javafx.concurrent.Service;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.ListView;
-import javafx.scene.control.SelectionMode;
+import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.web.WebView;
 import org.apache.jena.query.*;
@@ -35,7 +31,7 @@ import java.util.ResourceBundle;
  * @since
  */
 public class MainController implements Initializable {
-	public static final String WIKI_URL = "https://wikipedia.org/wiki/%s";
+	private static final String WIKI_URL = "https://wikipedia.org/wiki/%s";
 	private static final Logger LOGGER = LogManager.getLogger(MainController.class);
 	private static final String DBPEDIA_SERVICE = "http://dbpedia.org/sparql/";
 	@FXML
@@ -61,26 +57,32 @@ public class MainController implements Initializable {
 	public void initialize(final URL location, final ResourceBundle resources) {
 //		rootPane.setRight(null);
 //		rootPane.setBottom(null);
+		// when user has focus on search field and presses enter -> search
 		searchField.setOnKeyPressed(e -> {
 			if (e.getCode() == KeyCode.ENTER) {
-				search(null);
+				search();
 			}
 		});
 		searchField.requestFocus();
+
 		rootPane.setPadding(new Insets(10));
-		ontologyListView.setEditable(false);
-		ontologyListView.getSelectionModel()
-		                .setSelectionMode(SelectionMode.SINGLE);
-		ontologyListView.setCellFactory(RDFNodeFormatCell::new);
+		// this will ensure the pane is disabled when progress indicator is visible
 		rootPane.disableProperty()
 		        .bind(progressIndicator.visibleProperty());
-		ontologyListView.getSelectionModel()
-		                .selectedItemProperty()
-		                .addListener(this::onSelection);
-//		wikiPageWebView.setMinHeight(960);
-//		wikiPageWebView.setMinWidth(540);
+
+		final MultipleSelectionModel<RDFNode> selectionModel = ontologyListView.getSelectionModel();
+		selectionModel.setSelectionMode(SelectionMode.SINGLE);
+		selectionModel.selectedItemProperty()
+		              .addListener(this::onSelection);
+		ontologyListView.setCellFactory(RDFNodeCellFactory::new);
+		ontologyListView.setEditable(false);
 	}
 
+	/**
+	 * Callback for {@link SelectionModel#selectedItemProperty()} in the ontology list view.
+	 *
+	 * @param observable the observable that was invalidated
+	 */
 	private void onSelection(final Observable observable) {
 		final RDFNode selectedItem = ontologyListView.getSelectionModel()
 		                                             .getSelectedItem();
@@ -88,20 +90,19 @@ public class MainController implements Initializable {
 			LOGGER.info("Could not handle ontology click because selected item was null.");
 			return;
 		}
-		final String formattedItem = RDFNodeFormatCell.formatRDFNode(selectedItem);
 
+		final String formattedItem = RDFNodeCellFactory.formatRDFNode(selectedItem);
 		wikiPageWebView.getEngine()
 		               .load(String.format(WIKI_URL, formattedItem));
 	}
 
-	public void handleOntologyClick(final MouseEvent mouseEvent) {
 
-	}
-
-
-	public void search(final MouseEvent mouseEvent) {
-		final String searchValue = "r:" + searchField.getText()
-		                                             .replaceAll(" ", "_");
+	/**
+	 * Handler for mouse press on the search button.
+	 */
+	public void search() {
+		final String searchValue = searchField.getText()
+		                                      .replaceAll(" ", "_");
 		if (searchValue.isBlank()) {
 			LOGGER.info("Search field is blank, not searching for anything.");
 			final Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -121,8 +122,9 @@ public class MainController implements Initializable {
 				                                           .append("PREFIX dbp: <http://dbpedia.org/property/>\n")
 				                                           .append("select distinct ?name\n")
 				                                           .append("{\n")
-				                                           .append("?pred dbp:predecessor ")
+				                                           .append("?pred dbp:predecessor <http://dbpedia.org/resource/")
 				                                           .append(searchValue)
+				                                           .append(">")
 				                                           .append(" .\n")
 				                                           .append("?pred dbp:predecessor+ ?name\n")
 				                                           .append("}\n")
@@ -153,6 +155,7 @@ public class MainController implements Initializable {
 					while (results.hasNext()) {
 						final QuerySolution soln = results.next();
 						final RDFNode resource = soln.get("name");
+						LOGGER.debug(resource);
 						items.add(resource);
 					}
 					ontologyListView.getSelectionModel()
@@ -169,7 +172,6 @@ public class MainController implements Initializable {
 					hideIndicator(true);
 					exit();
 				});
-
 				queryService.start();
 			} catch (Exception e) {
 				Platform.runLater(() -> {

@@ -18,7 +18,7 @@ import org.apache.logging.log4j.Logger;
 public class PredecessorQueryTest {
 	private static final Logger LOGGER = LogManager.getLogger(PredecessorQueryTest.class);
 	private static final String DBPEDIA_SERVICE = "http://dbpedia.org/sparql/";
-	private static final String RESOURCE = "r:Windows_10";
+	private static final String RESOURCE = "<http://dbpedia.org/resource/Charles_IV,_Holy_Roman_Emperor>";
 
 	public static void main(String[] args) {
 		// because of some error (regardless of using JavaFX) we have to run this on JavaFX thread
@@ -32,10 +32,10 @@ public class PredecessorQueryTest {
 			                                           .append("PREFIX dbp: <http://dbpedia.org/property/>\n")
 			                                           .append("select distinct ?name\n")
 			                                           .append("{\n")
-			                                           .append("?pred dbp:precededBy ")
+			                                           .append("?pred dbp:predecessor ")
 			                                           .append(RESOURCE)
 			                                           .append(" .\n")
-			                                           .append("?pred dbp:precededBy+ ?name\n")
+			                                           .append("?pred dbp:predecessor+ ?name\n")
 			                                           .append("}\n")
 			                                           .append("order by ?pred")
 			                                           .toString();

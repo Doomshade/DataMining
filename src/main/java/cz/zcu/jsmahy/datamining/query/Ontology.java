@@ -44,11 +44,11 @@ public final class Ontology {
 	 * @param to   the second point
 	 */
 	public synchronized void addEdge(final RDFNode from, final RDFNode to) {
-		org.apache.jena.graph.Graph g;
+		/*org.apache.jena.graph.Graph g;
 		graph.addVertex(from);
 		graph.addVertex(to);
 		if (graph.addEdge(from, to) == null) {
 			// TODO throw something
-		}
+		}*/
 	}
 }

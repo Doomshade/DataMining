@@ -27,7 +27,7 @@
             </WebView>
         </center>
         <left>
-            <JFXListView fx:id="ontologyListView" onMouseClicked="#handleOntologyClick">
+            <JFXListView fx:id="ontologyListView">
                 <BorderPane.margin>
                     <Insets top="5" bottom="5" left="5" right="5"/>
                 </BorderPane.margin>
