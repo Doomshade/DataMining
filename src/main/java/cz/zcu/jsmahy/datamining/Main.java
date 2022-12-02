@@ -32,7 +32,6 @@ public class Main extends Application {
 		stage.setScene(scene);
 		stage.setMaximized(true);
 		stage.show();
-//		Config config = Config.getInstance();
 	}
 
     /*OkHttpClient client = new OkHttpClient();

@@ -11,9 +11,9 @@ import cz.zcu.jsmahy.datamining.query.handlers.DBPediaRequestHandler;
  * @since 1.0
  */
 public class DBPediaModule extends AbstractModule {
-	protected void configure() {
-		bind(RequestHandler.class)
-				.to(DBPediaRequestHandler.class);
-	}
+    protected void configure() {
+        bind(RequestHandler.class)
+                .to(DBPediaRequestHandler.class);
+    }
 
 }

@@ -13,8 +13,6 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.Properties;
 
-import static cz.zcu.jsmahy.datamining.Constants.EXIT_EXCEPTION;
-
 /**
  * Configuration file utility
  *
@@ -102,7 +100,7 @@ public final class Config {
 				L.fatal("Failed to autowire config, exiting...");
 				L.catching(e);
 				Platform.exit();
-				System.exit(EXIT_EXCEPTION);
+				System.exit(1);
 			}
 		}
 	}

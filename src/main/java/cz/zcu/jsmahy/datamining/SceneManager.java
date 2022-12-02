@@ -1,6 +1,5 @@
 package cz.zcu.jsmahy.datamining;
 
-import cz.zcu.jsmahy.datamining.util.Utils;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -16,6 +15,7 @@ import java.util.ResourceBundle;
  * @version 1.0
  */
 public final class SceneManager {
+	public static final String FXML_PATH = "/fxml/";
 	private static final Logger LOGGER = LogManager.getLogger(SceneManager.class);
 	private static final String FXML_SUFFIX = ".fxml";
 
@@ -28,7 +28,7 @@ public final class SceneManager {
 		}
 
 		final URL fxml = Main.class.getResource(
-				Utils.FXML_PATH
+				FXML_PATH
 						.concat(fxmlScenePath)
 						.concat(FXML_SUFFIX));
 		if (fxml == null) {
