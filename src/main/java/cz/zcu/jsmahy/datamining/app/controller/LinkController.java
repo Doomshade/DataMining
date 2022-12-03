@@ -5,12 +5,15 @@ import com.jfoenix.controls.JFXSpinner;
 import com.jfoenix.controls.JFXTextArea;
 import com.jfoenix.controls.JFXTextField;
 import cz.zcu.jsmahy.datamining.query.Ontology;
+import cz.zcu.jsmahy.datamining.query.RequestHandler;
 import cz.zcu.jsmahy.datamining.query.RequestHandlerFactory;
 import cz.zcu.jsmahy.datamining.query.SparqlRequest;
 import javafx.concurrent.Service;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.input.MouseEvent;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -25,6 +28,8 @@ public class LinkController implements Initializable {
 	public JFXTextArea textArea;
 	public JFXSpinner progress;
 
+	private static final Logger LOGGER = LogManager.getLogger(LinkController.class);
+
 	@Override
 	public void initialize(final URL location, final ResourceBundle resources) {
 
@@ -32,38 +37,38 @@ public class LinkController implements Initializable {
 
 	@FXML
 	public void search(final MouseEvent mouseEvent) {
-		setVisibilityAndOpacity(true, 0.2);
+		setDisabled(true);
 
 		String ontology = searchField.getText();
 		SparqlRequest request = new SparqlRequest(ontology, "http://dbpedia.org/ontology/", "successor");
+
 		Service<Ontology> query = RequestHandlerFactory.getDBPediaRequestHandler()
 		                                               .query(request);
-		RequestHandlerFactory.setupDefaultServiceHandlers(query);
 		query.setOnSucceeded(x -> {
-			query.getOnSucceeded()
-			     .handle(x);
-			setVisibilityAndOpacity(false, 1);
-			StringBuilder sb = new StringBuilder();
-			System.out.println(x.getSource()
-			                    .getValue());
-			((Ontology) x.getSource()
-			             .getValue()).printOntology(sb);
+			final Ontology ont = (Ontology) x.getSource()
+			                                 .getValue();
+			LOGGER.info("Printing ontology: {}", ont.toString());
+			setDisabled(false);
+			System.out.println(ont);
+			final StringBuilder sb = new StringBuilder();
+			ont.printOntology(sb);
 			textArea.textProperty()
 			        .set(sb.toString());
 
 		});
 
 		query.setOnFailed(x -> {
-			query.getOnFailed()
-			     .handle(x);
-			setVisibilityAndOpacity(false, 1);
+			query.getException()
+			     .printStackTrace();
+			setDisabled(false);
 		});
 		query.restart();
 		progress.progressProperty()
 		        .bind(query.progressProperty());
 	}
 
-	private void setVisibilityAndOpacity(boolean disabled, double opacity) {
+
+	private void setDisabled(boolean disabled) {
 		testbtn.setDisable(disabled);
 		progress.setVisible(disabled);
 		searchField.setDisable(disabled);

@@ -32,7 +32,15 @@ public class DBPediaQueryTest {
 							namespace,
 							link
 					));
-			RequestHandlerFactory.setupDefaultServiceHandlers(query);
+			query.setOnSucceeded(x -> {
+				final Ontology ont = (Ontology) x.getSource()
+				                                 .getValue();
+				LOGGER.info("Printing ontology: {}", ont.toString());
+			});
+			query.setOnFailed(x -> {
+				query.getException()
+				       .printStackTrace();
+			});
 			query.start();
 		});
 	}
