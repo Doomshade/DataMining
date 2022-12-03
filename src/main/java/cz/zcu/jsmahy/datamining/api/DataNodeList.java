@@ -3,7 +3,7 @@ package cz.zcu.jsmahy.datamining.api;
 import java.util.LinkedList;
 
 /**
- * Convenience linked list implementation.
+ * Convenience linked list implementation for data nodes.
  *
  * @author Jakub Smrha
  * @since 1.0
