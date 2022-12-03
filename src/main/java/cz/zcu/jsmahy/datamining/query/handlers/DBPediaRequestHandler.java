@@ -2,6 +2,7 @@ package cz.zcu.jsmahy.datamining.query.handlers;
 
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import cz.zcu.jsmahy.datamining.query.*;
+import javafx.application.Platform;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntModelSpec;
@@ -85,7 +86,11 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
 
         // now iterate recursively
         L.debug("Searching...");
+        Platform.runLater(() -> {
+            request.getObservableList().add(ontology.getRoot());
+        });
         dfs(model, selector, ontology.getRoot());
+        L.debug("Done searching");
         requesting = false;
         return ontology;
     }
@@ -118,6 +123,9 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
 
             // create a new edge between the previous link and this one
             currOntology.addEdge(prev, next);
+            Platform.runLater(() -> {
+                request.getObservableList().add(next);
+            });
             // the node is a resource -> means the ontology continues -> we search deeper
             if (next.isURIResource()) {
                 searchFurther(model, next.asResource(), next);

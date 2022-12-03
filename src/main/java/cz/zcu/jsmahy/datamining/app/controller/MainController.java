@@ -5,6 +5,9 @@ import com.jfoenix.controls.JFXSpinner;
 import com.jfoenix.controls.JFXTextField;
 import cz.zcu.jsmahy.datamining.QueryService;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
+import cz.zcu.jsmahy.datamining.query.Ontology;
+import cz.zcu.jsmahy.datamining.query.RequestHandlerFactory;
+import cz.zcu.jsmahy.datamining.query.SparqlRequest;
 import javafx.application.Platform;
 import javafx.beans.Observable;
 import javafx.beans.value.ChangeListener;
@@ -126,97 +129,31 @@ order by ?pred
             alert.setContentText("Please enter some text to search.");
             return;
         }
+        SparqlRequest request = new SparqlRequest(searchValue, "http://dbpedia.org/ontology/", "predecessor", ontologyListView.getItems());
 
-        final Thread t = new Thread(() -> {
-            hideIndicator(false);
-            try {
-                LOGGER.debug("Building query");
-                final String rawQuery = new StringBuilder().append("PREFIX rdf: <https://www.w3.org/1999/02/22-rdf-syntax-ns#>\n")
-                                                           .append("PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n")
-                                                           .append("PREFIX r: <http://dbpedia.org/resource/>\n")
-                                                           .append("PREFIX dbo: <http://dbpedia.org/ontology/>\n")
-                                                           .append("PREFIX dbp: <http://dbpedia.org/property/>\n")
-                                                           .append("PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n")
-                                                           .append("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n")
-                                                           .append("PREFIX bif: <http://www.openlinksw.com/schemas/bif#>")
-                                                           .append("select distinct ?first ?next\n")
-                                                           .append("{\n")
-                                                           .append("?first rdfs:label ?name .")
-                                                           .append("FILTER (?name = \"")
-                                                           .append(searchValue)
-                                                           .append("\"@cs) .\n")
-                                                           .append("?first dbp:precededBy+ ?next .")
-                                                           .append("}\n")
-                                                           .toString();
-                LOGGER.debug("Raw query:\n{}", rawQuery);
+        Service<Ontology> query = RequestHandlerFactory.getDBPediaRequestHandler()
+                                                       .query(request);
+        query.setOnSucceeded(x -> {
+            final Ontology ont = (Ontology) x.getSource()
+                                             .getValue();
+            LOGGER.info("Printing ontology: {}", ont.toString());
 
-                // build the query via Jena
-                final Query query = QueryFactory.create(rawQuery);
-                final QueryExecution qe = QueryExecution.service(DBPEDIA_SERVICE)
-                                                        .query(query)
-                                                        .build();
-                LOGGER.info("SPARQL endpoint: {}", DBPEDIA_SERVICE);
-
-                // execute the query on a separate thread via Service
-                final Service<ResultSet> queryService = new QueryService(qe);
-                this.progressIndicator.progressProperty()
-                                      .bind(queryService.progressProperty());
-                queryService.setOnSucceeded(e -> {
-                    final ResultSet results = (ResultSet) e.getSource()
-                                                           .getValue();
-                    LOGGER.info("Query successfully executed");
-                    LOGGER.info("Query returned {} results", results.hasNext() ? "some" : "no");
-
-                    final ObservableList<RDFNode> items = ontologyListView.getItems();
-                    items.clear();
-                    // print the results
-                    final Marker marker = MarkerManager.getMarker("query");
-                    boolean first = true;
-                    while (results.hasNext()) {
-                        final QuerySolution solution = results.next();
-                        final Iterator<String> it = solution.varNames();
-                        LOGGER.debug("Variables:");
-                        while (it.hasNext()) {
-                            LOGGER.debug(it.next());
-                        }
-                        LOGGER.debug("---------");
-                        if (first) {
-                            final RDFNode firstNode = solution.get("first");
-                            LOGGER.debug(marker, "First: {}", firstNode);
-                            items.add(firstNode);
-                            first = false;
-                        }
-                        final RDFNode resource = solution.get("next");
-                        LOGGER.debug(marker, "Next: {}", resource);
-                        items.add(resource);
-                    }
-                    ontologyListView.getSelectionModel()
-                                    .selectFirst();
-                    hideIndicator(true);
-                });
-
-                queryService.setOnFailed(e -> {
-                    hideIndicator(true);
-                    final Throwable ex = queryService.getException();
-                    LOGGER.error(ex);
-                    final Alert alert = buildExceptionAlert(ex);
-                    alert.show();
-                });
-                queryService.setOnCancelled(e -> {
-                    hideIndicator(true);
-                });
-                queryService.start();
-            } catch (Exception e) {
-                Platform.runLater(() -> {
-                    final Alert alert = buildExceptionAlert(e);
-                    alert.show();
-                });
-                LOGGER.error(e);
-                hideIndicator(true);
-            }
+            ontologyListView.getSelectionModel()
+                            .selectFirst();
 
         });
-        t.start();
+
+        query.setOnFailed(x -> {
+            query.getException()
+                 .printStackTrace();
+        });
+        query.restart();
+        this.rootPane.disableProperty()
+                     .bind(query.runningProperty());
+        this.progressIndicator.visibleProperty()
+                              .bind(query.runningProperty());
+        progressIndicator.progressProperty()
+                         .bind(query.progressProperty());
     }
 
     private Alert buildExceptionAlert(final Throwable e) {
@@ -227,8 +164,7 @@ order by ?pred
         alert.contentTextProperty()
              .addListener(new ChangeListener<String>() {
                  @Override
-                 public void changed(final ObservableValue<? extends String> observable, final String oldValue,
-                                     final String newValue) {
+                 public void changed(final ObservableValue<? extends String> observable, final String oldValue, final String newValue) {
                      int lineBreaks = 0;
                      final char[] chars = newValue.toCharArray();
                      for (int i = 0; i < chars.length; i++) {

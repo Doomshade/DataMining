@@ -1,6 +1,7 @@
 package cz.zcu.jsmahy.datamining.query;
 
 import org.apache.jena.rdf.model.RDFNode;
+import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
@@ -21,6 +22,10 @@ public final class Ontology {
 
 	public RDFNode getRoot() {
 		return root;
+	}
+
+	public Graph<RDFNode, DefaultEdge> getGraph() {
+		return graph;
 	}
 
 	@Override
@@ -44,11 +49,12 @@ public final class Ontology {
 	 * @param to   the second point
 	 */
 	public synchronized void addEdge(final RDFNode from, final RDFNode to) {
-		/*org.apache.jena.graph.Graph g;
+		org.apache.jena.graph.Graph g;
 		graph.addVertex(from);
 		graph.addVertex(to);
 		if (graph.addEdge(from, to) == null) {
 			// TODO throw something
-		}*/
+			System.err.printf("Failed to add edge %s-%s%n", from, to);
+		}
 	}
 }
