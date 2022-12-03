@@ -9,12 +9,12 @@ package cz.zcu.jsmahy.datamining.api;
 public final class DataNodeFactoryImpl implements DataNodeFactory {
 
     @Override
-    public <T> DataNodeRoot<T> newRoot(final T data) {
-        return new DataNodeRootImpl<>(data);
+    public <T> DataNodeRoot<T> newRoot() {
+        return new DataNodeRoot<>();
     }
 
     @Override
     public <T> DataNode<T> newNode(final T data) {
-        return new DataNodeImpl<>(data);
+        return new DataNode<>(data);
     }
 }
