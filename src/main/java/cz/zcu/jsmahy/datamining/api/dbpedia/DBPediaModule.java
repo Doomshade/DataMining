@@ -1,6 +1,6 @@
-package cz.zcu.jsmahy.datamining.guice;
+package cz.zcu.jsmahy.datamining.api.dbpedia;
 
-import com.google.inject.AbstractModule;
+import cz.zcu.jsmahy.datamining.api.DataMiningModule;
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
 import cz.zcu.jsmahy.datamining.query.handlers.DBPediaRequestHandler;
 
@@ -10,8 +10,9 @@ import cz.zcu.jsmahy.datamining.query.handlers.DBPediaRequestHandler;
  * @author Jakub Smrha
  * @since 1.0
  */
-public class DBPediaModule extends AbstractModule {
+public class DBPediaModule extends DataMiningModule {
     protected void configure() {
+        super.configure();
         bind(RequestHandler.class)
                 .to(DBPediaRequestHandler.class);
     }

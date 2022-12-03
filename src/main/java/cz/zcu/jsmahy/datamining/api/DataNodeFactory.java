@@ -4,15 +4,10 @@ package cz.zcu.jsmahy.datamining.api;
  * TODO
  *
  * @author Jakub Smrha
- * @since 1.0
+ * @since
  */
-public class DataNodeFactory {
+public interface DataNodeFactory {
+    <T> DataNodeRoot<T> newRoot(T data);
 
-    public <T> DataNodeRoot<T> newRoot(final T data) {
-        return new DataNodeRootImpl<>(data);
-    }
-
-    public <T> DataNode<T> newNode(final T data) {
-        return new DataNodeImpl<>(data);
-    }
+    <T> DataNode<T> newNode(T data);
 }

@@ -3,7 +3,7 @@ package cz.zcu.jsmahy.datamining.query;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.sun.javafx.application.PlatformImpl;
-import cz.zcu.jsmahy.datamining.guice.DBPediaModule;
+import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import javafx.concurrent.Service;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
