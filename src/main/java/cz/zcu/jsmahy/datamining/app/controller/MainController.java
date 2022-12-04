@@ -3,7 +3,6 @@ package cz.zcu.jsmahy.datamining.app.controller;
 import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXSpinner;
 import com.jfoenix.controls.JFXTextField;
-import cz.zcu.jsmahy.datamining.QueryService;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
 import cz.zcu.jsmahy.datamining.query.Ontology;
 import cz.zcu.jsmahy.datamining.query.RequestHandlerFactory;
@@ -12,6 +11,7 @@ import javafx.application.Platform;
 import javafx.beans.Observable;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Service;
 import javafx.fxml.FXML;
@@ -21,16 +21,14 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.web.WebView;
-import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
 
 import java.net.URL;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.ResourceBundle;
+import java.util.Set;
 
 /**
  * TODO
@@ -62,7 +60,8 @@ order by ?pred
     @FXML
     private BorderPane rootPane;
     @FXML
-    private ListView<RDFNode> ontologyListView;
+    private TreeView<RDFNode> ontologyListView;
+
     @FXML
     private WebView wikiPageWebView;
     @FXML
@@ -89,7 +88,7 @@ order by ?pred
         rootPane.disableProperty()
                 .bind(progressIndicator.visibleProperty());
 
-        final MultipleSelectionModel<RDFNode> selectionModel = ontologyListView.getSelectionModel();
+        final MultipleSelectionModel<TreeItem<RDFNode>> selectionModel = ontologyListView.getSelectionModel();
         selectionModel.setSelectionMode(SelectionMode.SINGLE);
         selectionModel.selectedItemProperty()
                       .addListener(this::onSelection);
@@ -103,14 +102,14 @@ order by ?pred
      * @param observable the observable that was invalidated
      */
     private void onSelection(final Observable observable) {
-        final RDFNode selectedItem = ontologyListView.getSelectionModel()
-                                                     .getSelectedItem();
+        final TreeItem<RDFNode> selectedItem = ontologyListView.getSelectionModel()
+                                                               .getSelectedItem();
         if (selectedItem == null) {
             LOGGER.info("Could not handle ontology click because selected item was null.");
             return;
         }
 
-        final String formattedItem = RDFNodeCellFactory.formatRDFNode(selectedItem);
+        final String formattedItem = RDFNodeCellFactory.formatRDFNode(selectedItem.getValue());
         wikiPageWebView.getEngine()
                        .load(String.format(WIKI_URL, formattedItem));
     }
@@ -130,8 +129,25 @@ order by ?pred
             alert.setContentText("Please enter some text to search.");
             return;
         }
-        ontologyListView.getItems().clear();
-        SparqlRequest request = new SparqlRequest(searchValue, "http://dbpedia.org/property/", "predecessor", ontologyListView.getItems());
+        ontologyListView.setRoot(new TreeItem<>(null));
+        final ObservableList<TreeItem<RDFNode>> children = ontologyListView.getRoot()
+                                                                           .getChildren();
+        children.clear();
+        ontologyListView.setShowRoot(false);
+        children.addListener(new ListChangeListener<TreeItem<RDFNode>>() {
+            @Override
+            public void onChanged(final Change<? extends TreeItem<RDFNode>> c) {
+                while (c.next()) {
+                    if (!c.wasAdded()) {
+                        return;
+                    }
+                    final ObservableList<? extends TreeItem<RDFNode>> list = c.getList();
+                    final Set<RDFNode> set = new HashSet<>();
+                    list.removeIf(child -> !set.add(child.getValue()));
+                }
+            }
+        });
+        SparqlRequest request = new SparqlRequest(searchValue, "http://dbpedia.org/property/", "predecessor", ontologyListView.getRoot());
 
         Service<Ontology> query = RequestHandlerFactory.getDBPediaRequestHandler()
                                                        .query(request);

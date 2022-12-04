@@ -7,6 +7,9 @@ import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import cz.zcu.jsmahy.datamining.query.*;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.scene.control.TreeItem;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntModelSpec;
@@ -14,10 +17,8 @@ import org.apache.jena.rdf.model.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * The DBPedia {@link RequestHandler}.
@@ -95,8 +96,8 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
         injector.injectMembers(this);
         final DataNodeFactory<RDFNode> nodeFactory = injector.getInstance(DataNodeFactory.class);
         final DataNodeRoot<RDFNode> root = nodeFactory.newRoot();
-        final AmbiguitySolver<RDFNode> ambiguitySolver = new DefaultAllAmbiguitySolver();
-        bfs(model, selector, nodeFactory, root, ambiguitySolver);
+        final AmbiguitySolver<RDFNode> ambiguitySolver = new DefaultFirstAmbiguitySolver();
+        bfs(model, selector, nodeFactory, root, request.getRoot(), ambiguitySolver);
         L.debug("Done searching");
         requesting = false;
         return ontology;
@@ -132,8 +133,7 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
      * @param selector the selector
      */
     private <T extends RDFNode> void bfs(final Model model, final Selector selector, final DataNodeFactory<T> nodeFactory,
-                                         final DataNodeRoot<T> root,
-                                         final AmbiguitySolver<T> ambiguitySolver) {
+                                         final DataNodeRoot<T> root, final TreeItem<T> treeRoot, final AmbiguitySolver<T> ambiguitySolver) {
         // list all statements based on the selector
         // only one statement should be found based on that selector
         // FIXME: this creates a list for no reason, just iterate
@@ -143,9 +143,9 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
         // TODO: meetsRequirements
         // it reads the resource inside, that's why we don't use it here
         root.addChild(curr);
+        final ObservableList<TreeItem<T>> treeChildren = treeRoot.getChildren();
         Platform.runLater(() -> {
-            request.getObservableList()
-                   .add(curr.data());
+            treeChildren.add(new TreeItem<>(curr.data()));
         });
         final List<Statement> statements = model.listStatements(selector)
                                                 .toList();
@@ -164,11 +164,6 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
             final DataNode<T> nextNode = nodeFactory.newNode((T) next);
             L.debug("Found {}", next);
             children.add(nextNode);
-
-            Platform.runLater(() -> {
-                request.getObservableList()
-                       .add(next);
-            });
         }
 
         // no nodes found, stop searching
@@ -181,24 +176,52 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
         final DataNode<T> parent;
         if (children.size() == 1) {
             parent = root;
+            Platform.runLater(() -> {
+                final DataNode<T> first = children.getFirst();
+                final T data = first.data();
+                for (TreeItem<T> item : treeChildren) {
+                    if (item.getValue()
+                            .equals(data)) {
+                        return;
+                    }
+                }
+                treeChildren.add(new TreeItem<>(data));
+            });
         } else {
             parent = curr;
+            Platform.runLater(() -> {
+                final int lastIndex = treeChildren.size() - 1;
+                if (lastIndex < 0) {
+                    return;
+                }
+                treeChildren.get(lastIndex)
+                            .getChildren()
+                            .addAll(children.stream()
+                                            .map(TreeItem::new)
+                                            .collect(() -> FXCollections.observableArrayList(), (x, y) -> {
+                                                x.add(new TreeItem<>(y.getValue()
+                                                                      .data()));
+                                            }, List::addAll));
+            });
         }
+
         parent.addChildren(children);
+
 
         // multiple children found, that means we need to branch out
         final DataNode<T> next = ambiguitySolver.call(children);
         if (next != null) {
-            searchFurther(model, nodeFactory, root, next, ambiguitySolver);
+            searchFurther(model, nodeFactory, root, next, treeRoot, ambiguitySolver);
         } else {
             for (DataNode<T> child : children) {
-                searchFurther(model, nodeFactory, root, child, ambiguitySolver);
+                searchFurther(model, nodeFactory, root, child, treeRoot, ambiguitySolver);
             }
         }
     }
 
     private <T extends RDFNode> void searchFurther(final Model model, final DataNodeFactory<T> nodeFactory, final DataNodeRoot<T> root,
-                                                   final DataNode<T> next, final AmbiguitySolver<T> ambiguitySolver) {
+                                                   final DataNode<T> next, final TreeItem<T> treeRoot,
+                                                   final AmbiguitySolver<T> ambiguitySolver) {
         final T data = next.data();
         if (!data.isURIResource()) {
             return;
@@ -207,7 +230,7 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
         readResource(model, resource);
         if (usedURIs.add(resource.getURI())) {
             final Selector sel = getSelector(resource, model.getProperty(request.getNamespace(), request.getLink()));
-            bfs(model, sel, nodeFactory, root, ambiguitySolver);
+            bfs(model, sel, nodeFactory, root, treeRoot, ambiguitySolver);
         }
     }
 

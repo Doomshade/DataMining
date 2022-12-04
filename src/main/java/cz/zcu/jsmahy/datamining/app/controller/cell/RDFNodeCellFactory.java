@@ -1,10 +1,7 @@
 package cz.zcu.jsmahy.datamining.app.controller.cell;
 
 import javafx.beans.binding.Bindings;
-import javafx.scene.control.ContextMenu;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
-import javafx.scene.control.MenuItem;
+import javafx.scene.control.*;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
@@ -23,12 +20,12 @@ import java.util.ResourceBundle;
  * @author Jakub Smrha
  * @since 1.0
  */
-public class RDFNodeCellFactory extends ListCell<RDFNode> {
+public class RDFNodeCellFactory extends TreeCell<RDFNode> {
     public static final String SPECIAL_CHARACTERS = "_";
     private static final Logger LOGGER = LogManager.getLogger(RDFNodeCellFactory.class);
-    private final ListView<RDFNode> rdfList;
+    private final TreeView<RDFNode> rdfList;
 
-    public RDFNodeCellFactory(final ListView<RDFNode> rdfList, final ResourceBundle resources) {
+    public RDFNodeCellFactory(final TreeView<RDFNode> rdfList, final ResourceBundle resources) {
         this.rdfList = rdfList;
 
         // TODO: context menu for "add/continue line"
@@ -45,8 +42,9 @@ public class RDFNodeCellFactory extends ListCell<RDFNode> {
         final MenuItem deleteItem = new MenuItem();
         deleteItem.textProperty()
                   .bind(Bindings.format(resources.getString("ontology.prompt.delete"), textProperty()));
-        deleteItem.setOnAction(event -> rdfList.getItems()
-                                               .remove(getItem()));
+        deleteItem.setOnAction(event -> rdfList.getRoot()
+                                               .getChildren()
+                                               .remove(getTreeItem()));
         contextMenu.getItems()
                    .addAll(editItem, deleteItem);
 
