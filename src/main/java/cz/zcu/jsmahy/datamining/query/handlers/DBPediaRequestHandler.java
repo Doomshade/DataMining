@@ -1,5 +1,12 @@
 package cz.zcu.jsmahy.datamining.query.handlers;
 
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
+import cz.zcu.jsmahy.datamining.api.DataNode;
+import cz.zcu.jsmahy.datamining.api.DataNodeFactory;
+import cz.zcu.jsmahy.datamining.api.DataNodeList;
+import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import cz.zcu.jsmahy.datamining.query.*;
 import javafx.application.Platform;
@@ -10,10 +17,7 @@ import org.apache.jena.rdf.model.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 /**
  * The DBPedia {@link RequestHandler}.
@@ -29,6 +33,10 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
     private Ontology currOntology = null;
     private Model model = null;
     private SparqlRequest request = null;
+
+    @Inject
+    private DataNodeFactory<RDFNode> nodeFactory;
+
 
     /**
      * Constructs a simple {@link Selector} from a subject, a predicate, and a null RDFNode
@@ -87,9 +95,13 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
         // now iterate recursively
         L.debug("Searching...");
         Platform.runLater(() -> {
-            request.getObservableList().add(ontology.getRoot());
+            request.getObservableList()
+                   .add(ontology.getRoot());
         });
-        dfs(model, selector, ontology.getRoot());
+        final Injector injector = Guice.createInjector(new DBPediaModule());
+        injector.injectMembers(this);
+        final DataNodeFactory<RDFNode> nodeFactory = injector.getInstance(DataNodeFactory.class);
+        bfs(model, selector, nodeFactory, nodeFactory.newRoot());
         L.debug("Done searching");
         requesting = false;
         return ontology;
@@ -100,44 +112,73 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
      *
      * @param model    the model
      * @param selector the selector
-     * @param prev     the previous link
      */
-    private void dfs(final Model model, final Selector selector, final RDFNode prev) {
+    private <T extends RDFNode> void bfs(final Model model, final Selector selector,
+                                         final DataNodeFactory<T> nodeFactory, final DataNode<T> previous) {
         // list all statements based on the selector
         // only one statement should be found based on that selector
         // FIXME: this creates a list for no reason, just iterate
+        // TODO: if the list size of nodes that meet requirements is 1 connect the node to the root
+        // otherwise connect it to the previous node
         final List<Statement> statements = model.listStatements(selector)
                                                 .toList();
         statements.sort((x, y) -> Boolean.compare(x.getObject()
-                                                    .isURIResource(),
+                                                   .isURIResource(),
                                                   y.getObject()
                                                    .isURIResource()));
+        final DataNodeList<T> children = new DataNodeList<>();
         for (final Statement stmt : statements) {
             final RDFNode next = stmt.getObject();
             // check whether the next meets requirements (i.e. check restrictions)
             if (!meetsRequirements(model, next)) {
                 return;
             }
+            final DataNode<T> nextNode = nodeFactory.newNode((T) next);
 
             L.debug("Found {}", next);
+            children.add(nextNode);
 
-            // create a new edge between the previous link and this one
-            currOntology.addEdge(prev, next);
             Platform.runLater(() -> {
-                request.getObservableList().add(next);
+                request.getObservableList()
+                       .add(next);
             });
+        }
+
+        if (children.isEmpty()) {
+            return;
+        } else if (children.size() == 1) {
+            previous.addChild(children.getFirst());
+            // the node is a resource -> means the ontology continues -> we search deeper
+            if (previous.data()
+                        .isURIResource()) {
+                searchFurther(model, nodeFactory, previous);
+            }
+            return;
+        } else {
+            for (final DataNode<T> child : children) {
+
+            }
+        }
+
+        for (final Statement stmt : statements) {
+            final RDFNode next = stmt.getObject();
+            if (!meetsRequirements(model, next)) {
+                return;
+            }
+
             // the node is a resource -> means the ontology continues -> we search deeper
             if (next.isURIResource()) {
-                searchFurther(model, next.asResource(), next);
+                searchFurther(model, nodeFactory, nodeFactory.newNode((T) next.asResource()));
             }
         }
     }
 
-    private void searchFurther(final Model model, final Resource resource, final RDFNode next) {
+    private <T extends RDFNode> void searchFurther(final Model model, final DataNodeFactory<T> nodeFactory, final DataNode<T> nextNode) {
+        final Resource resource = (Resource) nextNode.data();
         updateModel(model, resource);
         if (usedURIs.add(resource.getURI())) {
             final Selector sel = getSelector(resource, model.getProperty(request.getNamespace(), request.getLink()));
-            dfs(model, sel, next);
+            bfs(model, sel, nodeFactory, nextNode);
         }
     }
 

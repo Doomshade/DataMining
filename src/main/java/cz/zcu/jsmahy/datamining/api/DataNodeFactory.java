@@ -8,7 +8,7 @@ package cz.zcu.jsmahy.datamining.api;
  * @see DataNodeRoot
  * @since 1.0
  */
-public interface DataNodeFactory {
+public interface DataNodeFactory<T> {
     /**
      * Creates a new root.
      *
@@ -16,7 +16,7 @@ public interface DataNodeFactory {
      *
      * @return a data node root
      */
-    <T> DataNodeRoot<T> newRoot();
+    DataNodeRoot<T> newRoot();
 
     /**
      * Creates a new data node with the given data.
@@ -26,5 +26,5 @@ public interface DataNodeFactory {
      *
      * @return a new data node
      */
-    <T> DataNode<T> newNode(T data);
+    DataNode<T> newNode(T data);
 }

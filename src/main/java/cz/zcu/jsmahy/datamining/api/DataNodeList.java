@@ -8,5 +8,5 @@ import java.util.LinkedList;
  * @author Jakub Smrha
  * @since 1.0
  */
-class DataNodeList<T> extends LinkedList<DataNode<T>> {
+public class DataNodeList<T> extends LinkedList<DataNode<T>> {
 }

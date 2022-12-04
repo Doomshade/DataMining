@@ -6,15 +6,15 @@ package cz.zcu.jsmahy.datamining.api;
  * @author Jakub Smrha
  * @since 1.0
  */
-final class DataNodeFactoryImpl implements DataNodeFactory {
+final class DataNodeFactoryImpl<T> implements DataNodeFactory<T> {
 
     @Override
-    public <T> DataNodeRoot<T> newRoot() {
+    public DataNodeRoot<T> newRoot() {
         return new DataNodeRoot<>();
     }
 
     @Override
-    public <T> DataNode<T> newNode(final T data) {
+    public DataNode<T> newNode(final T data) {
         return new DataNode<>(data);
     }
 }
