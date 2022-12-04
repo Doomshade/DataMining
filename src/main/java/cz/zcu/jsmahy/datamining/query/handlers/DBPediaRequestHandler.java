@@ -1,11 +1,8 @@
 package cz.zcu.jsmahy.datamining.query.handlers;
 
 import com.google.inject.Guice;
-import com.google.inject.Inject;
 import com.google.inject.Injector;
-import cz.zcu.jsmahy.datamining.api.DataNode;
-import cz.zcu.jsmahy.datamining.api.DataNodeFactory;
-import cz.zcu.jsmahy.datamining.api.DataNodeList;
+import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import cz.zcu.jsmahy.datamining.query.*;
@@ -17,7 +14,10 @@ import org.apache.jena.rdf.model.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * The DBPedia {@link RequestHandler}.
@@ -33,9 +33,6 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
     private Ontology currOntology = null;
     private Model model = null;
     private SparqlRequest request = null;
-
-    @Inject
-    private DataNodeFactory<RDFNode> nodeFactory;
 
 
     /**
@@ -94,17 +91,38 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
 
         // now iterate recursively
         L.debug("Searching...");
-        Platform.runLater(() -> {
-            request.getObservableList()
-                   .add(ontology.getRoot());
-        });
         final Injector injector = Guice.createInjector(new DBPediaModule());
         injector.injectMembers(this);
         final DataNodeFactory<RDFNode> nodeFactory = injector.getInstance(DataNodeFactory.class);
-        bfs(model, selector, nodeFactory, nodeFactory.newRoot());
+        final DataNodeRoot<RDFNode> root = nodeFactory.newRoot();
+        final AmbiguitySolver<RDFNode> ambiguitySolver = new DefaultAllAmbiguitySolver();
+        bfs(model, selector, nodeFactory, root, ambiguitySolver);
         L.debug("Done searching");
         requesting = false;
         return ontology;
+    }
+
+
+    private static class DefaultAllAmbiguitySolver implements AmbiguitySolver<RDFNode> {
+
+        @Override
+        public DataNode<RDFNode> call(final DataNodeList<RDFNode> param) {
+            return null;
+        }
+    }
+
+    private static class DefaultFirstAmbiguitySolver implements AmbiguitySolver<RDFNode> {
+
+        @Override
+        public DataNode<RDFNode> call(final DataNodeList<RDFNode> dataNodeList) {
+            for (DataNode<RDFNode> dataNode : dataNodeList) {
+                if (dataNode.data()
+                            .isURIResource()) {
+                    return dataNode;
+                }
+            }
+            return null;
+        }
     }
 
     /**
@@ -113,13 +131,22 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
      * @param model    the model
      * @param selector the selector
      */
-    private <T extends RDFNode> void bfs(final Model model, final Selector selector,
-                                         final DataNodeFactory<T> nodeFactory, final DataNode<T> previous) {
+    private <T extends RDFNode> void bfs(final Model model, final Selector selector, final DataNodeFactory<T> nodeFactory,
+                                         final DataNodeRoot<T> root,
+                                         final AmbiguitySolver<T> ambiguitySolver) {
         // list all statements based on the selector
         // only one statement should be found based on that selector
         // FIXME: this creates a list for no reason, just iterate
         // TODO: if the list size of nodes that meet requirements is 1 connect the node to the root
         // otherwise connect it to the previous node
+        final DataNode<T> curr = nodeFactory.newNode((T) selector.getSubject());
+        // TODO: meetsRequirements
+        // it reads the resource inside, that's why we don't use it here
+        root.addChild(curr);
+        Platform.runLater(() -> {
+            request.getObservableList()
+                   .add(curr.data());
+        });
         final List<Statement> statements = model.listStatements(selector)
                                                 .toList();
         statements.sort((x, y) -> Boolean.compare(x.getObject()
@@ -133,8 +160,8 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
             if (!meetsRequirements(model, next)) {
                 return;
             }
-            final DataNode<T> nextNode = nodeFactory.newNode((T) next);
 
+            final DataNode<T> nextNode = nodeFactory.newNode((T) next);
             L.debug("Found {}", next);
             children.add(nextNode);
 
@@ -144,41 +171,43 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
             });
         }
 
+        // no nodes found, stop searching
         if (children.isEmpty()) {
             return;
-        } else if (children.size() == 1) {
-            previous.addChild(children.getFirst());
-            // the node is a resource -> means the ontology continues -> we search deeper
-            if (previous.data()
-                        .isURIResource()) {
-                searchFurther(model, nodeFactory, previous);
-            }
-            return;
-        } else {
-            for (final DataNode<T> child : children) {
-
-            }
         }
 
-        for (final Statement stmt : statements) {
-            final RDFNode next = stmt.getObject();
-            if (!meetsRequirements(model, next)) {
-                return;
-            }
+        // only one found, that means it's going linearly
+        // pass in this call's parent
+        final DataNode<T> parent;
+        if (children.size() == 1) {
+            parent = root;
+        } else {
+            parent = curr;
+        }
+        parent.addChildren(children);
 
-            // the node is a resource -> means the ontology continues -> we search deeper
-            if (next.isURIResource()) {
-                searchFurther(model, nodeFactory, nodeFactory.newNode((T) next.asResource()));
+        // multiple children found, that means we need to branch out
+        final DataNode<T> next = ambiguitySolver.call(children);
+        if (next != null) {
+            searchFurther(model, nodeFactory, root, next, ambiguitySolver);
+        } else {
+            for (DataNode<T> child : children) {
+                searchFurther(model, nodeFactory, root, child, ambiguitySolver);
             }
         }
     }
 
-    private <T extends RDFNode> void searchFurther(final Model model, final DataNodeFactory<T> nodeFactory, final DataNode<T> nextNode) {
-        final Resource resource = (Resource) nextNode.data();
-        updateModel(model, resource);
+    private <T extends RDFNode> void searchFurther(final Model model, final DataNodeFactory<T> nodeFactory, final DataNodeRoot<T> root,
+                                                   final DataNode<T> next, final AmbiguitySolver<T> ambiguitySolver) {
+        final T data = next.data();
+        if (!data.isURIResource()) {
+            return;
+        }
+        final Resource resource = (Resource) data;
+        readResource(model, resource);
         if (usedURIs.add(resource.getURI())) {
             final Selector sel = getSelector(resource, model.getProperty(request.getNamespace(), request.getLink()));
-            bfs(model, sel, nodeFactory, nextNode);
+            bfs(model, sel, nodeFactory, root, ambiguitySolver);
         }
     }
 
@@ -188,7 +217,7 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
         }
 
         final Resource resource = object.asResource();
-        updateModel(model, resource);
+        readResource(model, resource);
 
         // check for the restrictions on the given request
         for (final Restriction r : request.getRestrictions()) {
@@ -204,7 +233,7 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
         return true;
     }
 
-    private void updateModel(final Model model, final Resource resource) {
+    private void readResource(final Model model, final Resource resource) {
         String URI = resource.getURI();
         model.read(URI);
     }

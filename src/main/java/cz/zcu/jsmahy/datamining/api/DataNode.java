@@ -1,5 +1,6 @@
 package cz.zcu.jsmahy.datamining.api;
 
+import java.util.Collection;
 import java.util.Objects;
 
 /**
@@ -37,6 +38,14 @@ public class DataNode<T> {
             throw new IllegalArgumentException("Child cannot be root.");
         }
         this.children.add(child);
+    }
+
+    public void addChildren(Iterable<DataNode<T>> children) {
+        children.forEach(this::addChild);
+    }
+
+    public void addChildren(Collection<DataNode<T>> children){
+        this.children.addAll(children);
     }
 
     /**
