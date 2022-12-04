@@ -120,7 +120,8 @@ order by ?pred
      * Handler for mouse press on the search button.
      */
     public void search() {
-        final String searchValue = searchField.getText();
+        final String searchValue = searchField.getText()
+                                              .replaceAll(" ", "_");
         if (searchValue.isBlank()) {
             LOGGER.info("Search field is blank, not searching for anything.");
             final Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -129,7 +130,8 @@ order by ?pred
             alert.setContentText("Please enter some text to search.");
             return;
         }
-        SparqlRequest request = new SparqlRequest(searchValue, "http://dbpedia.org/ontology/", "predecessor", ontologyListView.getItems());
+        ontologyListView.getItems().clear();
+        SparqlRequest request = new SparqlRequest(searchValue, "http://dbpedia.org/property/", "predecessor", ontologyListView.getItems());
 
         Service<Ontology> query = RequestHandlerFactory.getDBPediaRequestHandler()
                                                        .query(request);
