@@ -4,21 +4,24 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
+import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeListCellFactory;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import cz.zcu.jsmahy.datamining.query.*;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.scene.control.TreeItem;
+import javafx.scene.control.*;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntModelSpec;
+import org.apache.jena.query.QueryExecution;
+import org.apache.jena.query.QueryExecutionFactory;
 import org.apache.jena.rdf.model.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * The DBPedia {@link RequestHandler}.
@@ -28,7 +31,7 @@ import java.util.stream.Collectors;
  */
 public class DBPediaRequestHandler extends AbstractRequestHandler {
     private static final Logger L = LogManager.getLogger(DBPediaRequestHandler.class);
-    private static final String DBPEDIA_SITE = "http://dbpedia.org/resource/";
+    private static final String DBPEDIA_SITE = "https://dbpedia.org/resource/";
     private static boolean requesting = false;
     private final Collection<String> usedURIs = new HashSet<>();
     private Ontology currOntology = null;
@@ -61,6 +64,7 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
             throw new IllegalStateException("Already requesting!");
         }
         requesting = true;
+
         // create the root request and model
         final String r = DBPEDIA_SITE.concat(request.getRequestPage());
         final OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
@@ -96,33 +100,70 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
         injector.injectMembers(this);
         final DataNodeFactory<RDFNode> nodeFactory = injector.getInstance(DataNodeFactory.class);
         final DataNodeRoot<RDFNode> root = nodeFactory.newRoot();
-        final AmbiguitySolver<RDFNode> ambiguitySolver = new DefaultFirstAmbiguitySolver();
+        final AmbiguitySolver<RDFNode> ambiguitySolver = new UserAmbiguitySolver<>();
         bfs(model, selector, nodeFactory, root, request.getRoot(), ambiguitySolver);
         L.debug("Done searching");
         requesting = false;
         return ontology;
     }
 
-
-    private static class DefaultAllAmbiguitySolver implements AmbiguitySolver<RDFNode> {
+    private class UserAmbiguitySolver<T extends RDFNode> implements AmbiguitySolver<T> {
 
         @Override
-        public DataNode<RDFNode> call(final DataNodeList<RDFNode> param) {
-            return null;
+        public AtomicReference<DataNode<T>> call(final DataNodeList<T> list) {
+            AtomicReference<DataNode<T>> ref = new AtomicReference<>();
+            Platform.runLater(() -> {
+                // prepare the dialogue
+                final Dialog<DataNode<T>> node = new Dialog<>();
+                final DialogPane dialogPane = node.getDialogPane();
+                dialogPane.getButtonTypes()
+                          .addAll(ButtonType.OK, ButtonType.CANCEL);
+
+                final ObservableList<DataNode<T>> dataNodes = FXCollections.observableArrayList(list);
+                final ListView<DataNode<T>> content = new ListView<>(dataNodes);
+                content.setCellFactory(x -> new RDFNodeListCellFactory<>());
+                dialogPane.setContent(content);
+                node.setResultConverter(buttonType -> content.getSelectionModel()
+                                                             .getSelectedItem());
+
+                // show the dialogue and wait for response
+                ref.set(node.showAndWait()
+                            .orElse(null));
+
+                // once we receive the response notify the thread under the request handler's monitor
+                // see bfs
+                synchronized (DBPediaRequestHandler.this) {
+                    DBPediaRequestHandler.this.notify();
+                }
+            });
+            return ref;
         }
     }
 
-    private static class DefaultFirstAmbiguitySolver implements AmbiguitySolver<RDFNode> {
+
+    private static class DefaultAllAmbiguitySolver<T extends RDFNode> implements AmbiguitySolver<T> {
 
         @Override
-        public DataNode<RDFNode> call(final DataNodeList<RDFNode> dataNodeList) {
-            for (DataNode<RDFNode> dataNode : dataNodeList) {
+        public AtomicReference<DataNode<T>> call(final DataNodeList<T> dataNodeList) {
+            return new AtomicReference<>(null);
+        }
+    }
+
+    private static class DefaultFirstAmbiguitySolver<T extends RDFNode> implements AmbiguitySolver<T> {
+
+        @Override
+        public AtomicReference<DataNode<T>> call(final DataNodeList<T> dataNodeList) {
+            final AtomicReference<DataNode<T>> ref = new AtomicReference<>();
+            DataNode<T> result = null;
+            for (DataNode<T> dataNode : dataNodeList) {
+                result = dataNode;
                 if (dataNode.data()
                             .isURIResource()) {
-                    return dataNode;
+                    break;
                 }
             }
-            return null;
+            ref.set(result);
+            return ref;
         }
     }
 
@@ -132,12 +173,11 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
      * @param model    the model
      * @param selector the selector
      */
-    private <T extends RDFNode> void bfs(final Model model, final Selector selector, final DataNodeFactory<T> nodeFactory,
-                                         final DataNodeRoot<T> root, final TreeItem<T> treeRoot, final AmbiguitySolver<T> ambiguitySolver) {
+    private <T extends RDFNode> void bfs(final Model model, final Selector selector, final DataNodeFactory<T> nodeFactory, final DataNodeRoot<T> root,
+                                         final TreeItem<T> treeRoot, final AmbiguitySolver<T> ambiguitySolver) {
         // list all statements based on the selector
         // only one statement should be found based on that selector
         // FIXME: this creates a list for no reason, just iterate
-        // TODO: if the list size of nodes that meet requirements is 1 connect the node to the root
         // otherwise connect it to the previous node
         final DataNode<T> curr = nodeFactory.newNode((T) selector.getSubject());
         // TODO: meetsRequirements
@@ -173,9 +213,8 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
 
         // only one found, that means it's going linearly
         // pass in this call's parent
-        final DataNode<T> parent;
         if (children.size() == 1) {
-            parent = root;
+            root.addChildren(children);
             Platform.runLater(() -> {
                 final DataNode<T> first = children.getFirst();
                 final T data = first.data();
@@ -187,8 +226,29 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
                 }
                 treeChildren.add(new TreeItem<>(data));
             });
+            return;
+        }
+        // multiple children found, that means we need to branch out
+        // the ambiguity solver might pop up a dialogue where it could wait
+        // for the response of the user
+        // the dialogue is then responsible for notifying the monitor of this object
+        // to free this thread
+        // the thread will wait up to 5 seconds and check for the result if the
+        // dialogue fails to notify the monitor
+        final AtomicReference<DataNode<T>> next = ambiguitySolver.call(children);
+        while (next.get() == null) {
+            try {
+                wait(5000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        if (next.get() != null) {
+            root.addChild(next.get());
+            searchFurther(model, nodeFactory, root, next.get(), treeRoot, ambiguitySolver);
         } else {
-            parent = curr;
+            curr.addChildren(children);
             Platform.runLater(() -> {
                 final int lastIndex = treeChildren.size() - 1;
                 if (lastIndex < 0) {
@@ -203,25 +263,14 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
                                                                       .data()));
                                             }, List::addAll));
             });
-        }
-
-        parent.addChildren(children);
-
-
-        // multiple children found, that means we need to branch out
-        final DataNode<T> next = ambiguitySolver.call(children);
-        if (next != null) {
-            searchFurther(model, nodeFactory, root, next, treeRoot, ambiguitySolver);
-        } else {
             for (DataNode<T> child : children) {
                 searchFurther(model, nodeFactory, root, child, treeRoot, ambiguitySolver);
             }
         }
     }
 
-    private <T extends RDFNode> void searchFurther(final Model model, final DataNodeFactory<T> nodeFactory, final DataNodeRoot<T> root,
-                                                   final DataNode<T> next, final TreeItem<T> treeRoot,
-                                                   final AmbiguitySolver<T> ambiguitySolver) {
+    private <T extends RDFNode> void searchFurther(final Model model, final DataNodeFactory<T> nodeFactory, final DataNodeRoot<T> root, final DataNode<T> next,
+                                                   final TreeItem<T> treeRoot, final AmbiguitySolver<T> ambiguitySolver) {
         final T data = next.data();
         if (!data.isURIResource()) {
             return;

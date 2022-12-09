@@ -21,16 +21,13 @@ public class DataNodeRoot<T> extends DataNode<T> {
      * <p>The first argument of the {@link BiConsumer} is the data node, the second argument is the breadth of the node in respect to the
      * parent. In essence, the breadth represents the column width. For example:</p>
      * <ul>
-     *     <li>(-1) null (root)</li>
-     *     <ul>
-     *         <li>(0) Karel IV</li>
-     *          <ul>
-     *              <li>(1) Jan Lucembursky</li>
-     *              <li>(1) Ludvik Bavorsky</li>
-     *          </ul>
-     *          <li>(0) Jan Lucembursky</li>
-     *          <li>(0) ...</li>
-     *     </ul>
+     *     <li>(0) Karel IV</li>
+     *      <ul>
+     *          <li>(1) Jan Lucembursky</li>
+     *          <li>(1) Ludvik Bavorsky</li>
+     *      </ul>
+     *      <li>(0) Jan Lucembursky</li>
+     *      <li>(0) ...</li>
      * </ul>
      * <p>In this example the nodes with breadth {@code 1} are children of the parent Karel IV, whereas nodes with breadth {@code 0} are
      * children of root.
@@ -38,7 +35,6 @@ public class DataNodeRoot<T> extends DataNode<T> {
      * <p>The first item to consume is the root which contains a null reference to data with depth of -1.</p>
      * <p>The next items to consume are in DFS order - the nodes will be iterated in this order:</p>
      * <ul>
-     *     <li>(-1) root</li>
      *     <li>(0) Karel IV</li>
      *     <li>(1) Jan Lucembursky</li>
      *     <li>(1) Ludvik Bavorsky</li>
@@ -50,7 +46,10 @@ public class DataNodeRoot<T> extends DataNode<T> {
      * @param biConsumer the bi-consumer
      */
     public void iterate(BiConsumer<DataNode<T>, Integer> biConsumer) {
-        iterate(biConsumer, -1, this);
+        final DataNodeList<T> children = this.getChildren();
+        if (!children.isEmpty()) {
+            iterate(biConsumer, -1, children.getFirst());
+        }
     }
 
     private void iterate(BiConsumer<DataNode<T>, Integer> biConsumer, int depth, DataNode<T> dataNode) {

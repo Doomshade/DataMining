@@ -24,9 +24,14 @@ import javafx.scene.web.WebView;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.controlsfx.control.GridView;
+import org.controlsfx.control.NotificationPane;
+import org.controlsfx.control.action.Action;
+import org.kordamp.bootstrapfx.BootstrapFX;
 
 import java.net.URL;
 import java.util.HashSet;
+import java.util.IllegalFormatConversionException;
 import java.util.ResourceBundle;
 import java.util.Set;
 
@@ -90,8 +95,13 @@ order by ?pred
 
         final MultipleSelectionModel<TreeItem<RDFNode>> selectionModel = ontologyTreeView.getSelectionModel();
         selectionModel.setSelectionMode(SelectionMode.SINGLE);
+
+        // show a web view on selection
+        // TODO: this will likely be a popup
         selectionModel.selectedItemProperty()
                       .addListener(this::onSelection);
+
+        // use custom cell factory for display
         ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory(lv, resources));
         ontologyTreeView.setEditable(false);
     }
@@ -112,6 +122,7 @@ order by ?pred
         final String formattedItem = RDFNodeCellFactory.formatRDFNode(selectedItem.getValue());
         wikiPageWebView.getEngine()
                        .load(String.format(WIKI_URL, formattedItem));
+
     }
 
 
@@ -129,6 +140,7 @@ order by ?pred
             alert.setContentText("Please enter some text to search.");
             return;
         }
+
         ontologyTreeView.setRoot(new TreeItem<>(null));
         final ObservableList<TreeItem<RDFNode>> children = ontologyTreeView.getRoot()
                                                                            .getChildren();
@@ -147,8 +159,8 @@ order by ?pred
                 }
             }
         });
-        SparqlRequest request = new SparqlRequest(searchValue, "http://dbpedia.org/property/", "predecessor", ontologyTreeView.getRoot());
 
+        SparqlRequest request = new SparqlRequest(searchValue, "http://dbpedia.org/property/", "predecessor", ontologyTreeView.getRoot());
         Service<Ontology> query = RequestHandlerFactory.getDBPediaRequestHandler()
                                                        .query(request);
         query.setOnSucceeded(x -> {
@@ -160,12 +172,12 @@ order by ?pred
                             .selectFirst();
 
         });
-
         query.setOnFailed(x -> {
             query.getException()
                  .printStackTrace();
         });
         query.restart();
+
         this.rootPane.disableProperty()
                      .bind(query.runningProperty());
         this.progressIndicator.visibleProperty()

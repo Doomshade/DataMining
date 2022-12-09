@@ -15,7 +15,7 @@
                 <BorderPane.margin>
                     <Insets top="5" bottom="5" left="5" right="5"/>
                 </BorderPane.margin>
-                <JFXTextField fx:id="searchField" promptText="%search-field"/>
+                <JFXTextField fx:id="searchField" promptText="%search-field" text="Charles IV, Holy Roman Emperor"/>
                 <JFXButton fx:id="searchButton" onMouseClicked="#search" text="%search" buttonType="FLAT"/>
             </HBox>
         </top>

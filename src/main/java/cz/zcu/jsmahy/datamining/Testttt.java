@@ -33,9 +33,6 @@ public class Testttt {
         root.addChild(dataNodeFactory.newNode("john of bohemia"));
         root.addChild(dataNodeFactory.newNode("pred john of bohemia"));
         root.iterate((node, depth) -> {
-            if (node instanceof DataNodeRoot) {
-                return;
-            }
             final char[] indent = new char[depth];
             Arrays.fill(indent, '\t');
             System.out.print(indent);

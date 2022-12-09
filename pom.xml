@@ -13,12 +13,12 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>5.8.0</junit.version>
-        <jena.version>4.4.0</jena.version>
+        <jena.version>4.6.1</jena.version>
         <maven.compiler.target>11</maven.compiler.target>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.release>11</maven.compiler.release>
-        <slf4j.version>2.0.3</slf4j.version>
-        <javafx.version>12-ea+14</javafx.version>
+        <slf4j.version>2.0.5</slf4j.version>
+        <prop.javafx.version>19</prop.javafx.version>
     </properties>
     <dependencies>
         <!-- LOG4J -->
@@ -43,38 +43,38 @@
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-base</artifactId>
-            <version>${javafx.version}</version>
+            <version>${prop.javafx.version}</version>
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
-            <version>${javafx.version}</version>
+            <version>${prop.javafx.version}</version>
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-graphics</artifactId>
-            <version>${javafx.version}</version>
+            <version>${prop.javafx.version}</version>
             <classifier>win</classifier>
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-fxml</artifactId>
-            <version>${javafx.version}</version>
+            <version>${prop.javafx.version}</version>
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-web</artifactId>
-            <version>${javafx.version}</version>
+            <version>${prop.javafx.version}</version>
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-media</artifactId>
-            <version>${javafx.version}</version>
+            <version>${prop.javafx.version}</version>
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-swing</artifactId>
-            <version>${javafx.version}</version>
+            <version>${prop.javafx.version}</version>
         </dependency>
 
         <!-- CONTROLSFX -->
@@ -148,22 +148,22 @@
         <dependency>
             <groupId>org.apache.jena</groupId>
             <artifactId>jena-core</artifactId>
-            <version>4.4.0</version>
+            <version>${jena.version}</version>
         </dependency>
-        <!--        <dependency>-->
-        <!--            <groupId>org.apache.jena</groupId>-->
-        <!--            <artifactId>jena-osgi</artifactId>-->
-        <!--            <version>4.1.0</version>-->
-        <!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.jena</groupId>-->
+<!--            <artifactId>jena-osgi</artifactId>-->
+<!--            <version>4.2.0</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.apache.jena</groupId>
             <artifactId>jena-arq</artifactId>
-            <version>4.4.0</version>
+            <version>${jena.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.jena</groupId>
             <artifactId>jena-iri</artifactId>
-            <version>4.4.0</version>
+            <version>${jena.version}</version>
         </dependency>
 
         <!-- LOMBOK -->
