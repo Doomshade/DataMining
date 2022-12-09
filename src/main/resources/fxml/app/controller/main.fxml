@@ -27,7 +27,7 @@
             </WebView>
         </center>
         <left>
-            <JFXTreeView fx:id="ontologyListView">
+            <JFXTreeView fx:id="ontologyTreeView">
                 <BorderPane.margin>
                     <Insets top="5" bottom="5" left="5" right="5"/>
                 </BorderPane.margin>

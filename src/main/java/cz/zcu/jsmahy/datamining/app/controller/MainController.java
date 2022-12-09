@@ -60,7 +60,7 @@ order by ?pred
     @FXML
     private BorderPane rootPane;
     @FXML
-    private TreeView<RDFNode> ontologyListView;
+    private TreeView<RDFNode> ontologyTreeView;
 
     @FXML
     private WebView wikiPageWebView;
@@ -88,12 +88,12 @@ order by ?pred
         rootPane.disableProperty()
                 .bind(progressIndicator.visibleProperty());
 
-        final MultipleSelectionModel<TreeItem<RDFNode>> selectionModel = ontologyListView.getSelectionModel();
+        final MultipleSelectionModel<TreeItem<RDFNode>> selectionModel = ontologyTreeView.getSelectionModel();
         selectionModel.setSelectionMode(SelectionMode.SINGLE);
         selectionModel.selectedItemProperty()
                       .addListener(this::onSelection);
-        ontologyListView.setCellFactory(lv -> new RDFNodeCellFactory(lv, resources));
-        ontologyListView.setEditable(false);
+        ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory(lv, resources));
+        ontologyTreeView.setEditable(false);
     }
 
     /**
@@ -102,7 +102,7 @@ order by ?pred
      * @param observable the observable that was invalidated
      */
     private void onSelection(final Observable observable) {
-        final TreeItem<RDFNode> selectedItem = ontologyListView.getSelectionModel()
+        final TreeItem<RDFNode> selectedItem = ontologyTreeView.getSelectionModel()
                                                                .getSelectedItem();
         if (selectedItem == null) {
             LOGGER.info("Could not handle ontology click because selected item was null.");
@@ -129,11 +129,11 @@ order by ?pred
             alert.setContentText("Please enter some text to search.");
             return;
         }
-        ontologyListView.setRoot(new TreeItem<>(null));
-        final ObservableList<TreeItem<RDFNode>> children = ontologyListView.getRoot()
+        ontologyTreeView.setRoot(new TreeItem<>(null));
+        final ObservableList<TreeItem<RDFNode>> children = ontologyTreeView.getRoot()
                                                                            .getChildren();
         children.clear();
-        ontologyListView.setShowRoot(false);
+        ontologyTreeView.setShowRoot(false);
         children.addListener(new ListChangeListener<TreeItem<RDFNode>>() {
             @Override
             public void onChanged(final Change<? extends TreeItem<RDFNode>> c) {
@@ -147,7 +147,7 @@ order by ?pred
                 }
             }
         });
-        SparqlRequest request = new SparqlRequest(searchValue, "http://dbpedia.org/property/", "predecessor", ontologyListView.getRoot());
+        SparqlRequest request = new SparqlRequest(searchValue, "http://dbpedia.org/property/", "predecessor", ontologyTreeView.getRoot());
 
         Service<Ontology> query = RequestHandlerFactory.getDBPediaRequestHandler()
                                                        .query(request);
@@ -156,7 +156,7 @@ order by ?pred
                                              .getValue();
             LOGGER.info("Printing ontology: {}", ont.toString());
 
-            ontologyListView.getSelectionModel()
+            ontologyTreeView.getSelectionModel()
                             .selectFirst();
 
         });
