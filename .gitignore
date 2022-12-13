@@ -1,7 +1,11 @@
+pom.xml
 *.class
 *.log
 *.ctxt
 .mtj.tmp/
+.gradle/
+gradle/
+build/
 *.jar
 *.war
 *.nar
@@ -44,3 +48,4 @@ out
 gen
 /data/
 /target/
+/.jpb/jpb-settings.xml
