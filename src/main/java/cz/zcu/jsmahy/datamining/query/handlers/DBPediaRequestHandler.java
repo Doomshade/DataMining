@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class DBPediaRequestHandler extends AbstractRequestHandler {
     private static final Logger L = LogManager.getLogger(DBPediaRequestHandler.class);
-    private static final String DBPEDIA_SITE = "https://dbpedia.org/resource/";
+    private static final String DBPEDIA_SITE = "http://dbpedia.org/resource/";
     private static boolean requesting = false;
     private final Collection<String> usedURIs = new HashSet<>();
     private Ontology currOntology = null;
@@ -244,28 +244,31 @@ public class DBPediaRequestHandler extends AbstractRequestHandler {
             }
         }
 
+        // if a node was chosen search further down that node
         if (next.get() != null) {
             root.addChild(next.get());
             searchFurther(model, nodeFactory, root, next.get(), treeRoot, ambiguitySolver);
-        } else {
-            curr.addChildren(children);
-            Platform.runLater(() -> {
-                final int lastIndex = treeChildren.size() - 1;
-                if (lastIndex < 0) {
-                    return;
-                }
-                treeChildren.get(lastIndex)
-                            .getChildren()
-                            .addAll(children.stream()
-                                            .map(TreeItem::new)
-                                            .collect(() -> FXCollections.observableArrayList(), (x, y) -> {
-                                                x.add(new TreeItem<>(y.getValue()
-                                                                      .data()));
-                                            }, List::addAll));
-            });
-            for (DataNode<T> child : children) {
-                searchFurther(model, nodeFactory, root, child, treeRoot, ambiguitySolver);
+			return;
+        }
+
+		// otherwise search through the children and add those nodes to the current node that acts as a parent
+        curr.addChildren(children);
+        Platform.runLater(() -> {
+            final int lastIndex = treeChildren.size() - 1;
+            if (lastIndex < 0) {
+                return;
             }
+            treeChildren.get(lastIndex)
+                        .getChildren()
+                        .addAll(children.stream()
+                                        .map(TreeItem::new)
+                                        .collect(() -> FXCollections.observableArrayList(), (x, y) -> {
+                                            x.add(new TreeItem<>(y.getValue()
+                                                                  .data()));
+                                        }, List::addAll));
+        });
+        for (DataNode<T> child : children) {
+            searchFurther(model, nodeFactory, root, child, treeRoot, ambiguitySolver);
         }
     }
 
