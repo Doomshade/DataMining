@@ -5,6 +5,7 @@ import com.google.inject.Injector;
 import com.sun.javafx.application.PlatformImpl;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import javafx.concurrent.Service;
+import javafx.scene.control.TreeItem;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -23,14 +24,15 @@ public class DBPediaQueryTest {
 			final String requestPage = "Windows_10";
 			final String namespace = "http://dbpedia.org/property/";
 			final String link = "precededBy";
-			LOGGER.info("Querying {}{} in namespace {} by link {}", namespace, requestPage, namespace, link);
+			LOGGER.info("Querying {}{} in namespace {} by link {}", "http://dbpedia.org/resource/", requestPage, namespace, link);
 			final Injector injector = Guice.createInjector(new DBPediaModule());
 			final RequestHandler requestHandler = injector.getInstance(RequestHandler.class);
 			final Service<Ontology> query = requestHandler
 					.query(new SparqlRequest(
 							requestPage,
 							namespace,
-							link
+							link,
+							new TreeItem<>()
 					));
 			query.setOnSucceeded(x -> {
 				final Ontology ont = (Ontology) x.getSource()
