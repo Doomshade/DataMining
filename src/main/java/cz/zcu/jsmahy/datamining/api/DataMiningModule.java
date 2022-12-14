@@ -11,7 +11,6 @@ import com.google.inject.AbstractModule;
 public abstract class DataMiningModule extends AbstractModule {
     @Override
     protected void configure() {
-        bind(DataNodeFactory.class)
-                .to(DataNodeFactoryImpl.class);
+        bind(DataNodeFactory.class).to(DataNodeFactoryImpl.class);
     }
 }

@@ -1,37 +1,37 @@
 package cz.zcu.jsmahy.datamining.query;
 
+import cz.zcu.jsmahy.datamining.api.DataNodeRoot;
 import javafx.scene.control.TreeItem;
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.apache.jena.rdf.model.RDFNode;
 
 import java.util.Collection;
 import java.util.LinkedList;
 
 
 @Data
-public final class SparqlRequest {
-    private final String requestPage, namespace, link;
-    private final TreeItem<RDFNode> root;
-    private final Collection<Restriction> restrictions = new LinkedList<>();
-
+@AllArgsConstructor
+public final class SparqlRequest<T> {
     /**
-     * @param requestPage the request to send to the web page, e.g. {@code Windows_10}
-     * @param namespace   the namespace, e.g. <a href="https://dbpedia.org/property/">a property</a> or <a
-     *                    href="https://dbpedia.org/ontology/">an ontology</a>
-     * @param link        the link to create the ontology for, e.g. {@code precededBy}
-     * @param root        the tree root to add nodes to
+     * the request to send to the web page, e.g. {@code Windows_10}
      */
-    public SparqlRequest(String requestPage, String namespace, String link, TreeItem<RDFNode> root) {
-        this.requestPage = requestPage;
-        this.namespace = namespace;
-        this.link = link;
-        this.root = root;
-    }
+    private final String requestPage;
+    /**
+     * the namespace, e.g. <a href="https://dbpedia.org/property/">a property</a> or <a href="https://dbpedia.org/ontology/">an ontology</a>
+     */
+    private final String namespace;
+    /**
+     * the link to create the ontology for, e.g. {@code precededBy}
+     */
+    private final String link;
+    /**
+     * the tree root to add nodes to
+     */
+    private final TreeItem<T> root;
 
-    public SparqlRequest(String requestPage, String namespace, String link) {
-        this(requestPage, namespace, link, null);
-    }
+    private final DataNodeRoot<T> dataNodeRoot;
 
+    private final Collection<Restriction> restrictions = new LinkedList<>();
 
     /**
      * Adds a restriction to the request

@@ -3,6 +3,7 @@ package cz.zcu.jsmahy.datamining.query;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import javafx.concurrent.Service;
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.RDFNode;
 
 /**
  * A handler for query requests
@@ -10,7 +11,7 @@ import org.apache.jena.rdf.model.Model;
  * @author Jakub Šmrha
  * @version 1.0
  */
-public interface RequestHandler {
+public interface RequestHandler<T> {
 
 	/**
 	 * @return the model used in this query
@@ -26,5 +27,5 @@ public interface RequestHandler {
 	 *
 	 * @throws InvalidQueryException if the request is invalid
 	 */
-	Service<Ontology> query(SparqlRequest request) throws InvalidQueryException;
+	Service<Ontology> query(SparqlRequest<T> request) throws InvalidQueryException;
 }

@@ -1,11 +1,14 @@
 package cz.zcu.jsmahy.datamining.app.controller;
 
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXSpinner;
 import com.jfoenix.controls.JFXTextField;
+import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
 import cz.zcu.jsmahy.datamining.query.Ontology;
-import cz.zcu.jsmahy.datamining.query.RequestHandlerFactory;
+import cz.zcu.jsmahy.datamining.query.RequestHandler;
 import cz.zcu.jsmahy.datamining.query.SparqlRequest;
 import javafx.application.Platform;
 import javafx.beans.Observable;
@@ -24,14 +27,9 @@ import javafx.scene.web.WebView;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.controlsfx.control.GridView;
-import org.controlsfx.control.NotificationPane;
-import org.controlsfx.control.action.Action;
-import org.kordamp.bootstrapfx.BootstrapFX;
 
 import java.net.URL;
 import java.util.HashSet;
-import java.util.IllegalFormatConversionException;
 import java.util.ResourceBundle;
 import java.util.Set;
 
@@ -41,7 +39,7 @@ import java.util.Set;
  * @author Jakub Smrha
  * @since
  */
-public class MainController implements Initializable {
+public class MainController<T extends RDFNode> implements Initializable {
     /*
 PREFIX rdf: <https://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX r: <http://dbpedia.org/resource/>
@@ -65,7 +63,7 @@ order by ?pred
     @FXML
     private BorderPane rootPane;
     @FXML
-    private TreeView<RDFNode> ontologyTreeView;
+    private TreeView<T> ontologyTreeView;
 
     @FXML
     private WebView wikiPageWebView;
@@ -93,7 +91,7 @@ order by ?pred
         rootPane.disableProperty()
                 .bind(progressIndicator.visibleProperty());
 
-        final MultipleSelectionModel<TreeItem<RDFNode>> selectionModel = ontologyTreeView.getSelectionModel();
+        final MultipleSelectionModel<TreeItem<T>> selectionModel = ontologyTreeView.getSelectionModel();
         selectionModel.setSelectionMode(SelectionMode.SINGLE);
 
         // show a web view on selection
@@ -102,7 +100,7 @@ order by ?pred
                       .addListener(this::onSelection);
 
         // use custom cell factory for display
-        ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory(lv, resources));
+        ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory<>(lv, resources));
         ontologyTreeView.setEditable(false);
     }
 
@@ -112,8 +110,8 @@ order by ?pred
      * @param observable the observable that was invalidated
      */
     private void onSelection(final Observable observable) {
-        final TreeItem<RDFNode> selectedItem = ontologyTreeView.getSelectionModel()
-                                                               .getSelectedItem();
+        final TreeItem<T> selectedItem = ontologyTreeView.getSelectionModel()
+                                                         .getSelectedItem();
         if (selectedItem == null) {
             LOGGER.info("Could not handle ontology click because selected item was null.");
             return;
@@ -142,27 +140,29 @@ order by ?pred
         }
 
         ontologyTreeView.setRoot(new TreeItem<>(null));
-        final ObservableList<TreeItem<RDFNode>> children = ontologyTreeView.getRoot()
-                                                                           .getChildren();
+        final ObservableList<TreeItem<T>> children = ontologyTreeView.getRoot()
+                                                                     .getChildren();
         children.clear();
         ontologyTreeView.setShowRoot(false);
-        children.addListener(new ListChangeListener<TreeItem<RDFNode>>() {
+        children.addListener(new ListChangeListener<TreeItem<T>>() {
             @Override
-            public void onChanged(final Change<? extends TreeItem<RDFNode>> c) {
+            public void onChanged(final Change<? extends TreeItem<T>> c) {
                 while (c.next()) {
                     if (!c.wasAdded()) {
                         return;
                     }
-                    final ObservableList<? extends TreeItem<RDFNode>> list = c.getList();
+                    final ObservableList<? extends TreeItem<T>> list = c.getList();
                     final Set<RDFNode> set = new HashSet<>();
                     list.removeIf(child -> !set.add(child.getValue()));
                 }
             }
         });
 
-        SparqlRequest request = new SparqlRequest(searchValue, "http://dbpedia.org/property/", "predecessor", ontologyTreeView.getRoot());
-        Service<Ontology> query = RequestHandlerFactory.getDBPediaRequestHandler()
-                                                       .query(request);
+        final Injector injector = Guice.createInjector(new DBPediaModule());
+
+        final RequestHandler<T> dbPediaRequestHandler = injector.getInstance(RequestHandler.class);
+        final SparqlRequest<T> request = new SparqlRequest<>(searchValue, "http://dbpedia.org/property/", "predecessor", ontologyTreeView.getRoot(), null);
+        final Service<Ontology> query = dbPediaRequestHandler.query(request);
         query.setOnSucceeded(x -> {
             final Ontology ont = (Ontology) x.getSource()
                                              .getValue();

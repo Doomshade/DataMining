@@ -20,12 +20,12 @@ import java.util.ResourceBundle;
  * @author Jakub Smrha
  * @since 1.0
  */
-public class RDFNodeCellFactory extends TreeCell<RDFNode> {
+public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<T> {
     public static final String SPECIAL_CHARACTERS = "_";
     private static final Logger LOGGER = LogManager.getLogger(RDFNodeCellFactory.class);
-    private final TreeView<RDFNode> rdfList;
+    private final TreeView<T> rdfList;
 
-    public RDFNodeCellFactory(final TreeView<RDFNode> rdfList, final ResourceBundle resources) {
+    public RDFNodeCellFactory(final TreeView<T> rdfList, final ResourceBundle resources) {
         this.rdfList = rdfList;
 
         // TODO: context menu for "add/continue line"
@@ -108,7 +108,7 @@ public class RDFNodeCellFactory extends TreeCell<RDFNode> {
     }
 
     @Override
-    protected void updateItem(final RDFNode item, final boolean empty) {
+    protected void updateItem(final T item, final boolean empty) {
         super.updateItem(item, empty);
         setText(item == null ? null : prettyFormat(item));
     }

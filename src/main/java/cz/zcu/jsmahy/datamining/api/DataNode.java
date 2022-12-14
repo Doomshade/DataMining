@@ -44,7 +44,7 @@ public class DataNode<T> {
         children.forEach(this::addChild);
     }
 
-    public void addChildren(Collection<DataNode<T>> children){
+    public void addChildren(Collection<DataNode<T>> children) {
         this.children.addAll(children);
     }
 
