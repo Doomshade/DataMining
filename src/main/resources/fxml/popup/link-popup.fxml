@@ -5,8 +5,8 @@
 <?import com.jfoenix.controls.JFXTextArea?>
 <?import com.jfoenix.controls.JFXTextField?>
 <?import javafx.scene.layout.AnchorPane?>
-<AnchorPane xmlns="http://javafx.com/javafx"
-            xmlns:fx="http://javafx.com/fxml"
+<AnchorPane xmlns:fx="http://javafx.com/fxml"
+            xmlns="http://javafx.com/javafx"
             fx:controller="cz.zcu.jsmahy.datamining.app.controller.LinkController"
             prefHeight="400.0" prefWidth="600.0">
     <JFXTextField fx:id="searchField" promptText="%search-field" text="Charles_IV,_Holy_Roman_Emperor"/>

@@ -13,10 +13,10 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface Property {
-	/**
-	 * @return The property key in properties
-	 */
-	String key();
+    /**
+     * @return The property key in properties
+     */
+    String key();
 
-	String defaultValue();
+    String defaultValue();
 }

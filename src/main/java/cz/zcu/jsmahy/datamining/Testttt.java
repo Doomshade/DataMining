@@ -20,6 +20,10 @@ public class Testttt {
     @Inject
     private DataNodeFactory<String> dataNodeFactory;
 
+    public static void main(String[] args) {
+        new Testttt().test();
+    }
+
     private void test() {
         final Injector injector = Guice.createInjector(new DBPediaModule());
         injector.injectMembers(this);
@@ -38,9 +42,5 @@ public class Testttt {
             System.out.print(indent);
             System.out.println(node.data());
         });
-    }
-
-    public static void main(String[] args) {
-        new Testttt().test();
     }
 }

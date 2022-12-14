@@ -14,25 +14,25 @@ import org.apache.logging.log4j.Logger;
  * @since 1.0
  */
 public class Main extends Application {
-	private static final Logger LOGGER = LogManager.getLogger(Main.class);
-	public static Stage currentStage = null;
+    private static final Logger LOGGER = LogManager.getLogger(Main.class);
+    public static Stage currentStage = null;
 
-	public static void main(String[] args) throws ParseException {
-		CommandParser.parseAndExecuteCommands(args);
-		launch(args);
-	}
+    public static void main(String[] args) throws ParseException {
+        CommandParser.parseAndExecuteCommands(args);
+        launch(args);
+    }
 
-	@Override
-	public void start(final Stage stage) throws Exception {
-		currentStage = stage;
-		// use resource bundle
-		stage.setTitle("BP");
-		//InfoboxManager.downloadTemplates("default-infoboxes");
-		final Scene scene = SceneManager.getScene(FXMLScene.MAIN);
-		stage.setScene(scene);
-		stage.setMaximized(true);
-		stage.show();
-	}
+    @Override
+    public void start(final Stage stage) throws Exception {
+        currentStage = stage;
+        // use resource bundle
+        stage.setTitle("BP");
+        //InfoboxManager.downloadTemplates("default-infoboxes");
+        final Scene scene = SceneManager.getScene(FXMLScene.MAIN);
+        stage.setScene(scene);
+        stage.setMaximized(true);
+        stage.show();
+    }
 
     /*OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder()

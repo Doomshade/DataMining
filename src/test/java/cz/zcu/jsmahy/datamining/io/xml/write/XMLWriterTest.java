@@ -6,6 +6,6 @@ package cz.zcu.jsmahy.datamining.io.xml.write;
  * @since 1.0
  */
 public class XMLWriterTest {
-	public void test() {
-	}
+    public void test() {
+    }
 }

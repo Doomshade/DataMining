@@ -26,12 +26,11 @@ import java.util.ResourceBundle;
  * @version 1.0
  */
 public class LinkController<T extends RDFNode> implements Initializable {
+    private static final Logger LOGGER = LogManager.getLogger(LinkController.class);
     public JFXTextField searchField;
     public JFXButton testbtn;
     public JFXTextArea textArea;
     public JFXSpinner progress;
-
-    private static final Logger LOGGER = LogManager.getLogger(LinkController.class);
 
     @Override
     public void initialize(final URL location, final ResourceBundle resources) {

@@ -18,7 +18,10 @@ import org.apache.jena.rdf.model.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -105,66 +108,6 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
         return ontology;
     }
 
-    private class UserAmbiguitySolver implements AmbiguitySolver<T> {
-
-        @Override
-        public AtomicReference<DataNode<T>> call(final DataNodeList<T> list) {
-            AtomicReference<DataNode<T>> ref = new AtomicReference<>();
-            Platform.runLater(() -> {
-                // prepare the dialogue
-                final Dialog<DataNode<T>> node = new Dialog<>();
-                final DialogPane dialogPane = node.getDialogPane();
-                dialogPane.getButtonTypes()
-                          .addAll(ButtonType.OK, ButtonType.CANCEL);
-
-                final ObservableList<DataNode<T>> dataNodes = FXCollections.observableArrayList(list);
-                final ListView<DataNode<T>> content = new ListView<>(dataNodes);
-                content.setCellFactory(x -> new RDFNodeListCellFactory<>());
-                dialogPane.setContent(content);
-                node.setResultConverter(buttonType -> content.getSelectionModel()
-                                                             .getSelectedItem());
-
-                // show the dialogue and wait for response
-                ref.set(node.showAndWait()
-                            .orElse(null));
-
-                // once we receive the response notify the thread under the request handler's monitor
-                // see bfs
-                synchronized (DBPediaRequestHandler.this) {
-                    DBPediaRequestHandler.this.notify();
-                }
-            });
-            return ref;
-        }
-    }
-
-
-    private class DefaultAllAmbiguitySolver implements AmbiguitySolver<T> {
-
-        @Override
-        public AtomicReference<DataNode<T>> call(final DataNodeList<T> dataNodeList) {
-            return new AtomicReference<>(null);
-        }
-    }
-
-    private class DefaultFirstAmbiguitySolver implements AmbiguitySolver<T> {
-
-        @Override
-        public AtomicReference<DataNode<T>> call(final DataNodeList<T> dataNodeList) {
-            final AtomicReference<DataNode<T>> ref = new AtomicReference<>();
-            DataNode<T> result = null;
-            for (DataNode<T> dataNode : dataNodeList) {
-                result = dataNode;
-                if (dataNode.data()
-                            .isURIResource()) {
-                    break;
-                }
-            }
-            ref.set(result);
-            return ref;
-        }
-    }
-
     /**
      * Performs a DFS on the given model, given selector, and a previous link
      *
@@ -172,7 +115,7 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
      * @param selector the selector
      */
     private void bfs(final Model model, final Selector selector, final DataNodeFactory<T> nodeFactory, final DataNodeRoot<T> root, final TreeItem<T> treeRoot,
-                                         final AmbiguitySolver<T> ambiguitySolver) {
+                     final AmbiguitySolver<T> ambiguitySolver) {
         // list all statements based on the selector
         // only one statement should be found based on that selector
         // FIXME: this creates a list for no reason, just iterate
@@ -271,7 +214,7 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
     }
 
     private void searchFurther(final Model model, final DataNodeFactory<T> nodeFactory, final DataNodeRoot<T> root, final DataNode<T> next, final TreeItem<T> treeRoot,
-                                                   final AmbiguitySolver<T> ambiguitySolver) {
+                               final AmbiguitySolver<T> ambiguitySolver) {
         final T data = next.data();
         if (!data.isURIResource()) {
             return;
@@ -314,6 +257,65 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
     @Override
     public Model getModel() {
         return model;
+    }
+
+    private class UserAmbiguitySolver implements AmbiguitySolver<T> {
+
+        @Override
+        public AtomicReference<DataNode<T>> call(final DataNodeList<T> list) {
+            AtomicReference<DataNode<T>> ref = new AtomicReference<>();
+            Platform.runLater(() -> {
+                // prepare the dialogue
+                final Dialog<DataNode<T>> node = new Dialog<>();
+                final DialogPane dialogPane = node.getDialogPane();
+                dialogPane.getButtonTypes()
+                          .addAll(ButtonType.OK, ButtonType.CANCEL);
+
+                final ObservableList<DataNode<T>> dataNodes = FXCollections.observableArrayList(list);
+                final ListView<DataNode<T>> content = new ListView<>(dataNodes);
+                content.setCellFactory(x -> new RDFNodeListCellFactory<>());
+                dialogPane.setContent(content);
+                node.setResultConverter(buttonType -> content.getSelectionModel()
+                                                             .getSelectedItem());
+
+                // show the dialogue and wait for response
+                ref.set(node.showAndWait()
+                            .orElse(null));
+
+                // once we receive the response notify the thread under the request handler's monitor
+                // see bfs
+                synchronized (DBPediaRequestHandler.this) {
+                    DBPediaRequestHandler.this.notify();
+                }
+            });
+            return ref;
+        }
+    }
+
+    private class DefaultAllAmbiguitySolver implements AmbiguitySolver<T> {
+
+        @Override
+        public AtomicReference<DataNode<T>> call(final DataNodeList<T> dataNodeList) {
+            return new AtomicReference<>(null);
+        }
+    }
+
+    private class DefaultFirstAmbiguitySolver implements AmbiguitySolver<T> {
+
+        @Override
+        public AtomicReference<DataNode<T>> call(final DataNodeList<T> dataNodeList) {
+            final AtomicReference<DataNode<T>> ref = new AtomicReference<>();
+            DataNode<T> result = null;
+            for (DataNode<T> dataNode : dataNodeList) {
+                result = dataNode;
+                if (dataNode.data()
+                            .isURIResource()) {
+                    break;
+                }
+            }
+            ref.set(result);
+            return ref;
+        }
     }
 
     /*private DBQueryResult getDbQueryResult(String request, Model model) {
