@@ -48,7 +48,7 @@ public class DataNodeRoot<T> extends DataNode<T> {
     public void iterate(BiConsumer<DataNode<T>, Integer> biConsumer) {
         final DataNodeList<T> children = this.getChildren();
         if (!children.isEmpty()) {
-            iterate(biConsumer, -1, children.getFirst());
+            iterate(biConsumer, -1, children.get(0));
         }
     }
 
