@@ -236,8 +236,8 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
         readResource(model, resource);
 
         // check for the restrictions on the given request
-        for (final Restriction r : request.getRestrictions()) {
-            final Selector sel = getSelector(resource, model.getProperty(r.getKey(), r.getValue()));
+        for (final Restriction restriction : request.getRestrictions()) {
+            final Selector sel = getSelector(resource, model.getProperty(restriction.getKey(), restriction.getValue()));
 
             // a statement with the given restriction was not found -> they were not met
             if (!model.listStatements(sel)
@@ -283,7 +283,7 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
                             .orElse(null));
 
                 // once we receive the response notify the thread under the request handler's monitor
-                // see bfs
+                // see bfs method
                 synchronized (DBPediaRequestHandler.this) {
                     DBPediaRequestHandler.this.notify();
                 }
