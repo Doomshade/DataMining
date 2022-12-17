@@ -2,6 +2,7 @@ package cz.zcu.jsmahy.datamining.api;
 
 import lombok.AccessLevel;
 import lombok.Data;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Collection;
@@ -16,6 +17,7 @@ import java.util.Objects;
 @Data
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public class DataNode<T> {
+    @NonNull
     private final T data;
     private final DataNodeList<T> children = new DataNodeList<>();
 

@@ -4,6 +4,7 @@ import cz.zcu.jsmahy.datamining.api.DataNodeRoot;
 import javafx.scene.control.TreeItem;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NonNull;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -15,20 +16,25 @@ public final class SparqlRequest<T> {
     /**
      * the request to send to the web page, e.g. {@code Windows_10}
      */
+    @NonNull
     private final String requestPage;
     /**
      * the namespace, e.g. <a href="https://dbpedia.org/property/">a property</a> or <a href="https://dbpedia.org/ontology/">an ontology</a>
      */
+    @NonNull
     private final String namespace;
     /**
      * the link to create the ontology for, e.g. {@code precededBy}
      */
+    @NonNull
     private final String link;
     /**
      * the tree root to add nodes to
      */
+    @NonNull
     private final TreeItem<T> treeRoot;
 
+    @NonNull
     private final DataNodeRoot<T> dataNodeRoot;
 
     private final Collection<Restriction> restrictions = new LinkedList<>();
