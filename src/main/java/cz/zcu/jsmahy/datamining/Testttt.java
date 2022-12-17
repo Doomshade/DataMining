@@ -40,7 +40,7 @@ public class Testttt {
             final char[] indent = new char[depth];
             Arrays.fill(indent, '\t');
             System.out.print(indent);
-            System.out.println(node.data());
+            System.out.println(node.getData());
         });
     }
 }

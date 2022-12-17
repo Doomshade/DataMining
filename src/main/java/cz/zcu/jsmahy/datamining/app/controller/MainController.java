@@ -5,9 +5,9 @@ import com.google.inject.Injector;
 import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXSpinner;
 import com.jfoenix.controls.JFXTextField;
+import cz.zcu.jsmahy.datamining.api.DataNodeFactory;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
-import cz.zcu.jsmahy.datamining.query.Ontology;
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
 import cz.zcu.jsmahy.datamining.query.SparqlRequest;
 import javafx.application.Platform;
@@ -160,13 +160,11 @@ order by ?pred
 
         final Injector injector = Guice.createInjector(new DBPediaModule());
 
-        final RequestHandler<T> dbPediaRequestHandler = injector.getInstance(RequestHandler.class);
-        final SparqlRequest<T> request = new SparqlRequest<>(searchValue, "http://dbpedia.org/property/", "predecessor", ontologyTreeView.getRoot(), null);
-        final Service<Ontology> query = dbPediaRequestHandler.query(request);
+        final RequestHandler<T, Void> dbPediaRequestHandler = injector.getInstance(RequestHandler.class);
+        final DataNodeFactory<T> dataNodeFactory = injector.getInstance(DataNodeFactory.class);
+        final SparqlRequest<T> request = new SparqlRequest<>(searchValue, "http://dbpedia.org/property/", "predecessor", ontologyTreeView.getRoot(), dataNodeFactory.newRoot());
+        final Service<Void> query = dbPediaRequestHandler.query(request);
         query.setOnSucceeded(x -> {
-            final Ontology ont = (Ontology) x.getSource()
-                                             .getValue();
-            LOGGER.info("Printing ontology: {}", ont.toString());
 
             ontologyTreeView.getSelectionModel()
                             .selectFirst();

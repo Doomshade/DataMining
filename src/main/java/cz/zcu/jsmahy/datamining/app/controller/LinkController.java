@@ -43,10 +43,10 @@ public class LinkController<T extends RDFNode> implements Initializable {
         final Injector injector = Guice.createInjector(new DBPediaModule());
 
         String ontology = searchField.getText();
-        final RequestHandler<T> dbPediaRequestHandler = injector.getInstance(RequestHandler.class);
+        final RequestHandler<T, Void> dbPediaRequestHandler = injector.getInstance(RequestHandler.class);
         SparqlRequest<T> request = new SparqlRequest<>(ontology, "http://dbpedia.org/ontology/", "successor", null, null);
 
-        final Service<Ontology> query = dbPediaRequestHandler.query(request);
+        final Service<Void> query = dbPediaRequestHandler.query(request);
         query.setOnSucceeded(x -> {
             final Ontology ont = (Ontology) x.getSource()
                                              .getValue();

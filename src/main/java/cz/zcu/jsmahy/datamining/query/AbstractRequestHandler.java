@@ -4,29 +4,35 @@ import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 
-/**
- * @author Jakub Šmrha
- * @version 1.0
- */
-public abstract class AbstractRequestHandler<T> extends Service<Ontology> implements RequestHandler<T> {
+
+public abstract class AbstractRequestHandler<T, R> extends Service<R> implements RequestHandler<T, R> {
     private SparqlRequest<T> request;
 
     @Override
-    public final Service<Ontology> query(final SparqlRequest<T> request) throws InvalidQueryException {
+    public final Service<R> query(final SparqlRequest<T> request) throws InvalidQueryException {
         this.request = request;
         return this;
     }
 
     @Override
-    protected Task<Ontology> createTask() {
+    protected Task<R> createTask() {
         return new Task<>() {
             @Override
-            protected Ontology call() {
-                return query0(request);
+            protected R call() {
+                return internalQuery(request);
             }
         };
     }
 
-
-    protected abstract Ontology query0(final SparqlRequest<T> request) throws InvalidQueryException;
+    /**
+     * The internal query request called in the {@link Task} that's created by this {@link Service}.
+     *
+     * @param request the SPARQL request
+     *
+     * @return Anything that the subclasses of this want to return.
+     *
+     * @throws InvalidQueryException A convenience exception if the request has invalid parameters.
+     * @see Service#createTask()
+     */
+    protected abstract R internalQuery(final SparqlRequest<T> request) throws InvalidQueryException;
 }

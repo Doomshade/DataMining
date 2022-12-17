@@ -25,7 +25,7 @@ public class RDFNodeListCellFactory<T extends RDFNode> extends ListCell<DataNode
      * @see RDFNodeCellFactory#formatRDFNode(RDFNode)
      */
     private String prettyFormat(DataNode<T> node) {
-        return formatRDFNode(node.data()).replaceAll(SPECIAL_CHARACTERS, " ");
+        return formatRDFNode(node.getData()).replaceAll(SPECIAL_CHARACTERS, " ");
     }
 
     @Override

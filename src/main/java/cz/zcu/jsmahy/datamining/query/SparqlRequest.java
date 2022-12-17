@@ -27,7 +27,7 @@ public final class SparqlRequest<T> {
     /**
      * the tree root to add nodes to
      */
-    private final TreeItem<T> root;
+    private final TreeItem<T> treeRoot;
 
     private final DataNodeRoot<T> dataNodeRoot;
 

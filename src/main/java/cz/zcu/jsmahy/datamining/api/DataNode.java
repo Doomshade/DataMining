@@ -1,5 +1,9 @@
 package cz.zcu.jsmahy.datamining.api;
 
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+
 import java.util.Collection;
 import java.util.Objects;
 
@@ -9,20 +13,11 @@ import java.util.Objects;
  * @author Jakub Smrha
  * @since 1.0
  */
+@Data
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public class DataNode<T> {
     private final T data;
     private final DataNodeList<T> children = new DataNodeList<>();
-
-    DataNode(T data) {
-        this.data = data;
-    }
-
-    /**
-     * @return The data this node contains.
-     */
-    public T data() {
-        return data;
-    }
 
     /**
      * Adds a child to this node.

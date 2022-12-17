@@ -6,9 +6,13 @@ import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeListCellFactory;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
-import cz.zcu.jsmahy.datamining.query.*;
+import cz.zcu.jsmahy.datamining.query.AbstractRequestHandler;
+import cz.zcu.jsmahy.datamining.query.RequestHandler;
+import cz.zcu.jsmahy.datamining.query.Restriction;
+import cz.zcu.jsmahy.datamining.query.SparqlRequest;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.scene.control.*;
 import org.apache.jena.atlas.web.HttpException;
@@ -18,11 +22,9 @@ import org.apache.jena.rdf.model.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 /**
  * The DBPedia {@link RequestHandler}.
@@ -30,14 +32,26 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author Jakub Šmrha
  * @version 1.0
  */
-public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHandler<T> {
+public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHandler<T, Void> {
     private static final Logger L = LogManager.getLogger(DBPediaRequestHandler.class);
     private static final String DBPEDIA_SITE = "http://dbpedia.org/resource/";
+    private static final Comparator<Statement> STATEMENT_COMPARATOR = (x, y) -> Boolean.compare(x.getObject()
+                                                                                                 .isURIResource(),
+                                                                                                y.getObject()
+                                                                                                 .isURIResource());
     private static boolean requesting = false;
     private final Collection<String> usedURIs = new HashSet<>();
-    private Ontology currOntology = null;
-    private Model model = null;
     private SparqlRequest<T> request = null;
+
+    private final DataNodeFactory<T> nodeFactory;
+    private final AmbiguitySolver<T> ambiguitySolver;
+
+    {
+        final Injector injector = Guice.createInjector(new DBPediaModule());
+        injector.injectMembers(this);
+        nodeFactory = injector.getInstance(DataNodeFactory.class);
+        ambiguitySolver = new UserAmbiguitySolver();
+    }
 
 
     /**
@@ -60,7 +74,10 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
     }
 
     @Override
-    protected synchronized Ontology query0(final SparqlRequest<T> request) throws InvalidQueryException {
+    protected synchronized Void internalQuery(final SparqlRequest<T> request) throws InvalidQueryException {
+        if (request == null || request.getDataNodeRoot() == null || request.getTreeRoot() == null || request.getRequestPage() == null || request.getLink() == null || request.getNamespace() == null) {
+            throw new IllegalArgumentException("Request is either null or has some null parameters that are not allowed: " + request);
+        }
         if (requesting) {
             throw new IllegalStateException("Already requesting!");
         }
@@ -82,30 +99,27 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
 
         // root subject and predicate
         final Resource subject = model.getResource(r);
+        assert false : "TEST";
         final Property predicate = model.getProperty(request.getNamespace(), request.getLink());
         final Selector selector = getSelector(subject, predicate);
-
-        // root link
-        final Ontology ontology = new Ontology(subject);
 
         // prepare the fields, don't put them as parameters, it will just
         // fill stack with duplicates
         this.request = request;
-        this.currOntology = ontology;
-        this.model = model;
         this.usedURIs.clear();
 
         // now iterate recursively
         L.debug("Searching...");
-        final Injector injector = Guice.createInjector(new DBPediaModule());
-        injector.injectMembers(this);
-        final DataNodeFactory<T> nodeFactory = injector.getInstance(DataNodeFactory.class);
-        final DataNodeRoot<T> root = nodeFactory.newRoot();
-        final AmbiguitySolver<T> ambiguitySolver = new UserAmbiguitySolver();
-        bfs(model, selector, nodeFactory, root, request.getRoot(), ambiguitySolver);
+
+        final DataNodeRoot<T> dataNodeRoot = request.getDataNodeRoot();
+        final TreeItem<T> treeRoot = request.getTreeRoot();
+        final DataNodeList<T> dataNodeRootChildren = dataNodeRoot.getChildren();
+        final ObservableList<TreeItem<T>> treeRootChildren = treeRoot.getChildren();
+        treeRootChildren.addListener(new TreeItemListChangeListener(dataNodeRootChildren));
+        bfs(model, selector, nodeFactory, dataNodeRoot, treeRoot, ambiguitySolver);
         L.debug("Done searching");
         requesting = false;
-        return ontology;
+        return null;
     }
 
     /**
@@ -116,33 +130,35 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
      */
     private void bfs(final Model model, final Selector selector, final DataNodeFactory<T> nodeFactory, final DataNodeRoot<T> root, final TreeItem<T> treeRoot,
                      final AmbiguitySolver<T> ambiguitySolver) {
-        // list all statements based on the selector
-        // only one statement should be found based on that selector
-        // FIXME: this creates a list for no reason, just iterate
-        // otherwise connect it to the previous node
+        // add the current node to the tree node
         final DataNode<T> curr = nodeFactory.newNode((T) selector.getSubject());
-        // TODO: meetsRequirements
-        // it reads the resource inside, that's why we don't use it here
-        root.addChild(curr);
         final ObservableList<TreeItem<T>> treeChildren = treeRoot.getChildren();
-        Platform.runLater(() -> {
-            treeChildren.add(new TreeItem<>(curr.data()));
-        });
+        Platform.runLater(() -> treeChildren.add(new TreeItem<>(curr.getData())));
+
         final List<Statement> statements = model.listStatements(selector)
                                                 .toList();
-        statements.sort((x, y) -> Boolean.compare(x.getObject()
-                                                   .isURIResource(),
-                                                  y.getObject()
-                                                   .isURIResource()));
+        statements.sort(STATEMENT_COMPARATOR);
+
         final DataNodeList<T> children = new DataNodeList<>();
+        T previous = null;
         for (final Statement stmt : statements) {
-            final RDFNode next = stmt.getObject();
             // check whether the next meets requirements (i.e. check restrictions)
-            if (!meetsRequirements(model, next)) {
+            // and update previous node
+            // we keep previous node to undo the jump to the resource that the meetsRequirements method makes
+            final T next = (T) stmt.getObject();
+            final boolean meetsRequirements;
+            try {
+                meetsRequirements = meetsRequirements(model, previous, next);
+            } catch (AssertionError e) {
+                L.error("An internal error occurred when trying to check for the requirements of the node {}.", next, e);
+                return;
+            }
+            previous = next;
+            if (!meetsRequirements) {
                 return;
             }
 
-            final DataNode<T> nextNode = nodeFactory.newNode((T) next);
+            final DataNode<T> nextNode = nodeFactory.newNode(next);
             L.debug("Found {}", next);
             children.add(nextNode);
         }
@@ -155,10 +171,9 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
         // only one found, that means it's going linearly
         // pass in this call's parent
         if (children.size() == 1) {
-            root.addChildren(children);
             Platform.runLater(() -> {
                 final DataNode<T> first = children.get(0);
-                final T data = first.data();
+                final T data = first.getData();
                 for (TreeItem<T> item : treeChildren) {
                     if (item.getValue()
                             .equals(data)) {
@@ -187,15 +202,14 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
 
         // if a node was chosen search further down that node
         if (next.get() != null) {
-            root.addChild(next.get());
             searchFurther(model, nodeFactory, root, next.get(), treeRoot, ambiguitySolver);
             return;
         }
 
         // otherwise search through the children and add those nodes to the current node that acts as a parent
-        curr.addChildren(children);
         Platform.runLater(() -> {
             final int lastIndex = treeChildren.size() - 1;
+            // TODO: the ambiguity can occur in the root perhaps?
             if (lastIndex < 0) {
                 return;
             }
@@ -205,17 +219,17 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
                                         .map(TreeItem::new)
                                         .collect(() -> FXCollections.observableArrayList(), (x, y) -> {
                                             x.add(new TreeItem<>(y.getValue()
-                                                                  .data()));
+                                                                  .getData()));
                                         }, List::addAll));
         });
-        for (DataNode<T> child : children) {
+        for (final DataNode<T> child : children) {
             searchFurther(model, nodeFactory, root, child, treeRoot, ambiguitySolver);
         }
     }
 
     private void searchFurther(final Model model, final DataNodeFactory<T> nodeFactory, final DataNodeRoot<T> root, final DataNode<T> next, final TreeItem<T> treeRoot,
                                final AmbiguitySolver<T> ambiguitySolver) {
-        final T data = next.data();
+        final T data = next.getData();
         if (!data.isURIResource()) {
             return;
         }
@@ -227,12 +241,28 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
         }
     }
 
-    private boolean meetsRequirements(final Model model, final RDFNode object) {
-        if (!object.isURIResource()) {
+    /**
+     * <p>Checks whether the {@code curr}ent node meets the requirements to be added to the search list.</p>
+     * <p><b>IMPORTANT:</b> this method reads the resource to the model and <b>STAYS</b> there if this method returns {@code true}</p>
+     * <p>If this method returns {@code false} it rolls back to the {@code previous} node.</p>
+     *
+     * @param model    the current model
+     * @param previous the previous node
+     * @param curr     the current node
+     *
+     * @return Whether the current node meets requirements. Read this method's javadoc for more information regarding the changes this method potentially makes to the model.
+     *
+     * @throws IllegalStateException if the previous is not a URI resource
+     */
+    private boolean meetsRequirements(final Model model, final T previous, final T curr) throws IllegalArgumentException {
+        if (!curr.isURIResource()) {
             return true;
         }
 
-        final Resource resource = object.asResource();
+        // this should not happen, but do a check regardless
+        assert previous != null && previous.isURIResource() : "Previous node must be a URI resource";
+
+        final Resource resource = curr.asResource();
         readResource(model, resource);
 
         // check for the restrictions on the given request
@@ -242,7 +272,11 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
             // a statement with the given restriction was not found -> they were not met
             if (!model.listStatements(sel)
                       .hasNext()) {
-                // don't continue in the search
+                // stop the search
+                // and go back to the previous node
+                if (previous != null) {
+                    readResource(model, previous.asResource());
+                }
                 return false;
             }
         }
@@ -254,41 +288,47 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
         model.read(URI);
     }
 
-    @Override
-    public Model getModel() {
-        return model;
-    }
-
     private class UserAmbiguitySolver implements AmbiguitySolver<T> {
 
         @Override
         public AtomicReference<DataNode<T>> call(final DataNodeList<T> list) {
             AtomicReference<DataNode<T>> ref = new AtomicReference<>();
-            Platform.runLater(() -> {
-                // prepare the dialogue
-                final Dialog<DataNode<T>> node = new Dialog<>();
-                final DialogPane dialogPane = node.getDialogPane();
+            Platform.runLater(() -> new DialogueHandler(list, ref).showDialogueAndWait());
+            return ref;
+        }
+
+        private class DialogueHandler {
+            private final Dialog<DataNode<T>> node = new Dialog<>();
+            private final DialogPane dialogPane = node.getDialogPane();
+            private final AtomicReference<DataNode<T>> ref;
+            private final ListView<DataNode<T>> content = new ListView<>();
+
+            {
                 dialogPane.getButtonTypes()
                           .addAll(ButtonType.OK, ButtonType.CANCEL);
-
-                final ObservableList<DataNode<T>> dataNodes = FXCollections.observableArrayList(list);
-                final ListView<DataNode<T>> content = new ListView<>(dataNodes);
                 content.setCellFactory(x -> new RDFNodeListCellFactory<>());
-                dialogPane.setContent(content);
                 node.setResultConverter(buttonType -> content.getSelectionModel()
                                                              .getSelectedItem());
+            }
 
+            public DialogueHandler(final DataNodeList<T> list, final AtomicReference<DataNode<T>> ref) {
+                this.ref = ref;
+                this.content.setItems(FXCollections.observableArrayList(list));
+                this.dialogPane.setContent(content);
+            }
+
+            public void showDialogueAndWait() {
                 // show the dialogue and wait for response
                 ref.set(node.showAndWait()
                             .orElse(null));
 
                 // once we receive the response notify the thread under the request handler's monitor
-                // see bfs method
+                // that we got a response from the user
+                // the thread waits otherwise for another 5 seconds
                 synchronized (DBPediaRequestHandler.this) {
                     DBPediaRequestHandler.this.notify();
                 }
-            });
-            return ref;
+            }
         }
     }
 
@@ -308,7 +348,7 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
             DataNode<T> result = null;
             for (DataNode<T> dataNode : dataNodeList) {
                 result = dataNode;
-                if (dataNode.data()
+                if (dataNode.getData()
                             .isURIResource()) {
                     break;
                 }
@@ -318,79 +358,49 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
         }
     }
 
-    /*private DBQueryResult getDbQueryResult(String request, Model model) {
-        System.out.println("STMTS:");
-        Selector sel = new SimpleSelector() {
-            @Override
-            public boolean test(Statement s) {
-                final Property pred = s.getPredicate();
-                final Resource subj = s.getSubject();
-                final boolean isCharles = subj.getURI().equals(request);
+    private class TreeItemListChangeListener implements ListChangeListener<TreeItem<T>> {
 
-                final boolean isSuccessor = pred.equals(model.getProperty
-                ("http://dbpedia
-                .org/ontology/", "successor"))
-                        || pred.equals(model.getResource("http://dbpedia
-                        .org/property/successor"));
-                return isCharles && isSuccessor;
-            }
-        };
-        Set<String> successors = new HashSet<>();
-        for (Statement n : model.listStatements(sel).toList()) {
-            successors.add(n.getObject().toString());
-            System.out.println("XXXX");
-            System.out.println("Subj: " + n.getSubject());
+        private final DataNodeList<T> dataNodeRootChildren;
 
-            System.out.println("Pred: " + n.getPredicate());
-
-            System.out.println("Obj: " + n.getObject());
-            System.out.println("XXXX");
-            System.out.println();
+        public TreeItemListChangeListener(final DataNodeList<T> dataNodeRootChildren) {
+            this.dataNodeRootChildren = dataNodeRootChildren;
         }
-        String s = String.join(", ", successors);
-        return new DBQueryResult(s, RDFFormat.JSON);
-    }*/
 
-    /*private void printOut(Model model, Resource subject, String title,
-    String type) {
-        System.out.println(title);
-        final Property ontPred = model.getProperty("http://dbpedia
-        .org/ontology/", type);
-        final Property propPred = model.getProperty("http://dbpedia
-        .org/property/", type);
-        System.out.println(model.listObjectsOfProperty(subject, ontPred)
-        .toList());
-        System.out.println(model.listObjectsOfProperty(subject, propPred)
-        .toList());
-        System.out.println();
-    }*/
+        private List<? extends DataNode<T>> mapToDataNode(Collection<? extends TreeItem<T>> collection) {
+            return collection.stream()
+                             .map(this::mapToDataNode)
+                             .collect(Collectors.toList());
+        }
 
+        private DataNode<T> mapToDataNode(TreeItem<T> treeItem) {
+            return nodeFactory.newNode(treeItem.getValue());
+        }
 
-    //System.out.println(model.getProperty("https://dbpedia.org/ontology/child").getProperty(RDFS.label));
-        /*try (QueryExecution query = QueryExecutionFactory.sparqlService
-        (SERVICE, request)) {
-
-            final ResultSet set = query.execSelect();
-
-            StringBuilder sb = new StringBuilder();
-            while (set.hasNext()) {
-                final QuerySolution qs = set.next();
-                final RDFNode node = qs.get("athlete");
-                sb.append(node.toString());
-                sb.append("\n");
-                //final Resource resource = node.asResource();
-
-                // Model m = ModelFactory.createDefaultModel();
-                // try {
-                //     m.read(resource.getURI());
-                //     m.write(System.out);
-                // } catch (Exception e) {
-                //     throw new InvalidQueryException(e);
-                // }
-
+        @Override
+        public void onChanged(final Change<? extends TreeItem<T>> change) {
+            while (change.next()) {
+                if (change.wasPermutated()) {
+                    for (int i = change.getFrom(); i < change.getTo(); i++) {
+                        final DataNode<T> tmp = dataNodeRootChildren.get(i);
+                        final int permutation = change.getPermutation(i);
+                        dataNodeRootChildren.set(i, dataNodeRootChildren.get(permutation));
+                        dataNodeRootChildren.set(permutation, tmp);
+                    }
+                } else if (change.wasReplaced()) {
+                    dataNodeRootChildren.removeAll(mapToDataNode(change.getRemoved()));
+                    dataNodeRootChildren.addAll(mapToDataNode(change.getAddedSubList()));
+                } else if (change.wasRemoved()) {
+                    dataNodeRootChildren.removeAll(mapToDataNode(change.getRemoved()));
+                } else if (change.wasAdded()) {
+                    dataNodeRootChildren.addAll(mapToDataNode(change.getAddedSubList()));
+                } else if (change.wasUpdated()) {
+                    for (int i = change.getFrom(); i < change.getTo(); i++) {
+                        dataNodeRootChildren.add(mapToDataNode(change.getList()
+                                                                     .get(i)));
+                    }
+                }
             }
-            return new DBDataResult(sb.toString(), RDFFormat.JSON);
-        } catch (NullPointerException ex) {
-            throw new InvalidQueryException(ex);
-        }*/
+        }
+    }
+
 }

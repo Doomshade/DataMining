@@ -2,29 +2,26 @@ package cz.zcu.jsmahy.datamining.query;
 
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import javafx.concurrent.Service;
-import org.apache.jena.rdf.model.Model;
 
 /**
  * A handler for query requests
  *
+ * @param <R> The return type of {@link Service}'s {@link Service#getValue()} in {@link #query(SparqlRequest)}. In other words, the return type of the request.
+ * @param <T> The input type for the {@link SparqlRequest}. In other words, the input type of the request.
+ *
  * @author Jakub Šmrha
  * @version 1.0
  */
-public interface RequestHandler<T> {
+public interface RequestHandler<T, R> {
 
     /**
-     * @return the model used in this query
-     */
-    Model getModel();
-
-    /**
-     * Queries a web page based on the handler implementation
+     * Queries a SPARQL endpoint based on the handler implementation.
      *
-     * @param request the request to send to the web page
+     * @param request the request to send to the SPARQL endpoint
      *
      * @return the ontology
      *
      * @throws InvalidQueryException if the request is invalid
      */
-    Service<Ontology> query(SparqlRequest<T> request) throws InvalidQueryException;
+    Service<R> query(SparqlRequest<T> request) throws InvalidQueryException;
 }
