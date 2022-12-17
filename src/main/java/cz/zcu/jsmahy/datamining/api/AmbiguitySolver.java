@@ -1,5 +1,6 @@
 package cz.zcu.jsmahy.datamining.api;
 
+import javafx.collections.ObservableList;
 import javafx.util.Callback;
 import org.apache.jena.rdf.model.RDFNode;
 
@@ -12,7 +13,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author Jakub Smrha
  * @since 1.0
  */
-public interface AmbiguitySolver<T> extends Callback<DataNodeList<T>, AtomicReference<DataNode<T>>> {
+public interface AmbiguitySolver<T> extends Callback<ObservableList<DataNode<T>>, AtomicReference<DataNode<T>>> {
     /**
      * <p>WARNING: when a null reference is returned from the {@link AtomicReference} the program waits until it receives a reference.</p>
      * <p>The reference can be set any time</p>
@@ -23,5 +24,5 @@ public interface AmbiguitySolver<T> extends Callback<DataNodeList<T>, AtomicRefe
      * @return an atomic reference
      */
     @Override
-    AtomicReference<DataNode<T>> call(DataNodeList<T> param);
+    AtomicReference<DataNode<T>> call(ObservableList<DataNode<T>> param);
 }

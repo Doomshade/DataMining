@@ -3,13 +3,14 @@ package cz.zcu.jsmahy.datamining.query;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
+import lombok.NonNull;
 
 
 public abstract class AbstractRequestHandler<T, R> extends Service<R> implements RequestHandler<T, R> {
     private SparqlRequest<T> request;
 
     @Override
-    public final Service<R> query(final SparqlRequest<T> request) throws InvalidQueryException {
+    public final Service<R> query(@NonNull final SparqlRequest<T> request) throws InvalidQueryException {
         this.request = request;
         return this;
     }

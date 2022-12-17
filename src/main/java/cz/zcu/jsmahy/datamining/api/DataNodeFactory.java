@@ -1,5 +1,7 @@
 package cz.zcu.jsmahy.datamining.api;
 
+import lombok.NonNull;
+
 /**
  * A factory for {@link DataNode}s.
  *
@@ -22,9 +24,8 @@ public interface DataNodeFactory<T> {
      * Creates a new data node with the given data.
      *
      * @param data the data
-     * @param <T>  the data type
      *
      * @return a new data node
      */
-    DataNode<T> newNode(T data);
+    DataNode<T> newNode(@NonNull T data);
 }

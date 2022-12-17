@@ -1,5 +1,7 @@
 package cz.zcu.jsmahy.datamining.api;
 
+import lombok.NonNull;
+
 /**
  * Default implementation of {@link DataNodeFactory}.
  *
@@ -14,7 +16,7 @@ final class DataNodeFactoryImpl<T> implements DataNodeFactory<T> {
     }
 
     @Override
-    public DataNode<T> newNode(final T data) {
+    public DataNode<T> newNode(final @NonNull T data) {
         return new DataNode<>(data);
     }
 }

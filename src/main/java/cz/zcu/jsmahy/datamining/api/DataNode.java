@@ -1,5 +1,7 @@
 package cz.zcu.jsmahy.datamining.api;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NonNull;
@@ -19,7 +21,11 @@ import java.util.Objects;
 public class DataNode<T> {
     @NonNull
     private final T data;
-    private final DataNodeList<T> children = new DataNodeList<>();
+    private final ObservableList<DataNode<T>> children = FXCollections.observableArrayList();
+
+    protected DataNode() {
+        this.data = null;
+    }
 
     /**
      * Adds a child to this node.
@@ -48,8 +54,8 @@ public class DataNode<T> {
     /**
      * @return The children of this node.
      */
-    public DataNodeList<T> getChildren() {
-        return children;
+    public ObservableList<DataNode<T>> getChildren() {
+        return FXCollections.unmodifiableObservableList(children);
     }
 
     /**

@@ -1,5 +1,7 @@
 package cz.zcu.jsmahy.datamining.api;
 
+import javafx.collections.ObservableList;
+
 import java.util.function.BiConsumer;
 
 /**
@@ -11,10 +13,6 @@ import java.util.function.BiConsumer;
  * @since 1.0
  */
 public class DataNodeRoot<T> extends DataNode<T> {
-
-    DataNodeRoot() {
-        super(null);
-    }
 
     /**
      * <p>Iterates over the children of this root.</p>
@@ -46,7 +44,7 @@ public class DataNodeRoot<T> extends DataNode<T> {
      * @param biConsumer the bi-consumer
      */
     public void iterate(BiConsumer<DataNode<T>, Integer> biConsumer) {
-        final DataNodeList<T> children = this.getChildren();
+        final ObservableList<DataNode<T>> children = this.getChildren();
         if (!children.isEmpty()) {
             iterate(biConsumer, -1, children.get(0));
         }

@@ -2,7 +2,10 @@ package cz.zcu.jsmahy.datamining.query.handlers;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import cz.zcu.jsmahy.datamining.api.*;
+import cz.zcu.jsmahy.datamining.api.AmbiguitySolver;
+import cz.zcu.jsmahy.datamining.api.DataNode;
+import cz.zcu.jsmahy.datamining.api.DataNodeFactory;
+import cz.zcu.jsmahy.datamining.api.DataNodeRoot;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeListCellFactory;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
@@ -15,6 +18,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.scene.control.*;
+import lombok.NonNull;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntModelSpec;
@@ -74,10 +78,7 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
     }
 
     @Override
-    protected synchronized Void internalQuery(final SparqlRequest<T> request) throws InvalidQueryException {
-        if (request == null || request.getDataNodeRoot() == null || request.getTreeRoot() == null || request.getRequestPage() == null || request.getLink() == null || request.getNamespace() == null) {
-            throw new IllegalArgumentException("Request is either null or has some null parameters that are not allowed: " + request);
-        }
+    protected synchronized Void internalQuery(@NonNull final SparqlRequest<T> request) throws InvalidQueryException {
         if (requesting) {
             throw new IllegalStateException("Already requesting!");
         }
@@ -99,7 +100,6 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
 
         // root subject and predicate
         final Resource subject = model.getResource(r);
-        assert false : "TEST";
         final Property predicate = model.getProperty(request.getNamespace(), request.getLink());
         final Selector selector = getSelector(subject, predicate);
 
@@ -113,7 +113,7 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
 
         final DataNodeRoot<T> dataNodeRoot = request.getDataNodeRoot();
         final TreeItem<T> treeRoot = request.getTreeRoot();
-        final DataNodeList<T> dataNodeRootChildren = dataNodeRoot.getChildren();
+        final ObservableList<DataNode<T>> dataNodeRootChildren = dataNodeRoot.getChildren();
         final ObservableList<TreeItem<T>> treeRootChildren = treeRoot.getChildren();
         treeRootChildren.addListener(new TreeItemListChangeListener(dataNodeRootChildren));
         bfs(model, selector, nodeFactory, dataNodeRoot, treeRoot, ambiguitySolver);
@@ -139,7 +139,7 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
                                                 .toList();
         statements.sort(STATEMENT_COMPARATOR);
 
-        final DataNodeList<T> children = new DataNodeList<>();
+        final ObservableList<DataNode<T>> children = FXCollections.observableArrayList();
         T previous = null;
         for (final Statement stmt : statements) {
             // check whether the next meets requirements (i.e. check restrictions)
@@ -291,7 +291,7 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
     private class UserAmbiguitySolver implements AmbiguitySolver<T> {
 
         @Override
-        public AtomicReference<DataNode<T>> call(final DataNodeList<T> list) {
+        public AtomicReference<DataNode<T>> call(final ObservableList<DataNode<T>> list) {
             AtomicReference<DataNode<T>> ref = new AtomicReference<>();
             Platform.runLater(() -> new DialogueHandler(list, ref).showDialogueAndWait());
             return ref;
@@ -311,9 +311,9 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
                                                              .getSelectedItem());
             }
 
-            public DialogueHandler(final DataNodeList<T> list, final AtomicReference<DataNode<T>> ref) {
+            public DialogueHandler(final ObservableList<DataNode<T>> list, final AtomicReference<DataNode<T>> ref) {
                 this.ref = ref;
-                this.content.setItems(FXCollections.observableArrayList(list));
+                this.content.setItems(list);
                 this.dialogPane.setContent(content);
             }
 
@@ -335,7 +335,7 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
     private class DefaultAllAmbiguitySolver implements AmbiguitySolver<T> {
 
         @Override
-        public AtomicReference<DataNode<T>> call(final DataNodeList<T> dataNodeList) {
+        public AtomicReference<DataNode<T>> call(final ObservableList<DataNode<T>> dataNodeList) {
             return new AtomicReference<>(null);
         }
     }
@@ -343,7 +343,7 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
     private class DefaultFirstAmbiguitySolver implements AmbiguitySolver<T> {
 
         @Override
-        public AtomicReference<DataNode<T>> call(final DataNodeList<T> dataNodeList) {
+        public AtomicReference<DataNode<T>> call(final ObservableList<DataNode<T>> dataNodeList) {
             final AtomicReference<DataNode<T>> ref = new AtomicReference<>();
             DataNode<T> result = null;
             for (DataNode<T> dataNode : dataNodeList) {
@@ -360,9 +360,9 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
 
     private class TreeItemListChangeListener implements ListChangeListener<TreeItem<T>> {
 
-        private final DataNodeList<T> dataNodeRootChildren;
+        private final ObservableList<DataNode<T>> dataNodeRootChildren;
 
-        public TreeItemListChangeListener(final DataNodeList<T> dataNodeRootChildren) {
+        public TreeItemListChangeListener(final ObservableList<DataNode<T>> dataNodeRootChildren) {
             this.dataNodeRootChildren = dataNodeRootChildren;
         }
 
