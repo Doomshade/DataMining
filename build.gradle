@@ -4,6 +4,7 @@
 
 plugins {
     id 'java'
+    id 'groovy'
     id 'maven-publish'
     id 'application'
     id 'org.openjfx.javafxplugin' version '0.0.13'
@@ -32,6 +33,8 @@ application {
 
 dependencies {
     annotationProcessor('org.projectlombok:lombok:1.18.24')
+    compileOnly 'org.projectlombok:lombok:1.18.24'
+
     implementation 'org.apache.logging.log4j:log4j-api:2.19.0'
     implementation 'org.apache.logging.log4j:log4j-core:2.19.0'
     implementation 'org.jsoup:jsoup:1.15.3'
@@ -56,8 +59,9 @@ dependencies {
     implementation 'org.jgrapht:jgrapht-core:1.5.1'
     implementation 'org.jgrapht:jgrapht-io:1.5.1'
     implementation 'com.google.inject:guice:5.1.0'
+
     testImplementation 'net.synedra:validatorfx:0.4.0'
-    compileOnly 'org.projectlombok:lombok:1.18.24'
+    testImplementation 'org.spockframework:spock-core:2.4-M1-groovy-4.0'
 }
 
 group = 'cz.zcu.jsmahy'
@@ -77,4 +81,8 @@ mainClassName = 'cz.zcu.jsmahy.Main'
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
+}
+
+test {
+    useJUnitPlatform()
 }
