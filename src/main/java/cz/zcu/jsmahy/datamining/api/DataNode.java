@@ -8,7 +8,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Collection;
-import java.util.Objects;
+import java.util.Iterator;
 
 /**
  * This node represents a single node in the tree with a link to next nodes.
@@ -18,7 +18,7 @@ import java.util.Objects;
  */
 @Data
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-public class DataNode<T> {
+public class DataNode<T> implements Iterable<DataNode<T>> {
     @NonNull
     private final T data;
     private final ObservableList<DataNode<T>> children = FXCollections.observableArrayList();
@@ -35,19 +35,18 @@ public class DataNode<T> {
      * @throws IllegalArgumentException if the child is an instance of {@link DataNodeRoot}
      * @throws NullPointerException     if the child is {@code null}
      */
-    public void addChild(DataNode<T> child) throws IllegalArgumentException, NullPointerException {
-        Objects.requireNonNull(child);
+    public void addChild(@NonNull DataNode<T> child) throws IllegalArgumentException, NullPointerException {
         if (child instanceof DataNodeRoot) {
             throw new IllegalArgumentException("Child cannot be root.");
         }
         this.children.add(child);
     }
 
-    public void addChildren(Iterable<DataNode<T>> children) {
+    public void addChildren(@NonNull Iterable<DataNode<T>> children) {
         children.forEach(this::addChild);
     }
 
-    public void addChildren(Collection<DataNode<T>> children) {
+    public void addChildren(@NonNull Collection<DataNode<T>> children) {
         this.children.addAll(children);
     }
 
@@ -63,5 +62,10 @@ public class DataNode<T> {
      */
     public boolean hasChildren() {
         return !children.isEmpty();
+    }
+
+    @Override
+    public Iterator<DataNode<T>> iterator() {
+        return children.iterator();
     }
 }

@@ -1,66 +1,93 @@
 package cz.zcu.jsmahy.datamining.api.dbpedia
 
 import com.google.inject.Guice
+import com.google.inject.Injector
 import cz.zcu.jsmahy.datamining.api.DataNode
 import cz.zcu.jsmahy.datamining.api.DataNodeFactory
+import cz.zcu.jsmahy.datamining.api.DataNodeRoot
 import cz.zcu.jsmahy.datamining.query.RequestHandler
-import cz.zcu.jsmahy.datamining.query.SparqlRequest
+import spock.lang.Shared
 import spock.lang.Specification
 
 class APISpecification extends Specification {
-    def "Data node value should not be null"() {
-        given:
-        def injector = Guice.createInjector(new DBPediaModule())
-        def nodeFactory = injector.getInstance(DataNodeFactory.class)
+    static final Injector injector = Guice.createInjector(new DBPediaModule())
+    @Shared
+    static DataNodeFactory<?> nodeFactory
+
+    DataNodeRoot<?> root;
+
+    void setupSpec() {
+        nodeFactory = injector.getInstance(DataNodeFactory)
+    }
+
+    void setup() {
+        root = nodeFactory.newRoot()
+    }
+
+    def "Should return false because we did not add a child"() {
+        expect:
+        !root.hasChildren()
+    }
+
+    def "Should return true because we added a child"() {
         when:
-        nodeFactory.newNode(null)
+        root.addChild(nodeFactory.newNode(_))
+
+        then:
+        root.hasChildren()
+    }
+
+    def "Should throw NPE when passing in null child"() {
+        when:
+        root.addChild(null)
 
         then:
         thrown(NullPointerException)
     }
 
-    def "Data Node Root should not be able to be added as a children"() {
-        given:
-        def injector = Guice.createInjector(new DBPediaModule())
-        def nodeFactory = injector.getInstance(DataNodeFactory.class)
-        def root = nodeFactory.newRoot()
-        def node = nodeFactory.newNode("")
-
+    def "Should throw NPE when passing in null iterable"() {
         when:
+        root.addChildren((Iterable<DataNode>) null)
+
+        then:
+        thrown(NullPointerException)
+    }
+
+    def "Should throw NPE when passing in null collection"() {
+        when:
+        root.addChildren((Collection<DataNode>) null)
+
+        then:
+        thrown(NullPointerException)
+    }
+
+    def "Should throw IAE when adding root to the children of any node"() {
+        when: "Add the root to the node"
         node.addChild(root)
 
         then:
         thrown(IllegalArgumentException)
+
+        where:
+        node << [nodeFactory.newRoot(), nodeFactory.newNode(_)]
     }
 
-    def "should demonstrate given-when-then"() {
+    def "Should throw NPE when passing null query to request handler"() {
         given:
-        def dataNode = new DataNode("")
+        def requestHandler = injector.getInstance(RequestHandler.class);
 
         when:
-        String data = dataNode.data
-
-        then:
-        data == ""
-    }
-
-    def "Query should be nonnull"() {
-        given:
-        def injector = Guice.createInjector(new DBPediaModule());
-        def dbPediaRequestHandler = injector.getInstance(RequestHandler.class);
-
-        when:
-        dbPediaRequestHandler.query(null);
+        requestHandler.query(null);
 
         then:
         thrown(NullPointerException)
     }
 
-    def "SPARQL Parameters should be nonnull"() {
+    def "Should return the passed value if the value was nonnull"() {
         when:
-        new SparqlRequest("", "", "", null, null)
+        def node = nodeFactory.newNode(_)
 
         then:
-        thrown(NullPointerException)
+        node.getData() == _
     }
 }
