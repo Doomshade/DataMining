@@ -24,12 +24,12 @@ class APISpecification extends Specification {
         root = nodeFactory.newRoot()
     }
 
-    def "Should return false because we did not add a child"() {
+    def "Data node root should return false because we did not add a child to it"() {
         expect:
         !root.hasChildren()
     }
 
-    def "Should return true because we added a child"() {
+    def "Data node root should return true because we added a child"() {
         when:
         root.addChild(nodeFactory.newNode(_))
 
@@ -37,7 +37,7 @@ class APISpecification extends Specification {
         root.hasChildren()
     }
 
-    def "Should throw NPE when passing in null child"() {
+    def "Should throw NPE when passing in null child to a data node (root)"() {
         when:
         root.addChild(null)
 
