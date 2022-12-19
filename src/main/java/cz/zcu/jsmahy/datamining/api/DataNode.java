@@ -43,6 +43,8 @@ public interface DataNode<T> extends Iterable<DataNode<T>> {
     void addChildren(@NonNull Collection<DataNode<T>> children) throws IllegalArgumentException, NullPointerException;
 
     /**
+     * NOTE: the children are MUTABLE
+     *
      * @return The children of this node.
      */
     ObservableList<DataNode<T>> getChildren();

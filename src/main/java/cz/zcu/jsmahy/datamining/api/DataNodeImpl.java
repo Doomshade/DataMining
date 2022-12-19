@@ -42,7 +42,7 @@ public class DataNodeImpl<T> implements DataNode<T> {
 
     @Override
     public ObservableList<DataNode<T>> getChildren() {
-        return FXCollections.unmodifiableObservableList(children);
+        return children;
     }
 
     @Override
