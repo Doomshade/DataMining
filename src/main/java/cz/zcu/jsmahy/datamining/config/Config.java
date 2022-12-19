@@ -2,7 +2,7 @@ package cz.zcu.jsmahy.datamining.config;
 
 import cz.zcu.jsmahy.datamining.Main;
 import javafx.application.Platform;
-import lombok.Data;
+import lombok.Getter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -20,12 +20,11 @@ import java.util.Properties;
  * @version 1.0
  * @since 1.0
  */
-@Data
 public class Config {
+    private static final String FILE_NAME = "config.properties";
     private final Logger logger = LogManager.getLogger(Config.class);
     private final Properties defaultProperties = new Properties();
     private final Properties properties = new Properties();
-    private final String filename = "config.properties";
 
     {
         load();
@@ -34,19 +33,20 @@ public class Config {
     //<editor-fold desc="Config properties">
     @Property(key = "max-depth",
               defaultValue = "10")
+    @Getter
     private int maxDepth;
     //</editor-fold>
 
     public void load() {
         logger.info("Loading config...");
-        final File f = new File(filename);
+        final File f = new File(FILE_NAME);
         InputStream in = null;
         try {
             // if the config was not found in the directory, use the
             // default one built in the jar
             if (!f.exists()) {
                 in = Main.class.getClassLoader()
-                               .getResourceAsStream(filename);
+                               .getResourceAsStream(FILE_NAME);
             } else {
                 in = new FileInputStream(f);
             }
@@ -94,7 +94,6 @@ public class Config {
             } catch (Exception e) {
                 logger.fatal("Failed to autowire config, exiting...", e);
                 Platform.exit();
-                System.exit(1);
             }
         }
     }

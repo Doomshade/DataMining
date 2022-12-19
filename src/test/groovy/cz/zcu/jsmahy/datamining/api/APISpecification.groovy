@@ -11,7 +11,7 @@ class APISpecification extends Specification {
     @Shared
     static DataNodeFactory<?> nodeFactory
 
-    DataNodeRootImpl<?> root;
+    private DataNodeRoot<?> root;
 
     void setupSpec() {
         injector = Guice.createInjector(new DataMiningModule() {})

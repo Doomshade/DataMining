@@ -43,7 +43,9 @@ public final class IOManager {
         validateFileName(fileName);
         File file = new File(getFolder(folder), fileName);
         if (!file.exists()) {
-            file.createNewFile();
+            if (!file.createNewFile()) {
+                throw new IOException("Failed to create file " + file.getAbsolutePath());
+            }
         }
         return file;
     }

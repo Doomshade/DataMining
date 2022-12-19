@@ -134,7 +134,7 @@ public class IBTemplateController implements Initializable {
         };
 
         public BooleanValidator() {
-            super(String.format("(TRUE) = %s\n(FALSE) = %s",
+            super(String.format("(TRUE) = %s%n(FALSE) = %s",
                                 Arrays.toString(TRUE_VALUES),
                                 Arrays.toString(FALSE_VALUES)));
         }

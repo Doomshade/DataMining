@@ -15,7 +15,6 @@ import org.apache.logging.log4j.Logger;
  */
 public class Main extends Application {
     private static final Logger LOGGER = LogManager.getLogger(Main.class);
-    public static Stage currentStage = null;
 
     public static void main(String[] args) throws ParseException {
         CommandParser.parseAndExecuteCommands(args);
@@ -24,7 +23,6 @@ public class Main extends Application {
 
     @Override
     public void start(final Stage stage) throws Exception {
-        currentStage = stage;
         // use resource bundle
         stage.setTitle("BP");
         //InfoboxManager.downloadTemplates("default-infoboxes");

@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NonNull;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 
 
@@ -34,9 +35,15 @@ public final class SparqlRequest<T> {
     @NonNull
     private final TreeItem<T> treeRoot;
 
+    /**
+     * The data node root to append the nodes to.
+     */
     @NonNull
     private final DataNodeRoot<T> dataNodeRoot;
 
+    /**
+     * The restrictions (or rules) of this request. Used for filtering responses to the SPARQL request.
+     */
     private final Collection<Restriction> restrictions = new LinkedList<>();
 
     /**
@@ -57,4 +64,7 @@ public final class SparqlRequest<T> {
         restrictions.forEach(this::addRestriction);
     }
 
+    public Collection<Restriction> getRestrictions() {
+        return Collections.unmodifiableCollection(restrictions);
+    }
 }

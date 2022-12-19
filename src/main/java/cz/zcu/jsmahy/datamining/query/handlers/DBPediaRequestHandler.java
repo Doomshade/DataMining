@@ -259,9 +259,6 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
             return true;
         }
 
-        // this should not happen, but do a check regardless
-        assert previous != null && previous.isURIResource() : "Previous node must be a URI resource";
-
         final Resource resource = curr.asResource();
         readResource(model, resource);
 

@@ -21,6 +21,7 @@ public class MainMenuController implements Initializable {
     public JFXButton createOntologyBtn;
     @FXML
     public JFXButton loadOntologyBtn;
+    @FXML
     public JFXComboBox<String> sourceChooseComboBox;
 
     @Override
