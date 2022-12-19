@@ -12,7 +12,7 @@ public class DataNodeRootImpl<T> extends DataNodeImpl<T> implements DataNodeRoot
     public void iterate(BiConsumer<DataNode<T>, Integer> biConsumer) {
         final ObservableList<DataNode<T>> children = this.getChildren();
         if (!children.isEmpty()) {
-            iterate(biConsumer, 0, this);
+            iterate(biConsumer, -1, this);
         }
     }
 

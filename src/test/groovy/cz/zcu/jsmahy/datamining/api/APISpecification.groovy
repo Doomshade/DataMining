@@ -5,6 +5,8 @@ import com.google.inject.Injector
 import spock.lang.Shared
 import spock.lang.Specification
 
+import java.util.function.BiConsumer
+
 class APISpecification extends Specification {
     @Shared
     static Injector injector
@@ -87,6 +89,53 @@ class APISpecification extends Specification {
 
         where:
         node << [nodeFactory.newRoot(), nodeFactory.newNode(_)]
+    }
+
+    def "Should iterate through children of root with correct order"() {
+        given: "Root with children where some children may have their own children to demonstrate the iteration order."
+        BiConsumer<DataNode<?>, Integer> consumer = Mock()
+
+        def firstNode = nodeFactory.newNode("Test 1")
+        root.addChild(firstNode)
+
+        def secondNode = nodeFactory.newNode("Test 2")
+
+        def firstChildNode = nodeFactory.newNode("Test 21")
+        def secondChildNode = nodeFactory.newNode("Test 22")
+        secondNode.addChild(firstChildNode)
+        secondNode.addChild(secondChildNode)
+        root.addChild(secondNode)
+
+        def thirdNode = nodeFactory.newNode("Test 3")
+        def thirdChildNode = nodeFactory.newNode("Test 31")
+        def fourthChildNode = nodeFactory.newNode("Test 32")
+        thirdNode.addChild(thirdChildNode)
+        thirdNode.addChild(fourthChildNode)
+        root.addChild(thirdNode)
+
+        def fourthNode = nodeFactory.newNode("Test 4")
+        root.addChild(fourthNode)
+
+        when: "We iterate over the children with an empty consumer"
+        root.iterate(consumer)
+
+        then: "By definition the order of iterated children should be: Test 1, Test 2, Test 21, Test 22, Test 3, Test 31, Test 32, Test 4."
+        1 * consumer.accept(firstNode, 0)
+        then:
+        1 * consumer.accept(secondNode, 0)
+        then:
+        1 * consumer.accept(firstChildNode, 1)
+        then:
+        1 * consumer.accept(secondChildNode, 1)
+        then:
+        1 * consumer.accept(thirdNode, 0)
+        then:
+        1 * consumer.accept(thirdChildNode, 1)
+        then:
+        1 * consumer.accept(fourthChildNode, 1)
+        then:
+        1 * consumer.accept(fourthNode, 0)
+
     }
 
 }
