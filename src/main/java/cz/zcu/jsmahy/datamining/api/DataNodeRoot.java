@@ -1,19 +1,16 @@
 package cz.zcu.jsmahy.datamining.api;
 
-import javafx.collections.ObservableList;
-
 import java.util.function.BiConsumer;
 
 /**
  * <p>The root node of the data node tree.</p>
- * <p>There can only be <b>ONE</b> root in the whole hierarchy/tree. Methods such as {@link DataNode#addChild(DataNode)} with
- * {@link DataNodeRoot} instance as an argument will throw an {@link IllegalArgumentException}.</p>
+ * <p>There can only be <b>ONE</b> root in the whole hierarchy/tree. Methods such as {@link DataNodeImpl#addChild(DataNode)} with
+ * {@link DataNodeRootImpl} instance as an argument will throw an {@link IllegalArgumentException}.</p>
  *
  * @author Jakub Smrha
  * @since 1.0
  */
-public class DataNodeRoot<T> extends DataNode<T> {
-
+public interface DataNodeRoot<T> extends DataNode<T> {
     /**
      * <p>Iterates over the children of this root.</p>
      * <p>The first argument of the {@link BiConsumer} is the data node, the second argument is the breadth of the node in respect to the
@@ -43,22 +40,5 @@ public class DataNodeRoot<T> extends DataNode<T> {
      *
      * @param biConsumer the bi-consumer
      */
-    public void iterate(BiConsumer<DataNode<T>, Integer> biConsumer) {
-        final ObservableList<DataNode<T>> children = this.getChildren();
-        if (!children.isEmpty()) {
-            iterate(biConsumer, -1, children.get(0));
-        }
-    }
-
-    private void iterate(BiConsumer<DataNode<T>, Integer> biConsumer, int depth, DataNode<T> dataNode) {
-        if (dataNode != null) {
-            biConsumer.accept(dataNode, depth);
-            if (dataNode.hasChildren()) {
-                depth++;
-                for (final DataNode<T> node : dataNode.getChildren()) {
-                    iterate(biConsumer, depth, node);
-                }
-            }
-        }
-    }
+    void iterate(BiConsumer<DataNode<T>, Integer> biConsumer);
 }

@@ -3,11 +3,11 @@ package cz.zcu.jsmahy.datamining.api;
 import lombok.NonNull;
 
 /**
- * A factory for {@link DataNode}s.
+ * A factory for {@link DataNodeImpl}s.
  *
  * @author Jakub Smrha
- * @see DataNode
- * @see DataNodeRoot
+ * @see DataNodeImpl
+ * @see DataNodeRootImpl
  * @since 1.0
  */
 public interface DataNodeFactory<T> {

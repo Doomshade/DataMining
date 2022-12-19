@@ -11,12 +11,12 @@ import lombok.NonNull;
 final class DataNodeFactoryImpl<T> implements DataNodeFactory<T> {
 
     @Override
-    public DataNodeRoot<T> newRoot() {
-        return new DataNodeRoot<>();
+    public DataNodeRootImpl<T> newRoot() {
+        return new DataNodeRootImpl<>();
     }
 
     @Override
     public DataNode<T> newNode(final @NonNull T data) {
-        return new DataNode<>(data);
+        return new DataNodeImpl<>(data);
     }
 }

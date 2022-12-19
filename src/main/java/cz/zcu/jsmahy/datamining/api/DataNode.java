@@ -1,14 +1,9 @@
 package cz.zcu.jsmahy.datamining.api;
 
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import lombok.AccessLevel;
-import lombok.Data;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 
 import java.util.Collection;
-import java.util.Iterator;
 
 /**
  * This node represents a single node in the tree with a link to next nodes.
@@ -16,17 +11,7 @@ import java.util.Iterator;
  * @author Jakub Smrha
  * @since 1.0
  */
-@Data
-@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-public class DataNode<T> implements Iterable<DataNode<T>> {
-    @NonNull
-    private final T data;
-    private final ObservableList<DataNode<T>> children = FXCollections.observableArrayList();
-
-    protected DataNode() {
-        this.data = null;
-    }
-
+public interface DataNode<T> extends Iterable<DataNode<T>> {
     /**
      * Adds a child to this node.
      *
@@ -35,37 +20,40 @@ public class DataNode<T> implements Iterable<DataNode<T>> {
      * @throws IllegalArgumentException if the child is an instance of {@link DataNodeRoot}
      * @throws NullPointerException     if the child is {@code null}
      */
-    public void addChild(@NonNull DataNode<T> child) throws IllegalArgumentException, NullPointerException {
-        if (child instanceof DataNodeRoot) {
-            throw new IllegalArgumentException("Child cannot be root.");
-        }
-        this.children.add(child);
-    }
+    void addChild(@NonNull DataNode<T> child) throws IllegalArgumentException, NullPointerException;
 
-    public void addChildren(@NonNull Iterable<DataNode<T>> children) {
-        children.forEach(this::addChild);
-    }
+    /**
+     * Adds children to this node.
+     *
+     * @param children the children to add
+     *
+     * @throws IllegalArgumentException if the child is an instance of {@link DataNodeRoot}
+     * @throws NullPointerException     if the child is {@code null}
+     */
+    void addChildren(@NonNull Iterable<DataNode<T>> children) throws IllegalArgumentException, NullPointerException;
 
-    public void addChildren(@NonNull Collection<DataNode<T>> children) {
-        this.children.addAll(children);
-    }
+    /**
+     * Adds children to this node.
+     *
+     * @param children the children to add
+     *
+     * @throws IllegalArgumentException if the child is an instance of {@link DataNodeRoot}
+     * @throws NullPointerException     if the child is {@code null}
+     */
+    void addChildren(@NonNull Collection<DataNode<T>> children) throws IllegalArgumentException, NullPointerException;
 
     /**
      * @return The children of this node.
      */
-    public ObservableList<DataNode<T>> getChildren() {
-        return FXCollections.unmodifiableObservableList(children);
-    }
+    ObservableList<DataNode<T>> getChildren();
 
     /**
      * @return Whether this node has children (aka is a parent)
      */
-    public boolean hasChildren() {
-        return !children.isEmpty();
-    }
+    boolean hasChildren();
 
-    @Override
-    public Iterator<DataNode<T>> iterator() {
-        return children.iterator();
-    }
+    /**
+     * @return The data this node carries.
+     */
+    T getData();
 }
