@@ -31,9 +31,6 @@ public class DBPediaQueryTest {
             final SparqlRequest<RDFNode> request = new SparqlRequest<>(requestPage, namespace, link, new TreeItem<>(), null);
             final Service<Void> query = requestHandler.query(request);
             query.setOnSucceeded(x -> {
-                final Ontology ont = (Ontology) x.getSource()
-                                                 .getValue();
-                LOGGER.info("Printing ontology: {}", ont.toString());
             });
             query.setOnFailed(x -> {
                 query.getException()

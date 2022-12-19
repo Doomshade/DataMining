@@ -7,7 +7,6 @@ import com.jfoenix.controls.JFXSpinner;
 import com.jfoenix.controls.JFXTextArea;
 import com.jfoenix.controls.JFXTextField;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
-import cz.zcu.jsmahy.datamining.query.Ontology;
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
 import cz.zcu.jsmahy.datamining.query.SparqlRequest;
 import javafx.concurrent.Service;
@@ -48,15 +47,9 @@ public class LinkController<T extends RDFNode> implements Initializable {
 
         final Service<Void> query = dbPediaRequestHandler.query(request);
         query.setOnSucceeded(x -> {
-            final Ontology ont = (Ontology) x.getSource()
-                                             .getValue();
-            LOGGER.info("Printing ontology: {}", ont.toString());
             setDisabled(false);
-            System.out.println(ont);
-            final StringBuilder sb = new StringBuilder();
-            ont.printOntology(sb);
             textArea.textProperty()
-                    .set(sb.toString());
+                    .set("");
 
         });
 

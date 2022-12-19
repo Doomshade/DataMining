@@ -1,7 +1,6 @@
 package cz.zcu.jsmahy.datamining.io;
 
 import cz.zcu.jsmahy.datamining.io.xml.write.XMLWriter;
-import cz.zcu.jsmahy.datamining.query.Ontology;
 import cz.zcu.jsmahy.datamining.query.infobox.InfoboxTemplate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,9 +25,6 @@ public final class IOManager {
         saveInfoboxData(filename, infoboxTemplates.toArray(new InfoboxTemplate[0]));
     }
 
-    public static void saveOntology(Ontology ont) {
-
-    }
 
     public static void saveInfoboxData(String fileName, InfoboxTemplate... infoboxTemplates) throws IOException, XMLStreamException {
         validateFileName(fileName);
