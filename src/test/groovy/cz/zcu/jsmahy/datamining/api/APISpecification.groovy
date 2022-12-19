@@ -80,14 +80,14 @@ class APISpecification extends Specification {
         thrown(NullPointerException)
     }
 
-    def "Should throw IAE when adding root to the children of any node"() {
-        when: "Add the root to the node"
+    def "Should throw IAE when adding root to the children of any node type"() {
+        when: "Root is added to a data node"
         node.addChild(root)
 
-        then:
+        then: "Throw an IAE because that's not allowed"
         thrown(IllegalArgumentException)
 
-        where:
+        where: "Node is any node type, aka root or a regular node"
         node << [nodeFactory.newRoot(), nodeFactory.newNode(_)]
     }
 
