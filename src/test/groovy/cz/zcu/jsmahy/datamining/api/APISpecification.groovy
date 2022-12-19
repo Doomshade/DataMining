@@ -42,6 +42,7 @@ class APISpecification extends Specification {
     def "Data node root should return false because we did not add a child to it"() {
         expect:
         !root.hasChildren()
+        root.getChildren().isEmpty()
     }
 
     def "Data node root should return true because we added a child"() {
@@ -50,6 +51,7 @@ class APISpecification extends Specification {
 
         then:
         root.hasChildren()
+        root.getChildren().isEmpty()
     }
 
     def "Should throw NPE when passing in null child to a data node (root)"() {

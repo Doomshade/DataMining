@@ -21,8 +21,7 @@ import java.util.Properties;
  * @since 1.0
  */
 @Data
-public final class Config {
-    //<editor-fold desc="Static fields">
+public class Config {
     private final Logger logger = LogManager.getLogger(Config.class);
     private final Properties defaultProperties = new Properties();
     private final Properties properties = new Properties();
@@ -31,7 +30,6 @@ public final class Config {
     {
         load();
     }
-    //</editor-fold>
 
     //<editor-fold desc="Config properties">
     @Property(key = "max-depth",
