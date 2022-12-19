@@ -2,7 +2,7 @@ package cz.zcu.jsmahy.datamining.config;
 
 import cz.zcu.jsmahy.datamining.Main;
 import javafx.application.Platform;
-import lombok.Getter;
+import lombok.Data;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -20,15 +20,15 @@ import java.util.Properties;
  * @version 1.0
  * @since 1.0
  */
+@Data
 public final class Config {
     //<editor-fold desc="Static fields">
-    private static final Logger L = LogManager.getLogger(Config.class);
-    private static final Properties DEFAULT_PROPERTIES = new Properties();
-    private static final Properties PROPERTIES = new Properties();
-    private static final String FILENAME = "config.properties";
-    private static final Config INSTANCE = new Config();
+    private final Logger logger = LogManager.getLogger(Config.class);
+    private final Properties defaultProperties = new Properties();
+    private final Properties properties = new Properties();
+    private final String filename = "config.properties";
 
-    static {
+    {
         load();
     }
     //</editor-fold>
@@ -36,33 +36,31 @@ public final class Config {
     //<editor-fold desc="Config properties">
     @Property(key = "max-depth",
               defaultValue = "10")
-    @Getter
     private int maxDepth;
     //</editor-fold>
 
-    public static void load() {
-        L.info("Loading config...");
-        final File f = new File(FILENAME);
+    public void load() {
+        logger.info("Loading config...");
+        final File f = new File(filename);
         InputStream in = null;
         try {
             // if the config was not found in the directory, use the
             // default one built in the jar
             if (!f.exists()) {
                 in = Main.class.getClassLoader()
-                               .getResourceAsStream(FILENAME);
+                               .getResourceAsStream(filename);
             } else {
                 in = new FileInputStream(f);
             }
 
             // load the properties
-            DEFAULT_PROPERTIES.load(in);
-            L.info("Successfully loaded properties");
+            defaultProperties.load(in);
+            logger.info("Successfully loaded properties");
         } catch (IOException e) {
-            L.warn("Failed to load properties. Reason:");
-            L.catching(e);
+            logger.error("Failed to load properties", e);
         } finally {
             // load the properties and wire them to the fields
-            PROPERTIES.putAll(DEFAULT_PROPERTIES);
+            properties.putAll(defaultProperties);
             autowire();
 
             // don't forget to close the file
@@ -70,8 +68,7 @@ public final class Config {
                 try {
                     in.close();
                 } catch (IOException e) {
-                    L.warn("Failed to close the config input stream! Reason:");
-                    L.catching(e);
+                    logger.error("Failed to close the config input stream", e);
                 }
             }
         }
@@ -80,8 +77,8 @@ public final class Config {
     /**
      * Maps property key/values to fields with {@link Property} annotation
      */
-    private static void autowire() {
-        L.info("Autowiring fields...");
+    private void autowire() {
+        logger.info("Autowiring fields...");
 
         // iterate through fields
         for (Field field : Config.class.getDeclaredFields()) {
@@ -93,12 +90,11 @@ public final class Config {
             final Property prop = field.getAnnotation(Property.class);
             // get the property value and set the field value via reflection
             try {
-                final String value = PROPERTIES.getProperty(prop.key(), prop.defaultValue());
-                L.trace("Setting {} to {}", field.getName(), value);
+                final String value = properties.getProperty(prop.key(), prop.defaultValue());
+                logger.trace("Setting {} to {}", field.getName(), value);
                 setField(field, value);
             } catch (Exception e) {
-                L.fatal("Failed to autowire config, exiting...");
-                L.catching(e);
+                logger.fatal("Failed to autowire config, exiting...", e);
                 Platform.exit();
                 System.exit(1);
             }
@@ -113,24 +109,20 @@ public final class Config {
      *
      * @throws IllegalAccessException if the field could not be set
      */
-    private static void setField(final Field field, final String value) throws IllegalAccessException {
+    private void setField(final Field field, final String value) throws IllegalAccessException {
         final Class<?> type = field.getType();
         if (type == int.class) {
-            field.setInt(INSTANCE, Integer.parseInt(value));
+            field.setInt(this, Integer.parseInt(value));
         } else if (type == float.class) {
-            field.setFloat(INSTANCE, Float.parseFloat(value));
+            field.setFloat(this, Float.parseFloat(value));
         } else if (type == double.class) {
-            field.setDouble(INSTANCE, Double.parseDouble(value));
+            field.setDouble(this, Double.parseDouble(value));
         } else if (type == boolean.class) {
-            field.setBoolean(INSTANCE, Boolean.parseBoolean(value));
+            field.setBoolean(this, Boolean.parseBoolean(value));
         } else if (type == char.class) {
-            field.setChar(INSTANCE, value == null || value.isEmpty() ? ' ' : value.charAt(0));
+            field.setChar(this, value == null || value.isEmpty() ? ' ' : value.charAt(0));
         } else {
-            field.set(INSTANCE, value);
+            field.set(this, value);
         }
-    }
-
-    public static Config getInstance() {
-        return INSTANCE;
     }
 }
