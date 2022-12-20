@@ -182,6 +182,7 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
                 }
                 treeChildren.add(new TreeItem<>(data));
             });
+            searchFurther(model, nodeFactory, root, children.get(0), treeRoot, ambiguitySolver);
             return;
         }
         // multiple children found, that means we need to branch out

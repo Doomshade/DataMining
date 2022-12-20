@@ -120,6 +120,10 @@ order by ?pred
             return;
         }
 
+        if (selectedItem == ontologyTreeView.getRoot()) {
+            return;
+        }
+
         final String formattedItem = RDFNodeCellFactory.formatRDFNode(selectedItem.getValue());
         wikiPageWebView.getEngine()
                        .load(String.format(WIKI_URL, formattedItem));
@@ -170,7 +174,7 @@ order by ?pred
 
         final RequestHandler<T, Void> dbPediaRequestHandler = injector.getInstance(RequestHandler.class);
         final DataNodeFactory<T> dataNodeFactory = injector.getInstance(DataNodeFactory.class);
-        final SparqlRequest<T> request = new SparqlRequest<>(searchValue, "http://dbpedia.org/property/", "predecessor", ontologyTreeView.getRoot(), dataNodeFactory.newRoot(null));
+        final SparqlRequest<T> request = new SparqlRequest<>(searchValue, "http://dbpedia.org/ontology/", "predecessor", ontologyTreeView.getRoot(), dataNodeFactory.newRoot(null));
         final Service<Void> query = dbPediaRequestHandler.query(request);
         query.setOnSucceeded(x -> {
 
