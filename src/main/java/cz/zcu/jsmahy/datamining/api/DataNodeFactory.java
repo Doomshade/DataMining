@@ -14,11 +14,11 @@ public interface DataNodeFactory<T> {
     /**
      * Creates a new root.
      *
-     * @param <T> the data type
+     * @param rootName the root display name
      *
      * @return a data node root
      */
-    DataNodeRoot<T> newRoot();
+    DataNodeRoot<T> newRoot(final String rootName);
 
     /**
      * Creates a new data node with the given data.

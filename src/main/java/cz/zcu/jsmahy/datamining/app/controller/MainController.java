@@ -24,7 +24,10 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.web.WebView;
+import org.apache.jena.graph.Node;
+import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.impl.LiteralImpl;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -139,11 +142,16 @@ order by ?pred
             return;
         }
 
-        ontologyTreeView.setRoot(new TreeItem<>(null));
-        final ObservableList<TreeItem<T>> children = ontologyTreeView.getRoot()
-                                                                     .getChildren();
+        final Node node = NodeFactory.createLiteral("Dynastie hovad");
+        final RDFNode literal = new LiteralImpl(node, null);
+        final TreeItem<T> root = new TreeItem<>((T) literal);
+        ontologyTreeView.setRoot(root);
+        ontologyTreeView.setShowRoot(node.isLiteral() && !node.getLiteral()
+                                                              .getLexicalForm()
+                                                              .isBlank());
+        root.setExpanded(true);
+        final ObservableList<TreeItem<T>> children = root.getChildren();
         children.clear();
-        ontologyTreeView.setShowRoot(false);
         children.addListener(new ListChangeListener<TreeItem<T>>() {
             @Override
             public void onChanged(final Change<? extends TreeItem<T>> c) {
@@ -162,7 +170,7 @@ order by ?pred
 
         final RequestHandler<T, Void> dbPediaRequestHandler = injector.getInstance(RequestHandler.class);
         final DataNodeFactory<T> dataNodeFactory = injector.getInstance(DataNodeFactory.class);
-        final SparqlRequest<T> request = new SparqlRequest<>(searchValue, "http://dbpedia.org/property/", "predecessor", ontologyTreeView.getRoot(), dataNodeFactory.newRoot());
+        final SparqlRequest<T> request = new SparqlRequest<>(searchValue, "http://dbpedia.org/property/", "predecessor", ontologyTreeView.getRoot(), dataNodeFactory.newRoot(null));
         final Service<Void> query = dbPediaRequestHandler.query(request);
         query.setOnSucceeded(x -> {
 

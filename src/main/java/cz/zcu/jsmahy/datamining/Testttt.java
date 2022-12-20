@@ -27,7 +27,7 @@ public class Testttt {
     private void test() {
         final Injector injector = Guice.createInjector(new DBPediaModule());
         injector.injectMembers(this);
-        final DataNodeRoot<String> root = dataNodeFactory.newRoot();
+        final DataNodeRoot<String> root = dataNodeFactory.newRoot(null);
 
         final DataNode<String> kaja4 = dataNodeFactory.newNode("karel iv");
         kaja4.addChild(dataNodeFactory.newNode("john of bohemia"));

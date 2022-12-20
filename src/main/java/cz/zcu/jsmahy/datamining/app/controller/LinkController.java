@@ -46,7 +46,7 @@ public class LinkController<T extends RDFNode> implements Initializable {
 
         String ontology = searchField.getText();
         final RequestHandler<T, Void> dbPediaRequestHandler = injector.getInstance(RequestHandler.class);
-        SparqlRequest<T> request = new SparqlRequest<>(ontology, "http://dbpedia.org/ontology/", "successor", new TreeItem<>(), nodeFactory.newRoot());
+        SparqlRequest<T> request = new SparqlRequest<>(ontology, "http://dbpedia.org/ontology/", "successor", new TreeItem<>(), nodeFactory.newRoot("Dynastie blbců"));
 
         final Service<Void> query = dbPediaRequestHandler.query(request);
         query.setOnSucceeded(x -> {

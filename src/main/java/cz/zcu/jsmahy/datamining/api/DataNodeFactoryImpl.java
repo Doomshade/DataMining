@@ -11,8 +11,8 @@ import lombok.NonNull;
 final class DataNodeFactoryImpl<T> implements DataNodeFactory<T> {
 
     @Override
-    public DataNodeRootImpl<T> newRoot() {
-        return new DataNodeRootImpl<>();
+    public DataNodeRootImpl<T> newRoot(final String rootName) {
+        return new DataNodeRootImpl<>(rootName);
     }
 
     @Override

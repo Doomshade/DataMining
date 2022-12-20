@@ -21,7 +21,7 @@ class APISpecification extends Specification {
     }
 
     void setup() {
-        root = nodeFactory.newRoot()
+        root = nodeFactory.newRoot(null)
     }
 
     def "Should throw NPE when passing null reference when trying to create a new data node"() {
@@ -88,7 +88,7 @@ class APISpecification extends Specification {
         thrown(IllegalArgumentException)
 
         where: "Node is any node type, aka root or a regular node"
-        node << [nodeFactory.newRoot(), nodeFactory.newNode(_)]
+        node << [nodeFactory.newRoot(null), nodeFactory.newNode(_)]
     }
 
     def "Should iterate through children of root with correct order"() {

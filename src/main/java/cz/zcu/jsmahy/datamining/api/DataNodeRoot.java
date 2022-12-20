@@ -51,4 +51,9 @@ public interface DataNodeRoot<T> extends DataNode<T> {
      */
     @Override
     T getData() throws UnsupportedOperationException;
+
+    /**
+     * @return The display name of the root. If null then there's no display name.
+     */
+    String getName();
 }
