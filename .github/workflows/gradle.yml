@@ -29,5 +29,5 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
         cache: 'gradle'
-    - run: ./gradlew run --no-daemon
+    - run: ./gradlew build --no-daemon
         
