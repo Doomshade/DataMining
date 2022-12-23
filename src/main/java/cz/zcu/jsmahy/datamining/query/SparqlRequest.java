@@ -1,5 +1,6 @@
 package cz.zcu.jsmahy.datamining.query;
 
+import cz.zcu.jsmahy.datamining.api.AmbiguitySolver;
 import cz.zcu.jsmahy.datamining.api.DataNodeRoot;
 import javafx.scene.control.TreeItem;
 import lombok.AllArgsConstructor;
@@ -13,7 +14,7 @@ import java.util.LinkedList;
 
 @Data
 @AllArgsConstructor
-public final class SparqlRequest<T> {
+public final class SparqlRequest<T, R> {
     /**
      * the request to send to the web page, e.g. {@code Windows_10}
      */
@@ -40,6 +41,9 @@ public final class SparqlRequest<T> {
      */
     @NonNull
     private final DataNodeRoot<T> dataNodeRoot;
+
+    @NonNull
+    private final AmbiguitySolver<T, R> ambiguitySolver;
 
     /**
      * The restrictions (or rules) of this request. Used for filtering responses to the SPARQL request.

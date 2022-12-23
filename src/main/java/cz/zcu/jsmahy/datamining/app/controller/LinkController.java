@@ -1,19 +1,11 @@
 package cz.zcu.jsmahy.datamining.app.controller;
 
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXSpinner;
 import com.jfoenix.controls.JFXTextArea;
 import com.jfoenix.controls.JFXTextField;
-import cz.zcu.jsmahy.datamining.api.DataNodeFactory;
-import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
-import cz.zcu.jsmahy.datamining.query.RequestHandler;
-import cz.zcu.jsmahy.datamining.query.SparqlRequest;
-import javafx.concurrent.Service;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.TreeItem;
 import javafx.scene.input.MouseEvent;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
@@ -40,30 +32,30 @@ public class LinkController<T extends RDFNode> implements Initializable {
 
     @FXML
     public void search(final MouseEvent mouseEvent) {
-        setDisabled(true);
-        final Injector injector = Guice.createInjector(new DBPediaModule());
-        final DataNodeFactory<T> nodeFactory = injector.getInstance(DataNodeFactory.class);
-
-        String ontology = searchField.getText();
-        final RequestHandler<T, Void> dbPediaRequestHandler = injector.getInstance(RequestHandler.class);
-        SparqlRequest<T> request = new SparqlRequest<>(ontology, "http://dbpedia.org/ontology/", "successor", new TreeItem<>(), nodeFactory.newRoot("Dynastie blbců"));
-
-        final Service<Void> query = dbPediaRequestHandler.query(request);
-        query.setOnSucceeded(x -> {
-            setDisabled(false);
-            textArea.textProperty()
-                    .set("");
-
-        });
-
-        query.setOnFailed(x -> {
-            query.getException()
-                 .printStackTrace();
-            setDisabled(false);
-        });
-        query.restart();
-        progress.progressProperty()
-                .bind(query.progressProperty());
+//        setDisabled(true);
+//        final Injector injector = Guice.createInjector(new DBPediaModule());
+//        final DataNodeFactory<T> nodeFactory = injector.getInstance(DataNodeFactory.class);
+//
+//        String ontology = searchField.getText();
+//        final RequestHandler<T, Void> dbPediaRequestHandler = injector.getInstance(RequestHandler.class);
+//        SparqlRequest<T, Void> request = new SparqlRequest<>(ontology, "http://dbpedia.org/ontology/", "successor", new TreeItem<>(), nodeFactory.newRoot("Dynastie blbců"), new User);
+//
+//        final Service<Void> query = dbPediaRequestHandler.query(request);
+//        query.setOnSucceeded(x -> {
+//            setDisabled(false);
+//            textArea.textProperty()
+//                    .set("");
+//
+//        });
+//
+//        query.setOnFailed(x -> {
+//            query.getException()
+//                 .printStackTrace();
+//            setDisabled(false);
+//        });
+//        query.restart();
+//        progress.progressProperty()
+//                .bind(query.progressProperty());
     }
 
 

@@ -30,21 +30,11 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<T> {
 
         // TODO: context menu for "add/continue line"
         final ContextMenu contextMenu = new ContextMenu();
-        final MenuItem editItem = new MenuItem();
 
-        editItem.textProperty()
-                .bind(Bindings.format(resources.getString("ontology.prompt.add"), textProperty()));
-        editItem.setOnAction(event -> {
-            final RDFNode item = getItem();
-            // code to edit item...
-        });
+        final MenuItem addRestrictionItem = buildAddRestrictionItem(resources);
+        final MenuItem editItem = buildEditItem(resources);
+        final MenuItem deleteItem = buildDeleteItem(resources);
 
-        final MenuItem deleteItem = new MenuItem();
-        deleteItem.textProperty()
-                  .bind(Bindings.format(resources.getString("ontology.prompt.delete"), textProperty()));
-        deleteItem.setOnAction(event -> rdfList.getRoot()
-                                               .getChildren()
-                                               .remove(getTreeItem()));
         contextMenu.getItems()
                    .addAll(editItem, deleteItem);
 
@@ -55,6 +45,38 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<T> {
                 setContextMenu(null);
             }
         });
+    }
+
+    private MenuItem buildAddRestrictionItem(final ResourceBundle resources) {
+        final MenuItem menuItem = new MenuItem();
+        menuItem.textProperty()
+                .bind(Bindings.format(resources.getString("ontology.prompt.add.restriction"), textProperty()));
+        menuItem.setOnAction(event -> {
+
+        });
+        return null;
+    }
+
+    private MenuItem buildDeleteItem(final ResourceBundle resources) {
+        final MenuItem menuItem = new MenuItem();
+        menuItem.textProperty()
+                .bind(Bindings.format(resources.getString("ontology.prompt.delete"), textProperty()));
+        menuItem.setOnAction(event -> rdfList.getRoot()
+                                             .getChildren()
+                                             .remove(getTreeItem()));
+        return menuItem;
+    }
+
+    private MenuItem buildEditItem(final ResourceBundle resources) {
+        final MenuItem menuItem = new MenuItem();
+
+        menuItem.textProperty()
+                .bind(Bindings.format(resources.getString("ontology.prompt.add"), textProperty()));
+        menuItem.setOnAction(event -> {
+            final RDFNode node = getItem();
+            // code to edit item...
+        });
+        return menuItem;
     }
 
     /**

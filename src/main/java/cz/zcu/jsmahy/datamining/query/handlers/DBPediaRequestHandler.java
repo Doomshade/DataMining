@@ -7,7 +7,6 @@ import cz.zcu.jsmahy.datamining.api.DataNode;
 import cz.zcu.jsmahy.datamining.api.DataNodeFactory;
 import cz.zcu.jsmahy.datamining.api.DataNodeRoot;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
-import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeListCellFactory;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import cz.zcu.jsmahy.datamining.query.AbstractRequestHandler;
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
@@ -17,7 +16,7 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.scene.control.*;
+import javafx.scene.control.TreeItem;
 import lombok.NonNull;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.ontology.OntModel;
@@ -36,7 +35,7 @@ import java.util.stream.Collectors;
  * @author Jakub Šmrha
  * @version 1.0
  */
-public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHandler<T, Void> {
+public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends AbstractRequestHandler<T, R> {
     private static final Logger L = LogManager.getLogger(DBPediaRequestHandler.class);
     private static final String DBPEDIA_SITE = "http://dbpedia.org/resource/";
     private static final Comparator<Statement> STATEMENT_COMPARATOR = (x, y) -> Boolean.compare(x.getObject()
@@ -45,16 +44,15 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
                                                                                                  .isURIResource());
     private static boolean requesting = false;
     private final Collection<String> usedURIs = new HashSet<>();
-    private SparqlRequest<T> request = null;
+    private SparqlRequest<T, R> request = null;
 
     private final DataNodeFactory<T> nodeFactory;
-    private final AmbiguitySolver<T> ambiguitySolver;
+    private AmbiguitySolver<T, R> ambiguitySolver;
 
     {
         final Injector injector = Guice.createInjector(new DBPediaModule());
         injector.injectMembers(this);
         nodeFactory = injector.getInstance(DataNodeFactory.class);
-        ambiguitySolver = new UserAmbiguitySolver();
     }
 
 
@@ -78,7 +76,7 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
     }
 
     @Override
-    protected synchronized Void internalQuery(@NonNull final SparqlRequest<T> request) throws InvalidQueryException {
+    protected synchronized R internalQuery(@NonNull final SparqlRequest<T, R> request) throws InvalidQueryException {
         if (requesting) {
             throw new IllegalStateException("Already requesting!");
         }
@@ -86,6 +84,7 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
 
         // create the root request and model
         final String r = DBPEDIA_SITE.concat(request.getRequestPage());
+        this.ambiguitySolver = request.getAmbiguitySolver();
         final OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
         try {
             L.debug(String.format("Requesting %s", r));
@@ -116,7 +115,7 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
         final ObservableList<DataNode<T>> dataNodeRootChildren = dataNodeRoot.getChildren();
         final ObservableList<TreeItem<T>> treeRootChildren = treeRoot.getChildren();
         treeRootChildren.addListener(new TreeItemListChangeListener(dataNodeRootChildren));
-        bfs(model, selector, nodeFactory, dataNodeRoot, treeRoot, ambiguitySolver);
+        bfs(model, selector, nodeFactory, dataNodeRoot, treeRoot);
         L.debug("Done searching");
         requesting = false;
         return null;
@@ -128,8 +127,7 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
      * @param model    the model
      * @param selector the selector
      */
-    private void bfs(final Model model, final Selector selector, final DataNodeFactory<T> nodeFactory, final DataNodeRoot<T> root, final TreeItem<T> treeRoot,
-                     final AmbiguitySolver<T> ambiguitySolver) {
+    private void bfs(final Model model, final Selector selector, final DataNodeFactory<T> nodeFactory, final DataNodeRoot<T> root, final TreeItem<T> treeRoot) {
         // add the current node to the tree node
         final DataNode<T> curr = nodeFactory.newNode((T) selector.getSubject());
         final ObservableList<TreeItem<T>> treeChildren = treeRoot.getChildren();
@@ -182,17 +180,17 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
                 }
                 treeChildren.add(new TreeItem<>(data));
             });
-            searchFurther(model, nodeFactory, root, children.get(0), treeRoot, ambiguitySolver);
+            searchFurther(model, nodeFactory, root, children.get(0), treeRoot);
             return;
         }
         // multiple children found, that means we need to branch out
         // the ambiguity solver might pop up a dialogue where it could wait
         // for the response of the user
         // the dialogue is then responsible for notifying the monitor of this object
-        // to free this thread
+        // to free this thread via unlockDialogPane method
         // the thread will wait up to 5 seconds and check for the result if the
         // dialogue fails to notify the monitor
-        final AtomicReference<DataNode<T>> next = ambiguitySolver.call(children);
+        final AtomicReference<DataNode<T>> next = ambiguitySolver.call(children, this);
         while (next.get() == null) {
             try {
                 wait(5000);
@@ -203,7 +201,7 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
 
         // if a node was chosen search further down that node
         if (next.get() != null) {
-            searchFurther(model, nodeFactory, root, next.get(), treeRoot, ambiguitySolver);
+            searchFurther(model, nodeFactory, root, next.get(), treeRoot);
             return;
         }
 
@@ -224,12 +222,11 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
                                         }, List::addAll));
         });
         for (final DataNode<T> child : children) {
-            searchFurther(model, nodeFactory, root, child, treeRoot, ambiguitySolver);
+            searchFurther(model, nodeFactory, root, child, treeRoot);
         }
     }
 
-    private void searchFurther(final Model model, final DataNodeFactory<T> nodeFactory, final DataNodeRoot<T> root, final DataNode<T> next, final TreeItem<T> treeRoot,
-                               final AmbiguitySolver<T> ambiguitySolver) {
+    private void searchFurther(final Model model, final DataNodeFactory<T> nodeFactory, final DataNodeRoot<T> root, final DataNode<T> next, final TreeItem<T> treeRoot) {
         final T data = next.getData();
         if (!data.isURIResource()) {
             return;
@@ -238,7 +235,7 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
         readResource(model, resource);
         if (usedURIs.add(resource.getURI())) {
             final Selector sel = getSelector(resource, model.getProperty(request.getNamespace(), request.getLink()));
-            bfs(model, sel, nodeFactory, root, treeRoot, ambiguitySolver);
+            bfs(model, sel, nodeFactory, root, treeRoot);
         }
     }
 
@@ -284,76 +281,6 @@ public class DBPediaRequestHandler<T extends RDFNode> extends AbstractRequestHan
     private void readResource(final Model model, final Resource resource) {
         String URI = resource.getURI();
         model.read(URI);
-    }
-
-    private class UserAmbiguitySolver implements AmbiguitySolver<T> {
-
-        @Override
-        public AtomicReference<DataNode<T>> call(final ObservableList<DataNode<T>> list) {
-            AtomicReference<DataNode<T>> ref = new AtomicReference<>();
-            Platform.runLater(() -> new DialogueHandler(list, ref).showDialogueAndWait());
-            return ref;
-        }
-
-        private class DialogueHandler {
-            private final Dialog<DataNode<T>> node = new Dialog<>();
-            private final DialogPane dialogPane = node.getDialogPane();
-            private final AtomicReference<DataNode<T>> ref;
-            private final ListView<DataNode<T>> content = new ListView<>();
-
-            {
-                dialogPane.getButtonTypes()
-                          .addAll(ButtonType.OK, ButtonType.CANCEL);
-                content.setCellFactory(x -> new RDFNodeListCellFactory<>());
-                node.setResultConverter(buttonType -> content.getSelectionModel()
-                                                             .getSelectedItem());
-            }
-
-            public DialogueHandler(final ObservableList<DataNode<T>> list, final AtomicReference<DataNode<T>> ref) {
-                this.ref = ref;
-                this.content.setItems(list);
-                this.dialogPane.setContent(content);
-            }
-
-            public void showDialogueAndWait() {
-                // show the dialogue and wait for response
-                ref.set(node.showAndWait()
-                            .orElse(null));
-
-                // once we receive the response notify the thread under the request handler's monitor
-                // that we got a response from the user
-                // the thread waits otherwise for another 5 seconds
-                synchronized (DBPediaRequestHandler.this) {
-                    DBPediaRequestHandler.this.notify();
-                }
-            }
-        }
-    }
-
-    private class DefaultAllAmbiguitySolver implements AmbiguitySolver<T> {
-
-        @Override
-        public AtomicReference<DataNode<T>> call(final ObservableList<DataNode<T>> dataNodeList) {
-            return new AtomicReference<>(null);
-        }
-    }
-
-    private class DefaultFirstAmbiguitySolver implements AmbiguitySolver<T> {
-
-        @Override
-        public AtomicReference<DataNode<T>> call(final ObservableList<DataNode<T>> dataNodeList) {
-            final AtomicReference<DataNode<T>> ref = new AtomicReference<>();
-            DataNode<T> result = null;
-            for (DataNode<T> dataNode : dataNodeList) {
-                result = dataNode;
-                if (dataNode.getData()
-                            .isURIResource()) {
-                    break;
-                }
-            }
-            ref.set(result);
-            return ref;
-        }
     }
 
     private class TreeItemListChangeListener implements ListChangeListener<TreeItem<T>> {

@@ -26,10 +26,10 @@ class DBPediaSpecification extends Specification {
 
     def "Should throw NPE when passing null query to request handler"() {
         given:
-        def requestHandler = injector.getInstance(RequestHandler.class);
+        def requestHandler = injector.getInstance(RequestHandler.class)
 
         when:
-        requestHandler.query(null);
+        requestHandler.query(null)
 
         then:
         thrown(NullPointerException)

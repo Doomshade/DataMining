@@ -7,10 +7,10 @@ import lombok.NonNull;
 
 
 public abstract class AbstractRequestHandler<T, R> extends Service<R> implements RequestHandler<T, R> {
-    private SparqlRequest<T> request;
+    private SparqlRequest<T, R> request;
 
     @Override
-    public final Service<R> query(@NonNull final SparqlRequest<T> request) throws InvalidQueryException {
+    public final Service<R> query(@NonNull final SparqlRequest<T, R> request) throws InvalidQueryException {
         this.request = request;
         return this;
     }
@@ -25,6 +25,11 @@ public abstract class AbstractRequestHandler<T, R> extends Service<R> implements
         };
     }
 
+    @Override
+    public synchronized void unlockDialogPane() {
+        notify();
+    }
+
     /**
      * The internal query request called in the {@link Task} that's created by this {@link Service}.
      *
@@ -35,5 +40,5 @@ public abstract class AbstractRequestHandler<T, R> extends Service<R> implements
      * @throws InvalidQueryException A convenience exception if the request has invalid parameters.
      * @see Service#createTask()
      */
-    protected abstract R internalQuery(final SparqlRequest<T> request) throws InvalidQueryException;
+    protected abstract R internalQuery(final SparqlRequest<T, R> request) throws InvalidQueryException;
 }

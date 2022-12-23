@@ -23,5 +23,7 @@ public interface RequestHandler<T, R> {
      *
      * @throws InvalidQueryException if the request is invalid
      */
-    Service<R> query(SparqlRequest<T> request) throws InvalidQueryException;
+    Service<R> query(SparqlRequest<T, R> request) throws InvalidQueryException;
+
+    void unlockDialogPane();
 }

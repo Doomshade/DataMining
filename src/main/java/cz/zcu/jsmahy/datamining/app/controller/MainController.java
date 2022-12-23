@@ -10,6 +10,7 @@ import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
 import cz.zcu.jsmahy.datamining.query.SparqlRequest;
+import cz.zcu.jsmahy.datamining.query.UserAssistedAmbiguitySolver;
 import javafx.application.Platform;
 import javafx.beans.Observable;
 import javafx.beans.value.ChangeListener;
@@ -174,7 +175,8 @@ order by ?pred
 
         final RequestHandler<T, Void> dbPediaRequestHandler = injector.getInstance(RequestHandler.class);
         final DataNodeFactory<T> dataNodeFactory = injector.getInstance(DataNodeFactory.class);
-        final SparqlRequest<T> request = new SparqlRequest<>(searchValue, "http://dbpedia.org/ontology/", "predecessor", ontologyTreeView.getRoot(), dataNodeFactory.newRoot(null));
+        final SparqlRequest<T, Void> request =
+                new SparqlRequest<>(searchValue, "http://dbpedia.org/ontology/", "predecessor", ontologyTreeView.getRoot(), dataNodeFactory.newRoot(null), new UserAssistedAmbiguitySolver<>());
         final Service<Void> query = dbPediaRequestHandler.query(request);
         query.setOnSucceeded(x -> {
 
@@ -192,8 +194,8 @@ order by ?pred
                      .bind(query.runningProperty());
         this.progressIndicator.visibleProperty()
                               .bind(query.runningProperty());
-        progressIndicator.progressProperty()
-                         .bind(query.progressProperty());
+        this.progressIndicator.progressProperty()
+                              .bind(query.progressProperty());
     }
 
     private Alert buildExceptionAlert(final Throwable e) {
