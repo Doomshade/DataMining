@@ -14,6 +14,8 @@ import org.apache.jena.rdf.model.RDFNode;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
+ * A user assisted ambiguity solver. The solver prompts the user using a simple GUI to choose the right target node.
+ *
  * @author Jakub Šmrha
  * @version 1.0
  */
