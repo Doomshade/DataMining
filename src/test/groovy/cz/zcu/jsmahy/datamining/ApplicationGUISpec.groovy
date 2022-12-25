@@ -14,6 +14,11 @@ import org.testfx.util.WaitForAsyncUtils
  * @since 25.12.2022
  */
 class ApplicationGUISpec extends ApplicationSpec {
+    private ResourceBundle resourceBundle
+
+    void setup() {
+        resourceBundle = ResourceBundle.getBundle("lang")
+    }
 
     @Override
     void init() throws Exception {
@@ -35,12 +40,12 @@ class ApplicationGUISpec extends ApplicationSpec {
 
     def "should click on button"() {
         given:
-        def button = lookup(".button").queryButton()
+        def button = lookup("#searchButton").queryButton()
 
         when:
         clickOn(button)
 
         then:
-        FxAssert.verifyThat(button, LabeledMatchers.hasText("Hledat"))
+        FxAssert.verifyThat(button, LabeledMatchers.hasText(resourceBundle.getString("search")))
     }
 }
