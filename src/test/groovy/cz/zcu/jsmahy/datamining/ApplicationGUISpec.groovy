@@ -7,6 +7,7 @@ import org.testfx.api.FxToolkit
 import org.testfx.framework.spock.ApplicationSpec
 import org.testfx.matcher.control.LabeledMatchers
 import org.testfx.util.WaitForAsyncUtils
+import spock.lang.Ignore
 
 /**
  * @author Jakub Šmrha
@@ -38,6 +39,7 @@ class ApplicationGUISpec extends ApplicationSpec {
         FxToolkit.cleanupStages()
     }
 
+    @Ignore
     def "should click on button"() {
         given:
         def button = lookup("#searchButton").queryButton()
