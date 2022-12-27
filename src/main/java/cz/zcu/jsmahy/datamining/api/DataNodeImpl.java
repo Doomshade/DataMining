@@ -13,7 +13,7 @@ import java.util.Iterator;
 
 @Data
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-public class DataNodeImpl<T> implements DataNode<T> {
+class DataNodeImpl<T> implements DataNode<T> {
     @NonNull
     private final T data;
     private final ObservableList<DataNode<T>> children = FXCollections.observableArrayList();
@@ -54,4 +54,27 @@ public class DataNodeImpl<T> implements DataNode<T> {
     public Iterator<DataNode<T>> iterator() {
         return children.iterator();
     }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof final DataNodeImpl<?> dataNode)) {
+            return false;
+        }
+
+        if (!getData().equals(dataNode.getData())) {
+            return false;
+        }
+        return getChildren().equals(dataNode.getChildren());
+    }
+
+    @Override
+    public int hashCode() {
+        int result = getData().hashCode();
+        result = 31 * result + getChildren().hashCode();
+        return result;
+    }
+
 }

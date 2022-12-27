@@ -1,5 +1,6 @@
 package cz.zcu.jsmahy.datamining.app.controller.cell;
 
+import cz.zcu.jsmahy.datamining.api.DataNode;
 import javafx.beans.binding.Bindings;
 import javafx.scene.control.*;
 import org.apache.jena.rdf.model.Literal;
@@ -20,12 +21,12 @@ import java.util.ResourceBundle;
  * @author Jakub Smrha
  * @since 1.0
  */
-public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<T> {
+public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>> {
     public static final String SPECIAL_CHARACTERS = "_";
     private static final Logger LOGGER = LogManager.getLogger(RDFNodeCellFactory.class);
-    private final TreeView<T> rdfList;
+    private final TreeView<DataNode<T>> rdfList;
 
-    public RDFNodeCellFactory(final TreeView<T> rdfList, final ResourceBundle resources) {
+    public RDFNodeCellFactory(final TreeView<DataNode<T>> rdfList, final ResourceBundle resources) {
         this.rdfList = rdfList;
 
         // TODO: context menu for "add/continue line"
@@ -73,7 +74,7 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<T> {
         menuItem.textProperty()
                 .bind(Bindings.format(resources.getString("ontology.prompt.add"), textProperty()));
         menuItem.setOnAction(event -> {
-            final RDFNode node = getItem();
+            final DataNode<T> node = getItem();
             // code to edit item...
         });
         return menuItem;
@@ -88,7 +89,7 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<T> {
      *
      * @return {@link RDFNode} in a simple {@link String} representation
      */
-    public static String formatRDFNode(RDFNode node) {
+    public static <T extends RDFNode> String formatRDFNode(T node) {
         if (node == null) {
             return "null";
         }
@@ -125,12 +126,12 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<T> {
      *
      * @see RDFNodeCellFactory#formatRDFNode(RDFNode)
      */
-    private static String prettyFormat(RDFNode node) {
-        return formatRDFNode(node).replaceAll(SPECIAL_CHARACTERS, " ");
+    private String prettyFormat(DataNode<T> node) {
+        return formatRDFNode(node.getData()).replaceAll(SPECIAL_CHARACTERS, " ");
     }
 
     @Override
-    protected void updateItem(final T item, final boolean empty) {
+    protected void updateItem(final DataNode<T> item, final boolean empty) {
         super.updateItem(item, empty);
         setText(item == null ? null : prettyFormat(item));
     }

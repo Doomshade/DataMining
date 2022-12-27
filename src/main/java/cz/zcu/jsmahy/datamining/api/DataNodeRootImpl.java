@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import java.util.function.BiConsumer;
 
 @RequiredArgsConstructor
-public class DataNodeRootImpl<T> extends DataNodeImpl<T> implements DataNodeRoot<T> {
+class DataNodeRootImpl<T> extends DataNodeImpl<T> implements DataNodeRoot<T> {
     @Getter
     private final String name;
 

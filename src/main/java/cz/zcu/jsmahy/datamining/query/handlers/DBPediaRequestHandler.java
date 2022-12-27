@@ -38,6 +38,10 @@ import java.util.stream.Collectors;
 public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends AbstractRequestHandler<T, R> {
     private static final Logger L = LogManager.getLogger(DBPediaRequestHandler.class);
     private static final String DBPEDIA_SITE = "http://dbpedia.org/resource/";
+    /**
+     * <p>This comparator ensures the URI resources are placed first over literal resources.</p>
+     * <p>The reasoning behind is simple: if the user wishes to fast forward when searching down the line we need to iterate through URI resources first.</p>
+     */
     private static final Comparator<Statement> STATEMENT_COMPARATOR = (x, y) -> Boolean.compare(x.getObject()
                                                                                                  .isURIResource(),
                                                                                                 y.getObject()
@@ -110,28 +114,26 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         // now iterate recursively
         L.debug("Searching...");
 
-        final DataNodeRoot<T> dataNodeRoot = request.getDataNodeRoot();
-        final TreeItem<T> treeRoot = request.getTreeRoot();
-        final ObservableList<DataNode<T>> dataNodeRootChildren = dataNodeRoot.getChildren();
-        final ObservableList<TreeItem<T>> treeRootChildren = treeRoot.getChildren();
-        treeRootChildren.addListener(new TreeItemListChangeListener(dataNodeRootChildren));
-        bfs(model, selector, nodeFactory, dataNodeRoot, treeRoot);
+        final TreeItem<DataNode<T>> treeRoot = request.getTreeRoot();
+        bfs(model, selector, nodeFactory, treeRoot);
         L.debug("Done searching");
         requesting = false;
         return null;
     }
 
     /**
-     * Performs a DFS on the given model, given selector, and a previous link
+     * Performs a DFS on the given model, given selector, and a previous link. Adds the subject of the selector to the tree.
      *
-     * @param model    the model
-     * @param selector the selector
+     * @param model       the model
+     * @param selector    the selector
+     * @param nodeFactory the data node factory
+     * @param treeRoot    the tree root
      */
-    private void bfs(final Model model, final Selector selector, final DataNodeFactory<T> nodeFactory, final DataNodeRoot<T> root, final TreeItem<T> treeRoot) {
+    private void bfs(final Model model, final Selector selector, final DataNodeFactory<T> nodeFactory, final TreeItem<DataNode<T>> treeRoot) {
         // add the current node to the tree node
         final DataNode<T> curr = nodeFactory.newNode((T) selector.getSubject());
-        final ObservableList<TreeItem<T>> treeChildren = treeRoot.getChildren();
-        Platform.runLater(() -> treeChildren.add(new TreeItem<>(curr.getData())));
+        final ObservableList<TreeItem<DataNode<T>>> treeChildren = treeRoot.getChildren();
+        Platform.runLater(() -> treeChildren.add(new TreeItem<>(curr)));
 
         final List<Statement> statements = model.listStatements(selector)
                                                 .toList();
@@ -169,18 +171,8 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         // only one found, that means it's going linearly
         // pass in this call's parent
         if (children.size() == 1) {
-            Platform.runLater(() -> {
-                final DataNode<T> first = children.get(0);
-                final T data = first.getData();
-                for (TreeItem<T> item : treeChildren) {
-                    if (item.getValue()
-                            .equals(data)) {
-                        return;
-                    }
-                }
-                treeChildren.add(new TreeItem<>(data));
-            });
-            searchFurther(model, nodeFactory, root, children.get(0), treeRoot);
+            final DataNode<T> first = children.get(0);
+            searchFurther(model, nodeFactory, first, treeRoot);
             return;
         }
         // multiple children found, that means we need to branch out
@@ -201,32 +193,16 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
 
         // if a node was chosen search further down that node
         if (next.get() != null) {
-            searchFurther(model, nodeFactory, root, next.get(), treeRoot);
+            searchFurther(model, nodeFactory, next.get(), treeRoot);
             return;
         }
 
-        // otherwise search through the children and add those nodes to the current node that acts as a parent
-        Platform.runLater(() -> {
-            final int lastIndex = treeChildren.size() - 1;
-            // TODO: the ambiguity can occur in the root perhaps?
-            if (lastIndex < 0) {
-                return;
-            }
-            treeChildren.get(lastIndex)
-                        .getChildren()
-                        .addAll(children.stream()
-                                        .map(TreeItem::new)
-                                        .collect(() -> FXCollections.observableArrayList(), (x, y) -> {
-                                            x.add(new TreeItem<>(y.getValue()
-                                                                  .getData()));
-                                        }, List::addAll));
-        });
         for (final DataNode<T> child : children) {
-            searchFurther(model, nodeFactory, root, child, treeRoot);
+            searchFurther(model, nodeFactory, child, treeRoot);
         }
     }
 
-    private void searchFurther(final Model model, final DataNodeFactory<T> nodeFactory, final DataNodeRoot<T> root, final DataNode<T> next, final TreeItem<T> treeRoot) {
+    private void searchFurther(final Model model, final DataNodeFactory<T> nodeFactory, final DataNode<T> next, final TreeItem<DataNode<T>> treeRoot) {
         final T data = next.getData();
         if (!data.isURIResource()) {
             return;
@@ -235,7 +211,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         readResource(model, resource);
         if (usedURIs.add(resource.getURI())) {
             final Selector sel = getSelector(resource, model.getProperty(request.getNamespace(), request.getLink()));
-            bfs(model, sel, nodeFactory, root, treeRoot);
+            bfs(model, sel, nodeFactory, treeRoot);
         }
     }
 
@@ -283,7 +259,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         model.read(URI);
     }
 
-    private class TreeItemListChangeListener implements ListChangeListener<TreeItem<T>> {
+    private class TreeItemListChangeListener implements ListChangeListener<TreeItem<DataNode<T>>> {
 
         private final ObservableList<DataNode<T>> dataNodeRootChildren;
 
@@ -291,18 +267,19 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
             this.dataNodeRootChildren = dataNodeRootChildren;
         }
 
-        private List<? extends DataNode<T>> mapToDataNode(Collection<? extends TreeItem<T>> collection) {
+        private List<? extends DataNode<T>> mapToDataNode(Collection<? extends TreeItem<DataNode<T>>> collection) {
             return collection.stream()
                              .map(this::mapToDataNode)
                              .collect(Collectors.toList());
         }
 
-        private DataNode<T> mapToDataNode(TreeItem<T> treeItem) {
-            return nodeFactory.newNode(treeItem.getValue());
+        private DataNode<T> mapToDataNode(TreeItem<DataNode<T>> treeItem) {
+            return nodeFactory.newNode(treeItem.getValue()
+                                               .getData());
         }
 
         @Override
-        public void onChanged(final Change<? extends TreeItem<T>> change) {
+        public void onChanged(final Change<? extends TreeItem<DataNode<T>>> change) {
             while (change.next()) {
                 if (change.wasPermutated()) {
                     for (int i = change.getFrom(); i < change.getTo(); i++) {

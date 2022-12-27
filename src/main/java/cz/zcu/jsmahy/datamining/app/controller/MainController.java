@@ -1,10 +1,12 @@
 package cz.zcu.jsmahy.datamining.app.controller;
 
 import com.google.inject.Guice;
+import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXSpinner;
 import com.jfoenix.controls.JFXTextField;
+import cz.zcu.jsmahy.datamining.api.DataNode;
 import cz.zcu.jsmahy.datamining.api.DataNodeFactory;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
@@ -64,12 +66,19 @@ order by ?pred
     @FXML
     private BorderPane rootPane;
     @FXML
-    private TreeView<T> ontologyTreeView;
+    private TreeView<DataNode<T>> ontologyTreeView;
 
     @FXML
     private WebView wikiPageWebView;
     @FXML
     private JFXSpinner progressIndicator;
+
+    @Inject
+    private DataNodeFactory<T> nodeFactory;
+
+    private DataNodeFactory<T> getDataNodeFactory() {
+        return (DataNodeFactory<T>) nodeFactory;
+    }
 
     private static synchronized void exit() {
         LOGGER.info("Exiting application...");
@@ -81,6 +90,9 @@ order by ?pred
 
     @Override
     public void initialize(final URL location, final ResourceBundle resources) {
+        final Injector injector = Guice.createInjector(new DBPediaModule());
+//        injector.injectMembers(this);
+        nodeFactory = injector.getInstance(DataNodeFactory.class);
         // when user has focus on search field and presses enter -> search
         searchField.setOnKeyPressed(e -> {
             if (e.getCode() == KeyCode.ENTER) {
@@ -94,7 +106,7 @@ order by ?pred
         rootPane.disableProperty()
                 .bind(progressIndicator.visibleProperty());
 
-        final MultipleSelectionModel<TreeItem<T>> selectionModel = ontologyTreeView.getSelectionModel();
+        final MultipleSelectionModel<TreeItem<DataNode<T>>> selectionModel = ontologyTreeView.getSelectionModel();
         selectionModel.setSelectionMode(SelectionMode.SINGLE);
 
         // show a web view on selection
@@ -106,7 +118,7 @@ order by ?pred
         ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory<>(lv, resources));
         ontologyTreeView.setEditable(false);
         ontologyTreeView.setShowRoot(false);
-        final TreeItem<T> root = new TreeItem<>(null);
+        final TreeItem<DataNode<T>> root = new TreeItem<>(null);
         ontologyTreeView.setRoot(root);
         final MenuItem addNewLineItem = buildAddNewLineItem(resources);
 
@@ -121,10 +133,11 @@ order by ?pred
         menuItem.setOnAction(e -> {
             final Node node = NodeFactory.createLiteral("Linie #" + SEQUENCE_NUM);
             SEQUENCE_NUM++;
-            final RDFNode literal = new LiteralImpl(node, null);
+            final T literal = (T) new LiteralImpl(node, null);
+            final DataNode<T> dataNode = getDataNodeFactory().newNode(literal);
             ontologyTreeView.getRoot()
                             .getChildren()
-                            .add(new TreeItem<>((T) literal));
+                            .add(new TreeItem<>(dataNode));
         });
         return menuItem;
     }
@@ -135,8 +148,8 @@ order by ?pred
      * @param observable the observable that was invalidated
      */
     private void onSelection(final Observable observable) {
-        final TreeItem<T> selectedItem = ontologyTreeView.getSelectionModel()
-                                                         .getSelectedItem();
+        final TreeItem<DataNode<T>> selectedItem = ontologyTreeView.getSelectionModel()
+                                                                   .getSelectedItem();
         if (selectedItem == null) {
             LOGGER.info("Could not handle ontology click because selected item was null.");
             return;
@@ -146,7 +159,8 @@ order by ?pred
             return;
         }
 
-        final String formattedItem = RDFNodeCellFactory.formatRDFNode(selectedItem.getValue());
+        final DataNode<T> dataNode = selectedItem.getValue();
+        final String formattedItem = RDFNodeCellFactory.formatRDFNode(dataNode.getData());
         wikiPageWebView.getEngine()
                        .load(String.format(WIKI_URL, formattedItem));
 
@@ -168,8 +182,8 @@ order by ?pred
             return;
         }
 //        ontologyTreeView.getRoot().setExpanded(true);
-        final ObservableList<TreeItem<T>> children = ontologyTreeView.getRoot()
-                                                                     .getChildren();
+        final ObservableList<TreeItem<DataNode<T>>> children = ontologyTreeView.getRoot()
+                                                                               .getChildren();
         children.clear();
 
         final Injector injector = Guice.createInjector(new DBPediaModule());

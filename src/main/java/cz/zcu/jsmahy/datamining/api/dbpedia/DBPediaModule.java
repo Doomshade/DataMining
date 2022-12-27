@@ -3,6 +3,7 @@ package cz.zcu.jsmahy.datamining.api.dbpedia;
 import cz.zcu.jsmahy.datamining.api.DataMiningModule;
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
 import cz.zcu.jsmahy.datamining.query.handlers.DBPediaRequestHandler;
+import org.apache.jena.rdf.model.RDFNode;
 
 /**
  * <p>Module for <a href="https://www.dbpedia.org/">DBPedia</a> SPARQL queries</p>
