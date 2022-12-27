@@ -15,7 +15,6 @@ import javafx.application.Platform;
 import javafx.beans.Observable;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Service;
 import javafx.fxml.FXML;
@@ -33,9 +32,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.net.URL;
-import java.util.HashSet;
 import java.util.ResourceBundle;
-import java.util.Set;
 
 /**
  * TODO
@@ -80,6 +77,8 @@ order by ?pred
         System.exit(0);
     }
 
+    private static int SEQUENCE_NUM = 1;
+
     @Override
     public void initialize(final URL location, final ResourceBundle resources) {
         // when user has focus on search field and presses enter -> search
@@ -106,6 +105,28 @@ order by ?pred
         // use custom cell factory for display
         ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory<>(lv, resources));
         ontologyTreeView.setEditable(false);
+        ontologyTreeView.setShowRoot(false);
+        final TreeItem<T> root = new TreeItem<>(null);
+        ontologyTreeView.setRoot(root);
+        final MenuItem addNewLineItem = buildAddNewLineItem(resources);
+
+        final ContextMenu contextMenu = new ContextMenu(addNewLineItem);
+        ontologyTreeView.setContextMenu(contextMenu);
+    }
+
+    private MenuItem buildAddNewLineItem(final ResourceBundle resources) {
+        final MenuItem menuItem = new MenuItem();
+        // TODO: resources
+        menuItem.setText("Vytvořit novou linii");
+        menuItem.setOnAction(e -> {
+            final Node node = NodeFactory.createLiteral("Linie #" + SEQUENCE_NUM);
+            SEQUENCE_NUM++;
+            final RDFNode literal = new LiteralImpl(node, null);
+            ontologyTreeView.getRoot()
+                            .getChildren()
+                            .add(new TreeItem<>((T) literal));
+        });
+        return menuItem;
     }
 
     /**
@@ -146,37 +167,17 @@ order by ?pred
             alert.setContentText("Please enter some text to search.");
             return;
         }
-
-        final Node node = NodeFactory.createLiteral("Dynastie hovad");
-        final RDFNode literal = new LiteralImpl(node, null);
-        final TreeItem<T> root = new TreeItem<>((T) literal);
-        ontologyTreeView.setRoot(root);
-        ontologyTreeView.setShowRoot(node.isLiteral() && !node.getLiteral()
-                                                              .getLexicalForm()
-                                                              .isBlank());
-        root.setExpanded(true);
-        final ObservableList<TreeItem<T>> children = root.getChildren();
+//        ontologyTreeView.getRoot().setExpanded(true);
+        final ObservableList<TreeItem<T>> children = ontologyTreeView.getRoot()
+                                                                     .getChildren();
         children.clear();
-        children.addListener(new ListChangeListener<TreeItem<T>>() {
-            @Override
-            public void onChanged(final Change<? extends TreeItem<T>> c) {
-                while (c.next()) {
-                    if (!c.wasAdded()) {
-                        return;
-                    }
-                    final ObservableList<? extends TreeItem<T>> list = c.getList();
-                    final Set<RDFNode> set = new HashSet<>();
-                    list.removeIf(child -> !set.add(child.getValue()));
-                }
-            }
-        });
 
         final Injector injector = Guice.createInjector(new DBPediaModule());
 
         final RequestHandler<T, Void> dbPediaRequestHandler = injector.getInstance(RequestHandler.class);
         final DataNodeFactory<T> dataNodeFactory = injector.getInstance(DataNodeFactory.class);
         final SparqlRequest<T, Void> request =
-                new SparqlRequest<>(searchValue, "http://dbpedia.org/ontology/", "predecessor", ontologyTreeView.getRoot(), dataNodeFactory.newRoot(null), new UserAssistedAmbiguitySolver<>());
+                new SparqlRequest<>(searchValue, "http://dbpedia.org/ontology/", "parent", ontologyTreeView.getRoot(), dataNodeFactory.newRoot(null), new UserAssistedAmbiguitySolver<>());
         final Service<Void> query = dbPediaRequestHandler.query(request);
         query.setOnSucceeded(x -> {
 

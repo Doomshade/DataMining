@@ -4,6 +4,7 @@ import cz.zcu.jsmahy.datamining.command.CommandParser;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,6 +26,7 @@ public class Main extends Application {
     public void start(final Stage stage) throws Exception {
         // use resource bundle
         stage.setTitle("BP");
+        Window window;
         //InfoboxManager.downloadTemplates("default-infoboxes");
         final Scene scene = SceneManager.getScene(FXMLScene.MAIN);
         stage.setScene(scene);
