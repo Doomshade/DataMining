@@ -1,11 +1,10 @@
 package cz.zcu.jsmahy.datamining.query;
 
 import cz.zcu.jsmahy.datamining.api.DataNode;
+import cz.zcu.jsmahy.datamining.api.DataNodeReference;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaAmbiguitySolver;
 import javafx.collections.ObservableList;
 import org.apache.jena.rdf.model.RDFNode;
-
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Jakub Šmrha
@@ -14,7 +13,9 @@ import java.util.concurrent.atomic.AtomicReference;
 public class DefaultAllAmbiguitySolver<T extends RDFNode> implements DBPediaAmbiguitySolver<T, Void> {
 
     @Override
-    public AtomicReference<DataNode<T>> call(final ObservableList<DataNode<T>> dataNodeList, final RequestHandler<T, Void> requestHandler) {
-        return new AtomicReference<>(null);
+    public DataNodeReference<T> call(final ObservableList<DataNode<T>> dataNodeList, final RequestHandler<T, Void> requestHandler) {
+        final DataNodeReference<T> ref = new DataNodeReference<>();
+        ref.setHasMultipleReferences(true);
+        return ref;
     }
 }

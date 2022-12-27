@@ -5,7 +5,7 @@ import com.google.inject.Injector;
 import cz.zcu.jsmahy.datamining.api.AmbiguitySolver;
 import cz.zcu.jsmahy.datamining.api.DataNode;
 import cz.zcu.jsmahy.datamining.api.DataNodeFactory;
-import cz.zcu.jsmahy.datamining.api.DataNodeRoot;
+import cz.zcu.jsmahy.datamining.api.DataNodeReference;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import cz.zcu.jsmahy.datamining.query.AbstractRequestHandler;
@@ -26,7 +26,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -182,8 +181,8 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         // to free this thread via unlockDialogPane method
         // the thread will wait up to 5 seconds and check for the result if the
         // dialogue fails to notify the monitor
-        final AtomicReference<DataNode<T>> next = ambiguitySolver.call(children, this);
-        while (next.get() == null) {
+        final DataNodeReference<T> next = ambiguitySolver.call(children, this);
+        while (!next.isFinished()) {
             try {
                 wait(5000);
             } catch (InterruptedException e) {
@@ -192,14 +191,17 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         }
 
         // if a node was chosen search further down that node
-        if (next.get() != null) {
-            searchFurther(model, nodeFactory, next.get(), treeRoot);
-            return;
+        if (!next.getHasMultipleReferences()) {
+            if (next.get() != null) {
+                searchFurther(model, nodeFactory, next.get(), treeRoot);
+                return;
+            }
+            throw new IllegalStateException("Marked node as a single reference only, yet received no reference!");
         }
 
-        for (final DataNode<T> child : children) {
-            searchFurther(model, nodeFactory, child, treeRoot);
-        }
+//        for (final DataNode<T> child : children) {
+//            searchFurther(model, nodeFactory, child, treeRoot);
+//        }
     }
 
     private void searchFurther(final Model model, final DataNodeFactory<T> nodeFactory, final DataNode<T> next, final TreeItem<DataNode<T>> treeRoot) {

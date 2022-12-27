@@ -20,9 +20,9 @@ public interface AmbiguitySolver<T, R> {
      * <p>TODO: add comment</p>
      *
      * @param param          The list of {@link RDFNode}s to choose the result from
-     * @param requestHandler
+     * @param requestHandler the request handler
      *
      * @return an atomic reference
      */
-    AtomicReference<DataNode<T>> call(ObservableList<DataNode<T>> param, final RequestHandler<T, R> requestHandler);
+    DataNodeReference<T> call(ObservableList<DataNode<T>> param, final RequestHandler<T, R> requestHandler);
 }
