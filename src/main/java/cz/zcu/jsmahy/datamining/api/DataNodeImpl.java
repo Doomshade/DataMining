@@ -2,24 +2,32 @@ package cz.zcu.jsmahy.datamining.api;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 
 import java.util.Collection;
 import java.util.Iterator;
 
 
 @Data
-@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 class DataNodeImpl<T> implements DataNode<T> {
+    private static long ID_SEQ = 0;
     @NonNull
     private final T data;
+    private final long id;
+
+    {
+        this.id = ID_SEQ++;
+    }
+
     private final ObservableList<DataNode<T>> children = FXCollections.observableArrayList();
 
     protected DataNodeImpl() {
         this.data = null;
+    }
+
+    DataNodeImpl(final @NonNull T data) {
+        this.data = data;
     }
 
     @Override
@@ -54,27 +62,4 @@ class DataNodeImpl<T> implements DataNode<T> {
     public Iterator<DataNode<T>> iterator() {
         return children.iterator();
     }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof final DataNodeImpl<?> dataNode)) {
-            return false;
-        }
-
-        if (!getData().equals(dataNode.getData())) {
-            return false;
-        }
-        return getChildren().equals(dataNode.getChildren());
-    }
-
-    @Override
-    public int hashCode() {
-        int result = getData().hashCode();
-        result = 31 * result + getChildren().hashCode();
-        return result;
-    }
-
 }

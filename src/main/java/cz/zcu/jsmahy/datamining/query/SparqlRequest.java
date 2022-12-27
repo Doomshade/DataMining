@@ -2,9 +2,9 @@ package cz.zcu.jsmahy.datamining.query;
 
 import cz.zcu.jsmahy.datamining.api.AmbiguitySolver;
 import cz.zcu.jsmahy.datamining.api.DataNode;
-import cz.zcu.jsmahy.datamining.api.DataNodeRoot;
 import javafx.scene.control.TreeItem;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 
@@ -15,6 +15,7 @@ import java.util.LinkedList;
 
 @Data
 @AllArgsConstructor
+@Builder
 public final class SparqlRequest<T, R> {
     /**
      * the request to send to the web page, e.g. {@code Windows_10}
@@ -36,12 +37,6 @@ public final class SparqlRequest<T, R> {
      */
     @NonNull
     private final TreeItem<DataNode<T>> treeRoot;
-
-    /**
-     * The data node root to append the nodes to.
-     */
-    @NonNull
-    private final DataNodeRoot<T> dataNodeRoot;
 
     @NonNull
     private final AmbiguitySolver<T, R> ambiguitySolver;

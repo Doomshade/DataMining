@@ -1,16 +1,21 @@
 package cz.zcu.jsmahy.datamining.api;
 
 import javafx.collections.ObservableList;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 import java.util.function.BiConsumer;
 
-@RequiredArgsConstructor
+@AllArgsConstructor
 class DataNodeRootImpl<T> extends DataNodeImpl<T> implements DataNodeRoot<T> {
+    /**
+     * The display name of the root. If null then there's no display name.
+     */
     @Getter
-    private final String name;
+    @Setter
+    private String name;
 
     @Override
     public void iterate(BiConsumer<DataNode<T>, Integer> biConsumer) {

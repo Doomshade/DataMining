@@ -28,7 +28,7 @@ public class DBPediaQueryTest {
             LOGGER.info("Querying {}{} in namespace {} by link {}", "http://dbpedia.org/resource/", requestPage, namespace, link);
             final Injector injector = Guice.createInjector(new DBPediaModule());
             final RequestHandler<RDFNode, Void> requestHandler = injector.getInstance(RequestHandler.class);
-            final SparqlRequest<RDFNode, Void> request = new SparqlRequest<>(requestPage, namespace, link, new TreeItem<>(), null, new UserAssistedAmbiguitySolver<>());
+            final SparqlRequest<RDFNode, Void> request = new SparqlRequest<>(requestPage, namespace, link, new TreeItem<>(), new UserAssistedAmbiguitySolver<>());
             final Service<Void> query = requestHandler.query(request);
             query.setOnSucceeded(x -> {
             });

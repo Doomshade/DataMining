@@ -1,13 +1,13 @@
 package cz.zcu.jsmahy.datamining.app.controller;
 
 import com.google.inject.Guice;
-import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXSpinner;
 import com.jfoenix.controls.JFXTextField;
 import cz.zcu.jsmahy.datamining.api.DataNode;
 import cz.zcu.jsmahy.datamining.api.DataNodeFactory;
+import cz.zcu.jsmahy.datamining.api.DataNodeRoot;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
@@ -15,21 +15,17 @@ import cz.zcu.jsmahy.datamining.query.SparqlRequest;
 import cz.zcu.jsmahy.datamining.query.UserAssistedAmbiguitySolver;
 import javafx.application.Platform;
 import javafx.beans.Observable;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
-import javafx.collections.ObservableList;
 import javafx.concurrent.Service;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
-import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.web.WebView;
-import org.apache.jena.graph.Node;
-import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.impl.LiteralImpl;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -73,12 +69,14 @@ order by ?pred
     @FXML
     private JFXSpinner progressIndicator;
 
-    @Inject
     private DataNodeFactory<T> nodeFactory;
+    private final EventHandler<ActionEvent> newLineAction = e -> {
+        final DataNodeRoot<T> dataNode = nodeFactory.newRoot("Linie # " + SEQUENCE_NUM++);
+        ontologyTreeView.getRoot()
+                        .getChildren()
+                        .add(new TreeItem<>(dataNode));
+    };
 
-    private DataNodeFactory<T> getDataNodeFactory() {
-        return (DataNodeFactory<T>) nodeFactory;
-    }
 
     private static synchronized void exit() {
         LOGGER.info("Exiting application...");
@@ -86,20 +84,40 @@ order by ?pred
         System.exit(0);
     }
 
+    private RequestHandler<T, Void> requestHandler;
+
     private static int SEQUENCE_NUM = 1;
 
     @Override
     public void initialize(final URL location, final ResourceBundle resources) {
         final Injector injector = Guice.createInjector(new DBPediaModule());
-//        injector.injectMembers(this);
         nodeFactory = injector.getInstance(DataNodeFactory.class);
+        requestHandler = injector.getInstance(RequestHandler.class);
+
         // when user has focus on search field and presses enter -> search
-        searchField.setOnKeyPressed(e -> {
-            if (e.getCode() == KeyCode.ENTER) {
-                search();
-            }
-        });
-        searchField.requestFocus();
+//        searchField.setOnKeyPressed(e -> {
+//            if (e.getCode() == KeyCode.ENTER) {
+//                search(ontologyTreeView.getRoot());
+//            }
+//        });
+//        searchField.requestFocus();
+
+        final MenuBar menuBar = new MenuBar();
+
+        final Menu fileMenu = new Menu("_File");
+        fileMenu.setMnemonicParsing(true);
+
+        final MenuItem exportToFile = new MenuItem("Exportovat");
+        exportToFile.setAccelerator(KeyCombination.keyCombination("CTRL + E"));
+        final MenuItem newLine = new MenuItem("Vytvořit novou linii");
+        newLine.setAccelerator(KeyCombination.keyCombination("CTRL + N"));
+        newLine.setOnAction(newLineAction);
+        fileMenu.getItems()
+                .addAll(exportToFile, newLine);
+
+        menuBar.getMenus()
+               .add(fileMenu);
+        rootPane.setTop(menuBar);
 
         rootPane.setPadding(new Insets(10));
         // this will ensure the pane is disabled when progress indicator is visible
@@ -115,9 +133,17 @@ order by ?pred
                       .addListener(this::onSelection);
 
         // use custom cell factory for display
-        ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory<>(lv, resources));
-        ontologyTreeView.setEditable(false);
         ontologyTreeView.setShowRoot(false);
+        ontologyTreeView.getSelectionModel()
+                        .setSelectionMode(SelectionMode.MULTIPLE);
+        ontologyTreeView.setEditable(true);
+        ontologyTreeView.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 1) {
+                event.consume();
+            }
+        });
+        ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory<>(lv, resources, this));
+
         final TreeItem<DataNode<T>> root = new TreeItem<>(null);
         ontologyTreeView.setRoot(root);
         final MenuItem addNewLineItem = buildAddNewLineItem(resources);
@@ -128,17 +154,8 @@ order by ?pred
 
     private MenuItem buildAddNewLineItem(final ResourceBundle resources) {
         final MenuItem menuItem = new MenuItem();
-        // TODO: resources
         menuItem.setText("Vytvořit novou linii");
-        menuItem.setOnAction(e -> {
-            final Node node = NodeFactory.createLiteral("Linie #" + SEQUENCE_NUM);
-            SEQUENCE_NUM++;
-            final T literal = (T) new LiteralImpl(node, null);
-            final DataNode<T> dataNode = getDataNodeFactory().newNode(literal);
-            ontologyTreeView.getRoot()
-                            .getChildren()
-                            .add(new TreeItem<>(dataNode));
-        });
+        menuItem.setOnAction(newLineAction);
         return menuItem;
     }
 
@@ -154,8 +171,10 @@ order by ?pred
             LOGGER.info("Could not handle ontology click because selected item was null.");
             return;
         }
-
         if (selectedItem == ontologyTreeView.getRoot()) {
+            return;
+        }
+        if (selectedItem.getValue() instanceof DataNodeRoot<T>) {
             return;
         }
 
@@ -166,35 +185,29 @@ order by ?pred
 
     }
 
-
     /**
      * Handler for mouse press on the search button.
+     *
+     * @param root
+     * @param searchValue
      */
-    public void search() {
-        final String searchValue = searchField.getText()
-                                              .replaceAll(" ", "_");
+    public void search(final TreeItem<DataNode<T>> root, final String searchValue) {
         if (searchValue.isBlank()) {
             LOGGER.info("Search field is blank, not searching for anything.");
             final Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            // use resource bundle
             alert.setTitle("Invalid search");
             alert.setContentText("Please enter some text to search.");
             return;
         }
-//        ontologyTreeView.getRoot().setExpanded(true);
-        final ObservableList<TreeItem<DataNode<T>>> children = ontologyTreeView.getRoot()
-                                                                               .getChildren();
-        children.clear();
-
-        final Injector injector = Guice.createInjector(new DBPediaModule());
-
-        final RequestHandler<T, Void> dbPediaRequestHandler = injector.getInstance(RequestHandler.class);
-        final DataNodeFactory<T> dataNodeFactory = injector.getInstance(DataNodeFactory.class);
-        final SparqlRequest<T, Void> request =
-                new SparqlRequest<>(searchValue, "http://dbpedia.org/ontology/", "parent", ontologyTreeView.getRoot(), dataNodeFactory.newRoot(null), new UserAssistedAmbiguitySolver<>());
-        final Service<Void> query = dbPediaRequestHandler.query(request);
+        final SparqlRequest<T, Void> request = SparqlRequest.<T, Void>builder()
+                                                            .requestPage(searchValue)
+                                                            .namespace("http://dbpedia.org/ontology/")
+                                                            .link("parent")
+                                                            .treeRoot(root)
+                                                            .ambiguitySolver(new UserAssistedAmbiguitySolver<>())
+                                                            .build();
+        final Service<Void> query = requestHandler.query(request);
         query.setOnSucceeded(x -> {
-
             ontologyTreeView.getSelectionModel()
                             .selectFirst();
 
@@ -211,43 +224,5 @@ order by ?pred
                               .bind(query.runningProperty());
         this.progressIndicator.progressProperty()
                               .bind(query.progressProperty());
-    }
-
-    private Alert buildExceptionAlert(final Throwable e) {
-        final Alert alert = new Alert(Alert.AlertType.ERROR);
-        // use resource bundle
-        alert.setTitle("Error");
-        alert.setResizable(true);
-        alert.contentTextProperty()
-             .addListener(new ChangeListener<String>() {
-                 @Override
-                 public void changed(final ObservableValue<? extends String> observable, final String oldValue, final String newValue) {
-                     int lineBreaks = 0;
-                     final char[] chars = newValue.toCharArray();
-                     for (int i = 0; i < chars.length; i++) {
-                         final char c = chars[i];
-                         if (c == '\n') {
-                             lineBreaks++;
-                             if (lineBreaks >= LINE_BREAK_LIMIT) {
-                                 alert.setContentText(newValue.substring(0, i)
-                                                              .concat(" (...)"));
-                                 return;
-                             }
-                         }
-                     }
-                 }
-             });
-        alert.setResult(ButtonType.OK);
-        // use resource bundle
-        alert.setHeaderText("An error occurred when searching for " + searchField.getText());
-        alert.setContentText(e.getMessage());
-        return alert;
-    }
-
-    private void hideIndicator(final boolean hide) {
-        progressIndicator.setVisible(!hide);
-//		progressIndicator.setProgress(-1);
-//		progressIndicator.setDisable(hide);
-        LOGGER.debug("{} indicator.", hide ? "Hiding" : "Showing");
     }
 }

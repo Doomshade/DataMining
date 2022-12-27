@@ -13,6 +13,10 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class DataNodeReference<V> extends AtomicReference<DataNode<V>> {
     private final BooleanProperty hasMultipleReferences = new SimpleBooleanProperty(false);
+    /**
+     * If true then the reference has been set. This exists because the default value of reference is {@code null}, and when setting null the request handler has no way of telling whether we actually
+     * set it because it would check for the default state -- and that being null. This is a workaround for that issue.
+     */
     private final ReadOnlyBooleanWrapper finished = new ReadOnlyBooleanWrapper(false);
 
     public boolean getHasMultipleReferences() {
@@ -27,6 +31,9 @@ public class DataNodeReference<V> extends AtomicReference<DataNode<V>> {
         this.hasMultipleReferences.set(hasMultipleReferences);
     }
 
+    /**
+     * Marks this reference as finished -- the reference has been set.
+     */
     public void finish() {
         finished.set(true);
     }

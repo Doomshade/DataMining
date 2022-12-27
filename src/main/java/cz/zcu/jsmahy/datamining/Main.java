@@ -4,7 +4,6 @@ import cz.zcu.jsmahy.datamining.command.CommandParser;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,6 +14,7 @@ import org.apache.logging.log4j.Logger;
  * @since 1.0
  */
 public class Main extends Application {
+    private static Stage stage = null;
     private static final Logger LOGGER = LogManager.getLogger(Main.class);
 
     public static void main(String[] args) throws ParseException {
@@ -22,11 +22,15 @@ public class Main extends Application {
         launch(args);
     }
 
+    public static Stage getPrimaryStage() {
+        return stage;
+    }
+
     @Override
     public void start(final Stage stage) throws Exception {
+        Main.stage = stage;
         // use resource bundle
         stage.setTitle("BP");
-        Window window;
         //InfoboxManager.downloadTemplates("default-infoboxes");
         final Scene scene = SceneManager.getScene(FXMLScene.MAIN);
         stage.setScene(scene);

@@ -1,24 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import com.jfoenix.controls.JFXButton?>
 <?import com.jfoenix.controls.JFXSpinner?>
-<?import com.jfoenix.controls.JFXTextField?>
 <?import com.jfoenix.controls.JFXTreeView?>
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.web.WebView?>
 <StackPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="810" prefWidth="1440" xmlns="http://javafx.com/javafx/11.0.2"
            fx:controller="cz.zcu.jsmahy.datamining.app.controller.MainController">
     <BorderPane fx:id="rootPane" prefHeight="810" prefWidth="1440">
-        <top>
-            <HBox spacing="5">
-                <BorderPane.margin>
-                    <Insets top="5" bottom="5" left="5" right="5"/>
-                </BorderPane.margin>
-                <JFXTextField fx:id="searchField" promptText="%search-field" text="Charles IV, Holy Roman Emperor"/>
-                <JFXButton fx:id="searchButton" onMouseClicked="#search" text="%search" buttonType="FLAT"/>
-            </HBox>
-        </top>
+        <!--        <top>-->
+        <!--            <HBox spacing="5">-->
+        <!--                <BorderPane.margin>-->
+        <!--                    <Insets top="5" bottom="5" left="5" right="5"/>-->
+        <!--                </BorderPane.margin>-->
+        <!--                <JFXTextField fx:id="searchField" promptText="%search-field" text="Charles IV, Holy Roman Emperor"/>-->
+        <!--                <JFXButton fx:id="searchButton" onMouseClicked="#search" text="%search" buttonType="FLAT"/>-->
+        <!--            </HBox>-->
+        <!--        </top>-->
         <center>
             <WebView fx:id="wikiPageWebView" prefHeight="810" prefWidth="1440">
                 <BorderPane.margin>

@@ -58,4 +58,9 @@ public interface DataNode<T> extends Iterable<DataNode<T>> {
      * @return The data this node carries.
      */
     T getData();
+
+    /**
+     * @return The ID of this data node.
+     */
+    long getId();
 }
