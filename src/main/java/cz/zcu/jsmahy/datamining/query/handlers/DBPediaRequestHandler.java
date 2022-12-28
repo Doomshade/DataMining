@@ -257,8 +257,8 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
     }
 
     private void readResource(final Model model, final Resource resource) {
-        String URI = resource.getURI();
-        model.read(URI);
+        String uri = resource.getURI();
+        model.read(uri);
     }
 
     private class TreeItemListChangeListener implements ListChangeListener<TreeItem<DataNode<T>>> {
