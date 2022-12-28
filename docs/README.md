@@ -3,8 +3,10 @@
 <i>Automated data mining from public sources for visualisation</i>
 </div>
 
-## Tools used
+## Build
+![build](https://github.com/Doomshade/DataMining/actions/workflows/gradle.yml/badge.svg)
 
+## Tools used
 - neo4j
 - JavaFX
 - JFoenix
