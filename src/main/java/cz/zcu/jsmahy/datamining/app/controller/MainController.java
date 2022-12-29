@@ -104,12 +104,12 @@ order by ?pred
 
         final MenuBar menuBar = new MenuBar();
 
-        final Menu fileMenu = new Menu("_File");
+        final Menu fileMenu = new Menu("_" + resources.getString("file"));
         fileMenu.setMnemonicParsing(true);
 
-        final MenuItem exportToFile = new MenuItem("Exportovat");
+        final MenuItem exportToFile = new MenuItem(resources.getString("export"));
         exportToFile.setAccelerator(KeyCombination.keyCombination("CTRL + E"));
-        final MenuItem newLine = new MenuItem("Vytvořit novou linii");
+        final MenuItem newLine = new MenuItem(resources.getString("create-new-line"));
         newLine.setAccelerator(KeyCombination.keyCombination("CTRL + N"));
         newLine.setOnAction(newLineAction);
         fileMenu.getItems()

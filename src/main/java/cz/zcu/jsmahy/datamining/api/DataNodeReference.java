@@ -8,6 +8,10 @@ import javafx.beans.property.SimpleBooleanProperty;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
+ * A {@link DataNode} reference with convenience methods to distinguish various outputs. The main reason being the output being {@code null} because the user chose nothing -- that doesn't necessarily
+ * mean he hasn't chosen ANYTHING yet. The finished property helps distinguish that.
+ * TODO: make it a reference to a collection of data nodes
+ *
  * @author Jakub Šmrha
  * @version 1.0
  */
