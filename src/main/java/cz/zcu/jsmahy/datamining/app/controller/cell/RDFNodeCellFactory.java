@@ -12,6 +12,7 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.HBox;
+import javafx.scene.text.TextAlignment;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
@@ -67,18 +68,20 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
     }
 
     private MenuItem buildSearchItem(final ResourceBundle resources) {
-        final MenuItem menuItem = new MenuItem("Hledat");
+        final MenuItem menuItem = new MenuItem(resources.getString("search"));
         menuItem.setOnAction(event -> {
             final Dialog<String> dialog = new Dialog<>();
             final DialogPane dialogPane = dialog.getDialogPane();
             dialogPane.getButtonTypes()
                       .add(ButtonType.OK);
             dialog.initOwner(Main.getPrimaryStage());
+            dialog.setTitle(resources.getString("search-dialog-title"));
 
             final TextField textField = new TextField();
             final Label label = new Label("Vyhledávaný text:");
             final HBox hbox = new HBox(label, textField);
-            label.setAlignment(Pos.CENTER);
+            hbox.setAlignment(Pos.CENTER_LEFT);
+            label.setTextAlignment(TextAlignment.CENTER);
             hbox.setSpacing(5d);
             label.setLabelFor(textField);
             dialogPane.setContent(hbox);
@@ -144,7 +147,7 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
     }
 
     private MenuItem buildEditItem(final ResourceBundle resources) {
-        final MenuItem menuItem = new MenuItem("Editovat");
+        final MenuItem menuItem = new MenuItem(resources.getString("edit"));
         menuItem.setOnAction(event -> {
             getTreeView().edit(getTreeView().getSelectionModel()
                                             .getSelectedItem());
@@ -156,7 +159,7 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
     private MenuItem buildAddRestrictionItem(final ResourceBundle resources) {
         final MenuItem menuItem = new MenuItem();
         menuItem.textProperty()
-                .bind(Bindings.format(resources.getString("ontology.prompt.add.restriction"), textProperty()));
+                .bind(Bindings.format(resources.getString("ontology-prompt-add-restriction"), textProperty()));
 
         menuItem.setAccelerator(KeyCombination.keyCombination("ALT + R"));
         return menuItem;
@@ -211,7 +214,7 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
     private MenuItem buildDeleteItem(final ResourceBundle resources) {
         final MenuItem menuItem = new MenuItem();
         menuItem.textProperty()
-                .bind(Bindings.format(resources.getString("ontology.prompt.delete"), textProperty()));
+                .bind(Bindings.format(resources.getString("ontology-prompt-delete"), textProperty()));
         menuItem.setOnAction(event -> {
             final ObservableList<TreeItem<DataNode<T>>> selectedItems = treeView.getSelectionModel()
                                                                                 .getSelectedItems();
@@ -231,7 +234,7 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
         final MenuItem menuItem = new MenuItem();
 
         menuItem.textProperty()
-                .bind(Bindings.format(resources.getString("ontology.prompt.add"), textProperty()));
+                .bind(Bindings.format(resources.getString("ontology-prompt-add"), textProperty()));
         menuItem.setOnAction(event -> {
             final DataNode<T> node = getItem();
             // code to edit item...
