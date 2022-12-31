@@ -1,0 +1,47 @@
+package cz.zcu.jsmahy.datamining.api;
+
+import javafx.application.Platform;
+import javafx.geometry.Pos;
+import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
+import javafx.scene.text.TextAlignment;
+
+import java.util.function.Consumer;
+
+/**
+ * @author Jakub Šmrha
+ * @version 1.0
+ */
+public class DialogHelper {
+    DialogHelper() {
+    }
+
+    public void textInputDialog(final String labelText, final Consumer<String> dialogFinishHandler) {
+        final TextField textField = new TextField();
+        final Label label = new Label(labelText);
+        final HBox hbox = new HBox(label, textField);
+        hbox.setAlignment(Pos.CENTER_LEFT);
+        label.setTextAlignment(TextAlignment.CENTER);
+        hbox.setSpacing(5d);
+        label.setLabelFor(textField);
+        final Dialog<String> dialog = new Dialog<>();
+        final DialogPane dialogPane = dialog.getDialogPane();
+        dialogPane.setContent(hbox);
+        dialogPane.getButtonTypes()
+                  .add(ButtonType.OK);
+        dialog.setResultConverter(buttonType -> {
+            if (buttonType == ButtonType.OK) {
+                return textField.getText();
+            }
+            return null;
+        });
+        dialog.setOnShown(shownEvent -> {
+            Platform.runLater(() -> {
+                textField.requestFocus();
+                shownEvent.consume();
+            });
+        });
+        dialog.showAndWait()
+              .ifPresent(dialogFinishHandler);
+    }
+}

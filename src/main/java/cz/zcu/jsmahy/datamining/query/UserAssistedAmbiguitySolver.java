@@ -13,6 +13,8 @@ import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ResourceBundle;
+
 /**
  * A user assisted ambiguity solver. The solver prompts the user using a simple GUI to choose the right target node.
  *
@@ -33,16 +35,19 @@ public class UserAssistedAmbiguitySolver<T extends RDFNode> implements DBPediaAm
     private class DialogueHandler {
         private final Dialog<DataNode<T>> dialog = new Dialog<>();
         private final DialogPane dialogPane = dialog.getDialogPane();
-        private final DataNodeReference<T> ref;
         private final ListView<DataNode<T>> content = new ListView<>();
+        private final DataNodeReference<T> ref;
         private final RequestHandler<T, Void> requestHandler;
 
-        {
-            dialogPane.getButtonTypes()
-                      .addAll(ButtonType.OK, ButtonType.CANCEL);
-            dialog.initOwner(Main.getPrimaryStage());
-            content.setCellFactory(x -> new RDFNodeListCellFactory<>());
-            dialog.setResultConverter(buttonType -> {
+        public DialogueHandler(final ObservableList<DataNode<T>> list, final DataNodeReference<T> ref, final RequestHandler<T, Void> requestHandler) {
+            final ResourceBundle resourceBundle = ResourceBundle.getBundle("lang");
+            this.ref = ref;
+
+            // setup dialog, such as buttons, title etc
+            this.dialogPane.getButtonTypes()
+                           .addAll(ButtonType.OK, ButtonType.CANCEL);
+            this.dialog.initOwner(Main.getPrimaryStage());
+            this.dialog.setResultConverter(buttonType -> {
                 if (buttonType == ButtonType.CANCEL) {
                     return null;
                 }
@@ -53,10 +58,17 @@ public class UserAssistedAmbiguitySolver<T extends RDFNode> implements DBPediaAm
                 LOGGER.error("Unrecognized button type: {}", buttonType);
                 return null;
             });
-        }
+            this.dialog.setTitle(resourceBundle.getString("ambiguity-dialog-title"));
+            this.dialog.setOnShown(event -> {
+                Platform.runLater(() -> {
+                    this.content.requestFocus();
+                    this.content.getSelectionModel()
+                                .selectFirst();
+                });
+            });
 
-        public DialogueHandler(final ObservableList<DataNode<T>> list, final DataNodeReference<T> ref, final RequestHandler<T, Void> requestHandler) {
-            this.ref = ref;
+            // dialog content
+            this.content.setCellFactory(x -> new RDFNodeListCellFactory<>());
             this.content.setItems(list);
             this.content.getSelectionModel()
                         .setSelectionMode(SelectionMode.MULTIPLE);
@@ -71,15 +83,6 @@ public class UserAssistedAmbiguitySolver<T extends RDFNode> implements DBPediaAm
             });
             this.dialogPane.setContent(content);
 
-            this.dialog.setTitle("Vyberte prosím, po kom dál jít. Díky!");
-            this.dialog.setOnShown(event -> {
-                Platform.runLater(() -> {
-                    this.content.requestFocus();
-                    this.content.getSelectionModel()
-                                .selectFirst();
-                    LOGGER.info("FOCUSING BRO");
-                });
-            });
             this.requestHandler = requestHandler;
         }
 

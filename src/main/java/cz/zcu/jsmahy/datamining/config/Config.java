@@ -26,6 +26,9 @@ public class Config {
     private final Properties defaultProperties = new Properties();
     private final Properties properties = new Properties();
 
+    Config() {
+    }
+
     {
         load();
     }

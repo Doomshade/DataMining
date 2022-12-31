@@ -16,6 +16,7 @@ public abstract class DataMiningModule extends AbstractModule {
     protected void configure() {
         bind(DataNodeFactory.class).to(DataNodeFactoryImpl.class);
         bind(Config.class).in(SINGLETON);
+        bind(DialogHelper.class).in(SINGLETON);
     }
 
 }

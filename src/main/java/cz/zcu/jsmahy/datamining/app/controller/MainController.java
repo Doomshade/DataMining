@@ -8,6 +8,7 @@ import com.jfoenix.controls.JFXTextField;
 import cz.zcu.jsmahy.datamining.api.DataNode;
 import cz.zcu.jsmahy.datamining.api.DataNodeFactory;
 import cz.zcu.jsmahy.datamining.api.DataNodeRoot;
+import cz.zcu.jsmahy.datamining.api.DialogHelper;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
@@ -56,6 +57,7 @@ order by ?pred
     private static final Logger LOGGER = LogManager.getLogger(MainController.class);
     private static final String DBPEDIA_SERVICE = "http://dbpedia.org/sparql/";
     private static final int LINE_BREAK_LIMIT = 20;
+    private static int SEQUENCE_NUM = 1;
     @FXML
     private JFXTextField searchField;
     @FXML
@@ -64,20 +66,24 @@ order by ?pred
     private BorderPane rootPane;
     @FXML
     private TreeView<DataNode<T>> ontologyTreeView;
-
     @FXML
     private WebView wikiPageWebView;
     @FXML
     private JFXSpinner progressIndicator;
-
     private DataNodeFactory<T> nodeFactory;
-    private final EventHandler<ActionEvent> newLineAction = e -> {
-        final DataNodeRoot<T> dataNode = nodeFactory.newRoot("Linie # " + SEQUENCE_NUM++);
-        ontologyTreeView.getRoot()
-                        .getChildren()
-                        .add(new TreeItem<>(dataNode));
-    };
+    private DialogHelper dialogHelper;
 
+    private final EventHandler<ActionEvent> createNewLineAction = e -> {
+        final ResourceBundle lang = ResourceBundle.getBundle("lang");
+        dialogHelper.textInputDialog(lang.getString("create-new-line"), lineName -> {
+            final DataNodeRoot<T> dataNode = nodeFactory.newRoot(lineName);
+            ontologyTreeView.getRoot()
+                            .getChildren()
+                            .add(new TreeItem<>(dataNode));
+        });
+
+    };
+    private RequestHandler<T, Void> requestHandler;
 
     private static synchronized void exit() {
         LOGGER.info("Exiting application...");
@@ -85,15 +91,12 @@ order by ?pred
         System.exit(0);
     }
 
-    private RequestHandler<T, Void> requestHandler;
-
-    private static int SEQUENCE_NUM = 1;
-
     @Override
     public void initialize(final URL location, final ResourceBundle resources) {
         final Injector injector = Guice.createInjector(new DBPediaModule());
         nodeFactory = injector.getInstance(DataNodeFactory.class);
         requestHandler = injector.getInstance(RequestHandler.class);
+        dialogHelper = injector.getInstance(DialogHelper.class);
 
         // when user has focus on search field and presses enter -> search
 //        searchField.setOnKeyPressed(e -> {
@@ -103,26 +106,7 @@ order by ?pred
 //        });
 //        searchField.requestFocus();
 
-        final MenuBar menuBar = new MenuBar();
-        final Menu lineMenu = new Menu("_" + resources.getString("line"));
-        final MenuItem newLine = new MenuItem(resources.getString("create-new-line"));
-        newLine.setAccelerator(KeyCombination.keyCombination("CTRL + N"));
-        newLine.setOnAction(newLineAction);
-
-        lineMenu.getItems()
-                .addAll(newLine);
-
-        final Menu fileMenu = new Menu("_" + resources.getString("file"));
-        fileMenu.setMnemonicParsing(true);
-
-        final MenuItem exportToFile = new MenuItem(resources.getString("export"));
-        exportToFile.setAccelerator(KeyCombination.keyCombination("CTRL + E"));
-
-        fileMenu.getItems()
-                .addAll(exportToFile);
-
-        menuBar.getMenus()
-               .addAll(lineMenu, fileMenu);
+        final MenuBar menuBar = createMenuBar(resources);
         rootPane.setTop(menuBar);
 
         rootPane.setPadding(new Insets(10));
@@ -148,20 +132,65 @@ order by ?pred
                 event.consume();
             }
         });
-        ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory<>(lv, resources, this));
+        ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory<>(lv, resources, this, dialogHelper));
 
         final TreeItem<DataNode<T>> root = new TreeItem<>(null);
         ontologyTreeView.setRoot(root);
-        final MenuItem addNewLineItem = buildAddNewLineItem(resources);
-
-        final ContextMenu contextMenu = new ContextMenu(addNewLineItem);
+        final ContextMenu contextMenu = createContextMenu(resources);
         ontologyTreeView.setContextMenu(contextMenu);
     }
 
-    private MenuItem buildAddNewLineItem(final ResourceBundle resources) {
+    private ContextMenu createContextMenu(final ResourceBundle resources) {
+        final MenuItem addNewLineItem = createAddNewLineMenuItem(resources);
+
+        return new ContextMenu(addNewLineItem);
+    }
+
+    private MenuBar createMenuBar(final ResourceBundle resources) {
+        final MenuBar menuBar = new MenuBar();
+        final Menu lineMenu = createLineMenu(resources);
+        final Menu fileMenu = createFileMenu(resources);
+        final Menu helpMenu = createHelpMenu(resources);
+
+        menuBar.getMenus()
+               .addAll(lineMenu, fileMenu, helpMenu);
+        return menuBar;
+    }
+
+    private Menu createHelpMenu(final ResourceBundle resources) {
+        final Menu helpMenu = new Menu(resources.getString("help"));
+        final MenuItem tempMenuItem = new MenuItem("Empty :)");
+        helpMenu.getItems()
+                .addAll(tempMenuItem);
+        return helpMenu;
+    }
+
+    private Menu createLineMenu(final ResourceBundle resources) {
+        final Menu lineMenu = new Menu("_" + resources.getString("line"));
+        final MenuItem newLineMenuItem = createAddNewLineMenuItem(resources);
+
+        lineMenu.getItems()
+                .addAll(newLineMenuItem);
+        return lineMenu;
+    }
+
+    private Menu createFileMenu(final ResourceBundle resources) {
+        final Menu fileMenu = new Menu("_" + resources.getString("file"));
+        fileMenu.setMnemonicParsing(true);
+
+        final MenuItem exportToFile = new MenuItem(resources.getString("export"));
+        exportToFile.setAccelerator(KeyCombination.keyCombination("CTRL + E"));
+
+        fileMenu.getItems()
+                .addAll(exportToFile);
+        return fileMenu;
+    }
+
+    private MenuItem createAddNewLineMenuItem(final ResourceBundle resources) {
         final MenuItem menuItem = new MenuItem();
-        menuItem.setText("Vytvořit novou linii");
-        menuItem.setOnAction(newLineAction);
+        menuItem.setText(resources.getString("create-new-line"));
+        menuItem.setAccelerator(KeyCombination.keyCombination("CTRL + N"));
+        menuItem.setOnAction(createNewLineAction);
         return menuItem;
     }
 
@@ -198,7 +227,7 @@ order by ?pred
     public void search(final TreeItem<DataNode<T>> root, final String searchValue) {
         if (searchValue.isBlank()) {
             LOGGER.info("Search field is blank, not searching for anything.");
-            final Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            final Alert alert = new Alert(Alert.AlertType.WARNING);
             alert.setTitle("Invalid search");
             alert.setContentText("Please enter some text to search.");
             return;
@@ -206,7 +235,7 @@ order by ?pred
         final SparqlRequest<T, Void> request = SparqlRequest.<T, Void>builder()
                                                             .requestPage(searchValue)
                                                             .namespace("http://dbpedia.org/ontology/")
-                                                            .link("parent")
+                                                            .link("doctoralAdvisor")
                                                             .treeRoot(root)
                                                             .ambiguitySolver(new UserAssistedAmbiguitySolver<>())
                                                             .build();
