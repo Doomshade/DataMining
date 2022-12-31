@@ -24,5 +24,5 @@ public interface AmbiguitySolver<T, R> {
      *
      * @return an atomic reference
      */
-    DataNodeReference<T> call(ObservableList<DataNode<T>> param, final RequestHandler<T, R> requestHandler);
+    DataNodeReferenceHolder<T> call(ObservableList<DataNode<T>> param, final RequestHandler<T, R> requestHandler);
 }

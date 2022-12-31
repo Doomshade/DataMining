@@ -5,7 +5,7 @@ import com.google.inject.Injector;
 import cz.zcu.jsmahy.datamining.api.AmbiguitySolver;
 import cz.zcu.jsmahy.datamining.api.DataNode;
 import cz.zcu.jsmahy.datamining.api.DataNodeFactory;
-import cz.zcu.jsmahy.datamining.api.DataNodeReference;
+import cz.zcu.jsmahy.datamining.api.DataNodeReferenceHolder;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import cz.zcu.jsmahy.datamining.query.AbstractRequestHandler;
@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
  * @version 1.0
  */
 public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends AbstractRequestHandler<T, R> {
-    private static final Logger L = LogManager.getLogger(DBPediaRequestHandler.class);
+    private static final Logger LOGGER = LogManager.getLogger(DBPediaRequestHandler.class);
     private static final String DBPEDIA_SITE = "http://dbpedia.org/resource/";
     /**
      * <p>This comparator ensures the URI resources are placed first over literal resources.</p>
@@ -90,11 +90,11 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         this.ambiguitySolver = request.getAmbiguitySolver();
         final OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
         try {
-            L.debug(String.format("Requesting %s", r));
+            LOGGER.debug(String.format("Requesting %s", r));
             model.read(r);
         } catch (HttpException e) {
             requesting = false;
-            throw L.throwing(e);
+            throw LOGGER.throwing(e);
         } catch (Exception e) {
             requesting = false;
             throw new InvalidQueryException(e);
@@ -111,11 +111,11 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         this.usedURIs.clear();
 
         // now iterate recursively
-        L.debug("Searching...");
+        LOGGER.debug("Searching...");
 
         final TreeItem<DataNode<T>> treeRoot = request.getTreeRoot();
         bfs(model, selector, nodeFactory, treeRoot);
-        L.debug("Done searching");
+        LOGGER.debug("Done searching");
         requesting = false;
         return null;
     }
@@ -132,7 +132,8 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         // add the current node to the tree node
         final DataNode<T> curr = nodeFactory.newNode((T) selector.getSubject());
         final ObservableList<TreeItem<DataNode<T>>> treeChildren = treeRoot.getChildren();
-        Platform.runLater(() -> treeChildren.add(new TreeItem<>(curr)));
+        final TreeItem<DataNode<T>> currTreeItem = new TreeItem<>(curr);
+        Platform.runLater(() -> treeChildren.add(currTreeItem));
 
         final List<Statement> statements = model.listStatements(selector)
                                                 .toList();
@@ -149,7 +150,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
             try {
                 meetsRequirements = meetsRequirements(model, previous, next);
             } catch (AssertionError e) {
-                L.error("An internal error occurred when trying to check for the requirements of the node {}.", next, e);
+                LOGGER.error("An internal error occurred when trying to check for the requirements of the node {}.", next, e);
                 return;
             }
             previous = next;
@@ -158,7 +159,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
             }
 
             final DataNode<T> nextNode = nodeFactory.newNode(next);
-            L.debug("Found {}", next);
+            LOGGER.debug("Found {}", next);
             children.add(nextNode);
         }
 
@@ -181,7 +182,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         // to free this thread via unlockDialogPane method
         // the thread will wait up to 5 seconds and check for the result if the
         // dialogue fails to notify the monitor
-        final DataNodeReference<T> next = ambiguitySolver.call(children, this);
+        final DataNodeReferenceHolder<T> next = ambiguitySolver.call(children, this);
         while (!next.isFinished()) {
             try {
                 wait(5000);
@@ -191,12 +192,20 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         }
 
         // if a node was chosen search further down that node
-        if (!next.getHasMultipleReferences()) {
-            if (next.get() != null) {
-                searchFurther(model, nodeFactory, next.get(), treeRoot);
-                return;
-            }
-            throw new IllegalStateException("Marked node as a single reference only, yet received no reference!");
+        final boolean multipleReferences = next.hasMultipleReferences();
+        LOGGER.debug("Has multiple references: " + multipleReferences);
+        LOGGER.debug("References: " + next.getList());
+        if (!multipleReferences) {
+            searchFurther(model, nodeFactory, next.get(), treeRoot);
+        } else {
+            final List<DataNode<T>> values = next.getList();
+            currTreeItem.getChildren()
+                        .addAll(values.stream()
+                                      .map(TreeItem::new)
+                                      .toList());
+            currTreeItem.setExpanded(true);
+            // TODO: add another dialog to choose where to continue
+            searchFurther(model, nodeFactory, values.get(0), treeRoot);
         }
 
 //        for (final DataNode<T> child : children) {

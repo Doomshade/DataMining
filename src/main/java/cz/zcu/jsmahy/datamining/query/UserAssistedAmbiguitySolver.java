@@ -2,7 +2,7 @@ package cz.zcu.jsmahy.datamining.query;
 
 import cz.zcu.jsmahy.datamining.Main;
 import cz.zcu.jsmahy.datamining.api.DataNode;
-import cz.zcu.jsmahy.datamining.api.DataNodeReference;
+import cz.zcu.jsmahy.datamining.api.DataNodeReferenceHolder;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaAmbiguitySolver;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeListCellFactory;
 import javafx.application.Platform;
@@ -13,6 +13,7 @@ import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.List;
 import java.util.ResourceBundle;
 
 /**
@@ -26,20 +27,20 @@ public class UserAssistedAmbiguitySolver<T extends RDFNode> implements DBPediaAm
     private static final Logger LOGGER = LogManager.getLogger(UserAssistedAmbiguitySolver.class);
 
     @Override
-    public DataNodeReference<T> call(final ObservableList<DataNode<T>> list, final RequestHandler<T, Void> requestHandler) {
-        DataNodeReference<T> ref = new DataNodeReference<>();
+    public DataNodeReferenceHolder<T> call(final ObservableList<DataNode<T>> list, final RequestHandler<T, Void> requestHandler) {
+        DataNodeReferenceHolder<T> ref = new DataNodeReferenceHolder<>();
         Platform.runLater(() -> new DialogueHandler(list, ref, requestHandler).showDialogueAndWait());
         return ref;
     }
 
     private class DialogueHandler {
-        private final Dialog<DataNode<T>> dialog = new Dialog<>();
+        private final Dialog<List<DataNode<T>>> dialog = new Dialog<>();
         private final DialogPane dialogPane = dialog.getDialogPane();
         private final ListView<DataNode<T>> content = new ListView<>();
-        private final DataNodeReference<T> ref;
+        private final DataNodeReferenceHolder<T> ref;
         private final RequestHandler<T, Void> requestHandler;
 
-        public DialogueHandler(final ObservableList<DataNode<T>> list, final DataNodeReference<T> ref, final RequestHandler<T, Void> requestHandler) {
+        public DialogueHandler(final ObservableList<DataNode<T>> list, final DataNodeReferenceHolder<T> ref, final RequestHandler<T, Void> requestHandler) {
             final ResourceBundle resourceBundle = ResourceBundle.getBundle("lang");
             this.ref = ref;
 
@@ -53,7 +54,7 @@ public class UserAssistedAmbiguitySolver<T extends RDFNode> implements DBPediaAm
                 }
                 if (buttonType == ButtonType.OK) {
                     return content.getSelectionModel()
-                                  .getSelectedItem();
+                                  .getSelectedItems();
                 }
                 LOGGER.error("Unrecognized button type: {}", buttonType);
                 return null;
@@ -70,8 +71,8 @@ public class UserAssistedAmbiguitySolver<T extends RDFNode> implements DBPediaAm
             // dialog content
             this.content.setCellFactory(x -> new RDFNodeListCellFactory<>());
             this.content.setItems(list);
-            this.content.getSelectionModel()
-                        .setSelectionMode(SelectionMode.MULTIPLE);
+            final MultipleSelectionModel<DataNode<T>> selectionModel = this.content.getSelectionModel();
+            selectionModel.setSelectionMode(SelectionMode.MULTIPLE);
             this.content.setOnKeyPressed(event -> {
                 if (event.getCode() == KeyCode.ENTER) {
                     final Button button = (Button) dialogPane.lookupButton(ButtonType.OK);
@@ -88,10 +89,9 @@ public class UserAssistedAmbiguitySolver<T extends RDFNode> implements DBPediaAm
 
         public void showDialogueAndWait() {
             // show the dialogue and wait for response
-            final DataNode<T> result = dialog.showAndWait()
-                                             .orElse(null);
+            final List<DataNode<T>> result = dialog.showAndWait()
+                                                   .orElse(null);
             ref.set(result);
-            ref.setHasMultipleReferences(result == null);
 
             // once we receive the response notify the thread under the request handler's monitor
             // that we got a response from the user
