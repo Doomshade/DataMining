@@ -104,20 +104,25 @@ order by ?pred
 //        searchField.requestFocus();
 
         final MenuBar menuBar = new MenuBar();
+        final Menu lineMenu = new Menu("_" + resources.getString("line"));
+        final MenuItem newLine = new MenuItem(resources.getString("create-new-line"));
+        newLine.setAccelerator(KeyCombination.keyCombination("CTRL + N"));
+        newLine.setOnAction(newLineAction);
+
+        lineMenu.getItems()
+                .addAll(newLine);
 
         final Menu fileMenu = new Menu("_" + resources.getString("file"));
         fileMenu.setMnemonicParsing(true);
 
         final MenuItem exportToFile = new MenuItem(resources.getString("export"));
         exportToFile.setAccelerator(KeyCombination.keyCombination("CTRL + E"));
-        final MenuItem newLine = new MenuItem(resources.getString("create-new-line"));
-        newLine.setAccelerator(KeyCombination.keyCombination("CTRL + N"));
-        newLine.setOnAction(newLineAction);
+
         fileMenu.getItems()
-                .addAll(exportToFile, newLine);
+                .addAll(exportToFile);
 
         menuBar.getMenus()
-               .add(fileMenu);
+               .addAll(lineMenu, fileMenu);
         rootPane.setTop(menuBar);
 
         rootPane.setPadding(new Insets(10));
