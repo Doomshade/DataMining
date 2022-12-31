@@ -14,6 +14,7 @@ import cz.zcu.jsmahy.datamining.query.RequestHandler;
 import cz.zcu.jsmahy.datamining.query.SparqlRequest;
 import cz.zcu.jsmahy.datamining.query.UserAssistedAmbiguitySolver;
 import javafx.application.Platform;
+import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
 import javafx.concurrent.Service;
 import javafx.event.ActionEvent;
@@ -160,21 +161,19 @@ order by ?pred
     }
 
     /**
-     * Callback for {@link SelectionModel#selectedItemProperty()} in the ontology list view.
+     * Callback for {@link SelectionModel#selectedItemProperty()} in the ontology list view. Displays the selected item in Wikipedia. The selected item must not be a root of any kind ({@link TreeItem}
+     * root nor {@link DataNodeRoot}).
      *
-     * @param observable the observable that was invalidated
+     * @param observable the observable that was invalidated. not used, it's here just because of the signature of {@link InvalidationListener#invalidated(Observable)} method
      */
     private void onSelection(final Observable observable) {
         final TreeItem<DataNode<T>> selectedItem = ontologyTreeView.getSelectionModel()
                                                                    .getSelectedItem();
         if (selectedItem == null) {
-            LOGGER.info("Could not handle ontology click because selected item was null.");
+            LOGGER.debug("Could not handle ontology click because selected item was null.");
             return;
         }
-        if (selectedItem == ontologyTreeView.getRoot()) {
-            return;
-        }
-        if (selectedItem.getValue() instanceof DataNodeRoot<T>) {
+        if (selectedItem == ontologyTreeView.getRoot() || selectedItem.getValue() instanceof DataNodeRoot<T>) {
             return;
         }
 
