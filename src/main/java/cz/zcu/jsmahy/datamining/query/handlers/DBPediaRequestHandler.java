@@ -234,7 +234,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         // the ambiguity solver might pop up a dialogue where it could wait
         // for the response of the user
         // the dialogue is then responsible for notifying the monitor of this object
-        // to free this thread via unlockDialogPane method
+        // to free this thread via continueSearch method
         // the thread will wait up to 5 seconds and check for the result if the
         // dialogue fails to notify the monitor
         final DataNodeReferenceHolder<T> next = ambiguitySolver.call(children, this, ontologyPathPredicate, request.getRestrictions(), model);

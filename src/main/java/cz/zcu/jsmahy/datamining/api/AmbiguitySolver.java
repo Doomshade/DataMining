@@ -1,13 +1,9 @@
 package cz.zcu.jsmahy.datamining.api;
 
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
-import cz.zcu.jsmahy.datamining.query.Restriction;
 import javafx.collections.ObservableList;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
 
-import java.util.Collection;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -19,9 +15,52 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public interface AmbiguitySolver<T, R> {
     /**
-     * <p>WARNING: when a null reference is returned from the {@link AtomicReference} the program waits until it receives a reference.</p>
-     * <p>The reference can be set any time</p>
-     * <p>TODO: add comment</p>
+     * <p>WARNING: the program waits until {@link DataNodeReferenceHolder#isFinished()} returns true</p>
+     * <p>The reference can be set any time. Once the reference is set, you are obliged to call {@link DataNodeReferenceHolder#finish()} to mark the reference as set followed by
+     * {@link RequestHandler#continueSearch()} if this method runs in a separate. If you do not call these methods the program will get stuck because it {@code wait}s for the user input if you
+     * decide to run this in a different thread (e.g. in a {@link Platform#runLater(Runnable)} call).
+     * </p>
+     * <p>An example async (different thread) implementation:</p>
+     * <pre>{@code
+     * public class UserAssistedAmbiguitySolver<T extends RDFNode> implements AmbiguitySolver<T, Void> {
+     *     @Override
+     *     public DataNodeReferenceHolder<T> call(ObservableList<DataNode<T>> list, RequestHandler<T, Void> requestHandler) {
+     *         DataNodeReferenceHolder<T> ref = new DataNodeReferenceHolder<>();
+     *         Platform.runLater(() -> {
+     *           final Dialog<DataNode<T>> dialog = ...
+     *           final List<DataNode<T>> result = dialog.showAndWait()
+     *                                                 .orElse(null);
+     *           ref.set(result);
+     *           ref.finish();
+     *           requestHandler.continueSearch();
+     *         });
+     *         return ref;
+     *     }
+     * }
+     * }
+     * </pre>
+     *
+     * <p>An example sync implementation:</p>
+     * <pre>{@code
+     * @Override
+     * public class DefaultFirstAmbiguitySolver<T extends RDFNode> implements AmbiguitySolver<T, Void> {
+     *
+     *     @Override
+     *     public DataNodeReferenceHolder<T> call(final ObservableList<DataNode<T>> dataNodeList, final RequestHandler<T, Void> requestHandler) {
+     *         final DataNodeReferenceHolder<T> ref = new DataNodeReferenceHolder<>();
+     *
+     *         for (DataNode<T> dataNode : dataNodeList) {
+     *             if (dataNode.getData()
+     *                         .isURIResource()) {
+     *                 ref.set(dataNode);
+     *                 break;
+     *             }
+     *         }
+     *         return ref;
+     *     }
+     * }
+     *     }
+     * </pre>
      *
      * @param param                 The list of {@link RDFNode}s to choose the result from
      * @param requestHandler        the request handler

@@ -25,5 +25,8 @@ public interface RequestHandler<T, R> {
      */
     Service<R> query(SparqlRequest<T, R> request) throws InvalidQueryException;
 
-    void unlockDialogPane();
+    /**
+     * Attempts to continue the search if the monitor is in wait queue.
+     */
+    void continueSearch();
 }

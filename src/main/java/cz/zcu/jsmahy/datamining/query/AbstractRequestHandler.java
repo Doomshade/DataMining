@@ -26,7 +26,7 @@ public abstract class AbstractRequestHandler<T, R> extends Service<R> implements
     }
 
     @Override
-    public synchronized void unlockDialogPane() {
+    public synchronized void continueSearch() {
         notify();
     }
 
