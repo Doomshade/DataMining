@@ -205,7 +205,9 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
                                       .toList());
             currTreeItem.setExpanded(true);
             // TODO: add another dialog to choose where to continue
-            searchFurther(model, nodeFactory, values.get(0), treeRoot);
+            if (!values.isEmpty()) {
+                searchFurther(model, nodeFactory, values.get(0), treeRoot);
+            }
         }
 
 //        for (final DataNode<T> child : children) {
