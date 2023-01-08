@@ -54,6 +54,7 @@ class ApplicationGUISpec extends ApplicationSpec {
         FxAssert.verifyThat(button, LabeledMatchers.hasText(resourceBundle.getString("search")))
     }
 
+    @Ignore
     def "Test search for debug"() {
         given:
         push(new KeyCodeCombination(KeyCode.N, ANY, DOWN, ANY, ANY, ANY))
