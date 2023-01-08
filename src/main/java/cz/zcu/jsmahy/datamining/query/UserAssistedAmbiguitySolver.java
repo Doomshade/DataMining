@@ -9,6 +9,7 @@ import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
+import javafx.util.Callback;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,7 +30,7 @@ public class UserAssistedAmbiguitySolver<T extends RDFNode> implements DBPediaAm
     @Override
     public DataNodeReferenceHolder<T> call(final ObservableList<DataNode<T>> list, final RequestHandler<T, Void> requestHandler) {
         DataNodeReferenceHolder<T> ref = new DataNodeReferenceHolder<>();
-        Platform.runLater(() -> new DialogueHandler(list, ref, requestHandler).showDialogueAndWait());
+        Platform.runLater(() -> new DialogueHandler(list, ref, requestHandler, x -> new RDFNodeListCellFactory<>(), SelectionMode.SINGLE).showDialogueAndWait());
         return ref;
     }
 
@@ -40,7 +41,8 @@ public class UserAssistedAmbiguitySolver<T extends RDFNode> implements DBPediaAm
         private final DataNodeReferenceHolder<T> ref;
         private final RequestHandler<T, Void> requestHandler;
 
-        public DialogueHandler(final ObservableList<DataNode<T>> list, final DataNodeReferenceHolder<T> ref, final RequestHandler<T, Void> requestHandler) {
+        public DialogueHandler(final ObservableList<DataNode<T>> list, final DataNodeReferenceHolder<T> ref, final RequestHandler<T, Void> requestHandler,
+                               final Callback<ListView<DataNode<T>>, ListCell<DataNode<T>>> cellFactory, final SelectionMode selectionMode) {
             final ResourceBundle resourceBundle = ResourceBundle.getBundle("lang");
             this.ref = ref;
 
@@ -69,10 +71,10 @@ public class UserAssistedAmbiguitySolver<T extends RDFNode> implements DBPediaAm
             });
 
             // dialog content
-            this.content.setCellFactory(x -> new RDFNodeListCellFactory<>());
+            this.content.setCellFactory(cellFactory);
             this.content.setItems(list);
             final MultipleSelectionModel<DataNode<T>> selectionModel = this.content.getSelectionModel();
-            selectionModel.setSelectionMode(SelectionMode.MULTIPLE);
+            selectionModel.setSelectionMode(selectionMode);
             this.content.setOnKeyPressed(event -> {
                 if (event.getCode() == KeyCode.ENTER) {
                     final Button button = (Button) dialogPane.lookupButton(ButtonType.OK);

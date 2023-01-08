@@ -80,7 +80,7 @@ order by ?pred
             ontologyTreeView.getRoot()
                             .getChildren()
                             .add(new TreeItem<>(dataNode));
-        });
+        }, "Title");
 
     };
     private RequestHandler<T, Void> requestHandler;

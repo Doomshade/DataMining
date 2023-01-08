@@ -2,11 +2,9 @@ package cz.zcu.jsmahy.datamining.query.handlers;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import cz.zcu.jsmahy.datamining.api.AmbiguitySolver;
-import cz.zcu.jsmahy.datamining.api.DataNode;
-import cz.zcu.jsmahy.datamining.api.DataNodeFactory;
-import cz.zcu.jsmahy.datamining.api.DataNodeReferenceHolder;
+import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
+import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeListCellFactory;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import cz.zcu.jsmahy.datamining.query.AbstractRequestHandler;
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
@@ -16,6 +14,7 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TreeItem;
 import lombok.NonNull;
 import org.apache.jena.atlas.web.HttpException;
@@ -49,6 +48,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
     private final Collection<String> usedURIs = new HashSet<>();
     private SparqlRequest<T, R> request = null;
 
+    private DialogHelper helper = null;
     private final DataNodeFactory<T> nodeFactory;
     private AmbiguitySolver<T, R> ambiguitySolver;
 
@@ -56,6 +56,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         final Injector injector = Guice.createInjector(new DBPediaModule());
         injector.injectMembers(this);
         nodeFactory = injector.getInstance(DataNodeFactory.class);
+        helper = injector.getInstance(DialogHelper.class);
     }
 
 
@@ -86,12 +87,12 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         requesting = true;
 
         // create the root request and model
-        final String r = DBPEDIA_SITE.concat(request.getRequestPage());
+        final String requestPage = DBPEDIA_SITE.concat(request.getRequestPage());
         this.ambiguitySolver = request.getAmbiguitySolver();
         final OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
         try {
-            LOGGER.debug(String.format("Requesting %s", r));
-            model.read(r);
+            LOGGER.debug(String.format("Requesting %s", requestPage));
+            model.read(requestPage);
         } catch (HttpException e) {
             requesting = false;
             throw LOGGER.throwing(e);
@@ -101,7 +102,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         }
 
         // root subject and predicate
-        final Resource subject = model.getResource(r);
+        final Resource subject = model.getResource(requestPage);
         final Property predicate = model.getProperty(request.getNamespace(), request.getLink());
         final Selector selector = getSelector(subject, predicate);
 
@@ -118,6 +119,54 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         LOGGER.debug("Done searching");
         requesting = false;
         return null;
+    }
+
+    private static final Collection<String> IGNORED_PREDICATES = new ArrayList<>() {
+        {
+            add("http://dbpedia.org/ontology/wikiPageWikiLink");
+            add("http://dbpedia.org/ontology/wikiPageExternalLink");
+            add("http://www.w3.org/2002/07/owl#sameAs");
+            add("http://dbpedia.org/property/wikiPageUsesTemplate");
+            add("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+            add("http://dbpedia.org/ontology/abstract");
+            add("http://purl.org/dc/terms/subject");
+            add("http://www.w3.org/2000/01/rdf-schema#label");
+            add("http://dbpedia.org/ontology/wikiPageRevisionID");
+            add("http://xmlns.com/foaf/0.1/depiction");
+            add("http://dbpedia.org/ontology/deathPlace");
+            add("http://www.w3.org/2000/01/rdf-schema#comment");
+            add("http://dbpedia.org/property/wikt");
+            add("http://www.w3.org/2000/01/rdf-schema#comment");
+            add("http://dbpedia.org/ontology/wikiPageLength");
+            add("http://dbpedia.org/property/thesisTitle");
+            add("http://dbpedia.org/ontology/thumbnail");
+        }
+    };
+
+    private void initialSearch(final Resource subject, final Model model, final Selector selector, final DataNodeFactory<T> nodeFactory, final TreeItem<DataNode<T>> treeRoot) {
+        final Selector s = new SimpleSelector(subject, null, (Object) null) {
+            @Override
+            public boolean selects(final Statement s) {
+                final Property predicate = s.getPredicate();
+                for (String ignoredPredicate : IGNORED_PREDICATES) {
+                    if (predicate.hasURI(ignoredPredicate)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        };
+
+        StmtIterator stmtIterator = model.listStatements(s);
+        final T test = (T) stmtIterator.next()
+                                       .getObject();
+        stmtIterator = model.listStatements(s);
+        stmtIterator.forEach(System.out::println);
+        final DataNodeReferenceHolder<T> ref = new DataNodeReferenceHolder<>();
+        final ObservableList<DataNode<T>> list = FXCollections.observableArrayList();
+        list.add(nodeFactory.newNode(test));
+        Platform.runLater(() -> helper.itemChooseDialog(ref, this, x -> new RDFNodeListCellFactory<>(), list, SelectionMode.SINGLE)
+                                      .showDialogueAndWait());
     }
 
     /**
@@ -200,9 +249,9 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         } else {
             final List<DataNode<T>> values = next.getList();
             currTreeItem.getChildren()
-                        .addAll(values.stream()
-                                      .map(TreeItem::new)
-                                      .toList());
+                        .addAll(children.stream()
+                                        .map(TreeItem::new)
+                                        .toList());
             currTreeItem.setExpanded(true);
             // TODO: add another dialog to choose where to continue
             if (!values.isEmpty()) {

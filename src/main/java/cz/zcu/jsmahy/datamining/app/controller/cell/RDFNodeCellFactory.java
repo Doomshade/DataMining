@@ -69,7 +69,7 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
             dialogHelper.textInputDialog(resources.getString("item-to-search"), searchValue -> {
                 getTreeItem().setExpanded(true);
                 mainController.search(getTreeItem(), searchValue.replaceAll(" ", "_"));
-            });
+            }, "Title");
         });
         menuItem.setAccelerator(KeyCombination.keyCombination("ALT + H"));
         return menuItem;
