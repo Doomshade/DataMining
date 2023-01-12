@@ -109,13 +109,15 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         // prepare the fields, don't put them as parameters, it will just
         // fill stack with duplicates
         this.request = request;
+        this.ontologyPathPredicate = predicate;
         this.usedURIs.clear();
 
         // now iterate recursively
         LOGGER.debug("Searching...");
 
         final TreeItem<DataNode<T>> treeRoot = request.getTreeRoot();
-        bfs(model, selector, nodeFactory, treeRoot);
+        initialSearch(subject, model, selector, nodeFactory, treeRoot);
+//        bfs(model, selector, nodeFactory, treeRoot);
         LOGGER.debug("Done searching");
         requesting = false;
         return null;
@@ -165,9 +167,13 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         final DataNodeReferenceHolder<T> ref = new DataNodeReferenceHolder<>();
         final ObservableList<DataNode<T>> list = FXCollections.observableArrayList();
         list.add(nodeFactory.newNode(test));
-        Platform.runLater(() -> helper.itemChooseDialog(ref, this, x -> new RDFNodeListCellFactory<>(), list, SelectionMode.SINGLE)
-                                      .showDialogueAndWait());
+        Platform.runLater(() -> {
+            final DialogHelper.ItemChooseDialog<T, R> dialog = helper.itemChooseDialog(ref, this, x -> new RDFNodeListCellFactory<>(), list, SelectionMode.SINGLE);
+            dialog.showDialogueAndWait();
+        });
     }
+
+    private Property ontologyPathPredicate = null;
 
     /**
      * Performs a DFS on the given model, given selector, and a previous link. Adds the subject of the selector to the tree.
@@ -231,7 +237,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         // to free this thread via unlockDialogPane method
         // the thread will wait up to 5 seconds and check for the result if the
         // dialogue fails to notify the monitor
-        final DataNodeReferenceHolder<T> next = ambiguitySolver.call(children, this);
+        final DataNodeReferenceHolder<T> next = ambiguitySolver.call(children, this, ontologyPathPredicate, request.getRestrictions(), model);
         while (!next.isFinished()) {
             try {
                 wait(5000);

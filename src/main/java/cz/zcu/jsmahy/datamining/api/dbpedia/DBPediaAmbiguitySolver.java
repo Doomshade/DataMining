@@ -4,8 +4,13 @@ import cz.zcu.jsmahy.datamining.api.AmbiguitySolver;
 import cz.zcu.jsmahy.datamining.api.DataNode;
 import cz.zcu.jsmahy.datamining.api.DataNodeReferenceHolder;
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
+import cz.zcu.jsmahy.datamining.query.Restriction;
 import javafx.collections.ObservableList;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
+
+import java.util.Collection;
 
 /**
  * @author Jakub Šmrha
@@ -13,5 +18,6 @@ import org.apache.jena.rdf.model.RDFNode;
  */
 public interface DBPediaAmbiguitySolver<T extends RDFNode, R> extends AmbiguitySolver<T, R> {
     @Override
-    DataNodeReferenceHolder<T> call(ObservableList<DataNode<T>> param, final RequestHandler<T, R> requestHandler);
+    DataNodeReferenceHolder<T> call(ObservableList<DataNode<T>> param, final RequestHandler<T, R> requestHandler, final Property ontologyPathPredicate, final Collection<Restriction> restrictions,
+                                    final Model model);
 }

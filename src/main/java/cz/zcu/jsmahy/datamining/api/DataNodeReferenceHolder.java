@@ -1,10 +1,11 @@
 package cz.zcu.jsmahy.datamining.api;
 
+import cz.zcu.jsmahy.datamining.query.Restriction;
 import javafx.beans.binding.Bindings;
-import javafx.beans.property.ReadOnlyBooleanProperty;
-import javafx.beans.property.ReadOnlyBooleanWrapper;
+import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import org.apache.jena.rdf.model.Property;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -27,6 +28,34 @@ public class DataNodeReferenceHolder<V> {
      * set it because it would check for the default state -- and that being null. This is a workaround for that issue.
      */
     private final ReadOnlyBooleanWrapper finished = new ReadOnlyBooleanWrapper(false);
+
+    private final ObjectProperty<Property> ontologyPathPredicate = new SimpleObjectProperty<>();
+
+    private final ListProperty<Restriction> restrictions = new SimpleListProperty<>();
+
+    public ObservableList<Restriction> getRestrictions() {
+        return restrictions.get();
+    }
+
+    public ListProperty<Restriction> restrictionsProperty() {
+        return restrictions;
+    }
+
+    public void setRestrictions(final ObservableList<Restriction> restrictions) {
+        this.restrictions.set(restrictions);
+    }
+
+    public Property getOntologyPathPredicate() {
+        return ontologyPathPredicate.get();
+    }
+
+    public ObjectProperty<Property> ontologyPathPredicateProperty() {
+        return ontologyPathPredicate;
+    }
+
+    public void setOntologyPathPredicate(final Property ontologyPathPredicate) {
+        this.ontologyPathPredicate.set(ontologyPathPredicate);
+    }
 
     public DataNodeReferenceHolder() {
         this.hasMultipleReferences.bind(Bindings.greaterThanOrEqual(2, Bindings.createIntegerBinding(references::size)));

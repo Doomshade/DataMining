@@ -1,5 +1,6 @@
 package cz.zcu.jsmahy.datamining.api;
 
+import com.jfoenix.controls.JFXListView;
 import cz.zcu.jsmahy.datamining.Main;
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
 import javafx.application.Platform;
@@ -25,7 +26,7 @@ public class DialogHelper {
     public class ItemChooseDialog<T, R> {
         private final Dialog<List<DataNode<T>>> dialog = new Dialog<>();
         private final DialogPane dialogPane = dialog.getDialogPane();
-        private final ListView<DataNode<T>> content = new ListView<>();
+        private final ListView<DataNode<T>> content = new JFXListView<>();
         private final DataNodeReferenceHolder<T> ref;
         private final RequestHandler<T, R> requestHandler;
 

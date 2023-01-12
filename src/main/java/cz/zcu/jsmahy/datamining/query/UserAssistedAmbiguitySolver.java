@@ -10,10 +10,13 @@ import javafx.collections.ObservableList;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.util.Callback;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.ResourceBundle;
 
@@ -28,21 +31,97 @@ public class UserAssistedAmbiguitySolver<T extends RDFNode> implements DBPediaAm
     private static final Logger LOGGER = LogManager.getLogger(UserAssistedAmbiguitySolver.class);
 
     @Override
-    public DataNodeReferenceHolder<T> call(final ObservableList<DataNode<T>> list, final RequestHandler<T, Void> requestHandler) {
-        DataNodeReferenceHolder<T> ref = new DataNodeReferenceHolder<>();
-        Platform.runLater(() -> new DialogueHandler(list, ref, requestHandler, x -> new RDFNodeListCellFactory<>(), SelectionMode.SINGLE).showDialogueAndWait());
+    public DataNodeReferenceHolder<T> call(final ObservableList<DataNode<T>> list, final RequestHandler<T, Void> requestHandler, final Property ontologyPathPredicate,
+                                           final Collection<Restriction> restrictions, final Model model) {
+        // first off we check if we have an ontology path set
+        // if not, pop up a dialogue
+        final DataNodeReferenceHolder<T> ref = new DataNodeReferenceHolder<>();
+        if (ontologyPathPredicate == null) {
+            Platform.runLater(() -> {
+                final OntologyPathPredicateChoiceDialog dialog = new OntologyPathPredicateChoiceDialog(ref, model);
+                dialog.showDialogueAndWait();
+
+                ref.finish();
+                requestHandler.unlockDialogPane();
+            });
+            return ref;
+        }
+
+        Platform.runLater(() -> {
+            final MultipleItemChoiceDialog dialog = new MultipleItemChoiceDialog(list, ref, x -> new RDFNodeListCellFactory<>(), SelectionMode.SINGLE);
+            dialog.showDialogueAndWait();
+
+            // once we receive the response notify the thread under the request handler's monitor
+            // that we got a response from the user
+            // the thread waits otherwise for another 5 seconds
+            ref.finish();
+            requestHandler.unlockDialogPane();
+        });
         return ref;
     }
 
-    private class DialogueHandler {
+    private class OntologyPathPredicateChoiceDialog {
+        private class RDFNodeModel {
+            private final DataNode<T> node;
+
+            private RDFNodeModel(final DataNode<T> node) {
+                this.node = node;
+            }
+        }
+
+        private final Dialog<List<DataNode<T>>> dialog = new Dialog<>();
+        private final DialogPane dialogPane = dialog.getDialogPane();
+        private final TableView<RDFNodeModel> content = new TableView<>();
+        private final DataNodeReferenceHolder<T> ref;
+
+        private OntologyPathPredicateChoiceDialog(final DataNodeReferenceHolder<T> ref, final Model model) {
+            final ResourceBundle resourceBundle = ResourceBundle.getBundle("lang");
+            this.ref = ref;
+
+            // setup dialog, such as buttons, title etc
+            this.dialogPane.getButtonTypes()
+                           .addAll(ButtonType.OK, ButtonType.CANCEL);
+            this.dialog.initOwner(Main.getPrimaryStage());
+            this.dialog.setResultConverter(buttonType -> {
+                if (buttonType == ButtonType.CANCEL) {
+                    return null;
+                }
+                if (buttonType == ButtonType.OK) {
+                    return content.getSelectionModel()
+                                  .getSelectedItems()
+                                  .stream()
+                                  .map(x -> x.node)
+                                  .toList();
+                }
+                LOGGER.error("Unrecognized button type: {}", buttonType);
+                return null;
+            });
+            this.dialog.setTitle(resourceBundle.getString("ambiguity-dialog-title"));
+            this.dialog.setOnShown(event -> {
+                Platform.runLater(() -> {
+                    this.content.requestFocus();
+                    this.content.getSelectionModel()
+                                .selectFirst();
+                });
+            });
+        }
+
+        public void showDialogueAndWait() {
+            // show the dialogue and wait for response
+            final List<DataNode<T>> result = dialog.showAndWait()
+                                                   .orElse(null);
+            ref.set(result);
+        }
+    }
+
+    private class MultipleItemChoiceDialog {
         private final Dialog<List<DataNode<T>>> dialog = new Dialog<>();
         private final DialogPane dialogPane = dialog.getDialogPane();
         private final ListView<DataNode<T>> content = new ListView<>();
         private final DataNodeReferenceHolder<T> ref;
-        private final RequestHandler<T, Void> requestHandler;
 
-        public DialogueHandler(final ObservableList<DataNode<T>> list, final DataNodeReferenceHolder<T> ref, final RequestHandler<T, Void> requestHandler,
-                               final Callback<ListView<DataNode<T>>, ListCell<DataNode<T>>> cellFactory, final SelectionMode selectionMode) {
+        public MultipleItemChoiceDialog(final ObservableList<DataNode<T>> list, final DataNodeReferenceHolder<T> ref, final Callback<ListView<DataNode<T>>, ListCell<DataNode<T>>> cellFactory,
+                                        final SelectionMode selectionMode) {
             final ResourceBundle resourceBundle = ResourceBundle.getBundle("lang");
             this.ref = ref;
 
@@ -86,7 +165,6 @@ public class UserAssistedAmbiguitySolver<T extends RDFNode> implements DBPediaAm
             });
             this.dialogPane.setContent(content);
 
-            this.requestHandler = requestHandler;
         }
 
         public void showDialogueAndWait() {
@@ -94,12 +172,6 @@ public class UserAssistedAmbiguitySolver<T extends RDFNode> implements DBPediaAm
             final List<DataNode<T>> result = dialog.showAndWait()
                                                    .orElse(null);
             ref.set(result);
-
-            // once we receive the response notify the thread under the request handler's monitor
-            // that we got a response from the user
-            // the thread waits otherwise for another 5 seconds
-            ref.finish();
-            requestHandler.unlockDialogPane();
         }
     }
 }

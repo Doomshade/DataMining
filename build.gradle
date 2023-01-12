@@ -58,6 +58,7 @@ dependencies {
     implementation 'org.apache.jena:jena-iri:4.7.0'
     implementation 'org.jgrapht:jgrapht-core:1.5.1'
     implementation 'org.jgrapht:jgrapht-io:1.5.1'
+    implementation 'org.apache.commons:commons-configuration2:2.8.0'
     implementation 'com.google.inject:guice:5.1.0'
 
     testImplementation 'net.synedra:validatorfx:0.4.0'
