@@ -29,7 +29,7 @@ public class DBPediaQueryTest {
             final Injector injector = Guice.createInjector(new DBPediaModule());
             final RequestHandler<RDFNode, Void> requestHandler = injector.getInstance(RequestHandler.class);
             final SparqlRequest<RDFNode, Void> request = new SparqlRequest<>(requestPage, namespace, link, new TreeItem<>(), new UserAssistedAmbiguousInputResolver<>(listCellFactory));
-            final Service<Void> query = requestHandler.query(request);
+            final Service<Void> query = requestHandler.query(, request, );
             query.setOnSucceeded(x -> {
             });
             query.setOnFailed(x -> {

@@ -17,8 +17,8 @@ import java.util.Collection;
 public class DefaultFirstAmbiguousInputResolver<T extends RDFNode> implements AmbiguousInputResolver<T, Void> {
 
     @Override
-    public DataNodeReferenceHolder<T> call(final ObservableList<DataNode<T>> dataNodeList, final RequestHandler<T, Void> requestHandler, final Property ontologyPathPredicate,
-                                           final Collection<Restriction> restrictions, final Model model) {
+    public DataNodeReferenceHolder<T> resolveRequest(final ObservableList<DataNode<T>> dataNodeList, final RequestHandler<T, Void> requestHandler, final Property ontologyPathPredicate,
+                                                     final Collection<Restriction> restrictions, final Model model) {
         final DataNodeReferenceHolder<T> ref = new DataNodeReferenceHolder<>();
 
         for (DataNode<T> dataNode : dataNodeList) {

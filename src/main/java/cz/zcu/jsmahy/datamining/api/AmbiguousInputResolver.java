@@ -19,15 +19,15 @@ import java.util.Collection;
 public interface AmbiguousInputResolver<T, R> {
     /**
      * <p>WARNING: the program waits until {@link DataNodeReferenceHolder#isFinished()} returns true</p>
-     * <p>The reference can be set any time. Once the reference is set, you are obliged to call {@link DataNodeReferenceHolder#finish()} to mark the reference as set followed by
-     * {@link RequestHandler#unlockDialogPane()} if this method runs in a separate. If you do not call these methods the program will get stuck because it {@code wait}s for the user input if you
-     * decide to run this in a different thread (e.g. in a {@link Platform#runLater(Runnable)} call).
+     * <p>The reference can be set any time. Once the reference is set, you are obliged to resolveRequest {@link DataNodeReferenceHolder#finish()} to mark the reference as set followed by
+     * {@link RequestHandler#unlockDialogPane()} if this method runs in a separate. If you do not resolveRequest these methods the program will get stuck because it {@code wait}s for the user input if you
+     * decide to run this in a different thread (e.g. in a {@link Platform#runLater(Runnable)} resolveRequest).
      * </p>
      * <p>An example async (different thread) implementation:</p>
      * <pre>{@code
      * public class UserAssistedAmbiguitySolver<T extends RDFNode> implements AmbiguitySolver<T, Void> {
      *     @Override
-     *     public DataNodeReferenceHolder<T> call(ObservableList<DataNode<T>> list, RequestHandler<T, Void> requestHandler) {
+     *     public DataNodeReferenceHolder<T> resolveRequest(ObservableList<DataNode<T>> list, RequestHandler<T, Void> requestHandler) {
      *         DataNodeReferenceHolder<T> ref = new DataNodeReferenceHolder<>();
      *         Platform.runLater(() -> {
      *           final Dialog<DataNode<T>> dialog = ...
@@ -49,7 +49,7 @@ public interface AmbiguousInputResolver<T, R> {
      * public class DefaultFirstAmbiguitySolver<T extends RDFNode> implements AmbiguitySolver<T, Void> {
      *
      *     @Override
-     *     public DataNodeReferenceHolder<T> call(final ObservableList<DataNode<T>> dataNodeList, final RequestHandler<T, Void> requestHandler) {
+     *     public DataNodeReferenceHolder<T> resolveRequest(final ObservableList<DataNode<T>> dataNodeList, final RequestHandler<T, Void> requestHandler) {
      *         final DataNodeReferenceHolder<T> ref = new DataNodeReferenceHolder<>();
      *
      *         for (DataNode<T> dataNode : dataNodeList) {
@@ -73,6 +73,6 @@ public interface AmbiguousInputResolver<T, R> {
      *
      * @return an atomic reference
      */
-    DataNodeReferenceHolder<T> call(ObservableList<DataNode<T>> param, final RequestHandler<T, R> requestHandler, final Property ontologyPathPredicate, final Collection<Restriction> restrictions,
-                                    final Model model);
+    DataNodeReferenceHolder<T> resolveRequest(ObservableList<DataNode<T>> param, final RequestHandler<T, R> requestHandler, final Property ontologyPathPredicate, final Collection<Restriction> restrictions,
+                                              final Model model);
 }

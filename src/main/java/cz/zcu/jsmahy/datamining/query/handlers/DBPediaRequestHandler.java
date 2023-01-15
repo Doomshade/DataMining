@@ -5,13 +5,15 @@ import com.google.inject.Injector;
 import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
-import cz.zcu.jsmahy.datamining.query.*;
+import cz.zcu.jsmahy.datamining.query.AbstractRequestHandler;
+import cz.zcu.jsmahy.datamining.query.BlockingRequestHandler;
+import cz.zcu.jsmahy.datamining.query.RequestHandler;
+import cz.zcu.jsmahy.datamining.query.Restriction;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.scene.control.TreeItem;
-import lombok.NonNull;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntModelSpec;
@@ -39,19 +41,22 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
                                                                                                  .isURIResource(),
                                                                                                 y.getObject()
                                                                                                  .isURIResource());
+    public static final String NAMESPACE = "http://dbpedia.org/ontology/";
+    public static final String LINK = "doctoralAdvisor";
     private static boolean requesting = false;
     private final Collection<String> usedURIs = new HashSet<>();
-    private SparqlRequest<T, R> request = null;
 
     private DialogHelper helper = null;
     private final DataNodeFactory<T> nodeFactory;
     private AmbiguousInputResolver<T, R> ambiguousInputResolver;
+    private final Collection<Restriction> restrictions = new ArrayList<>();
 
-    {
+    public DBPediaRequestHandler() {
         final Injector injector = Guice.createInjector(new DBPediaModule());
         injector.injectMembers(this);
         nodeFactory = injector.getInstance(DataNodeFactory.class);
         helper = injector.getInstance(DialogHelper.class);
+        ambiguousInputResolver = injector.getInstance(AmbiguousInputResolver.class);
     }
 
     /**
@@ -82,15 +87,14 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
     }
 
     @Override
-    protected synchronized R internalQuery(@NonNull final SparqlRequest<T, R> request) throws InvalidQueryException {
+    protected synchronized R internalQuery(final String query, final TreeItem<DataNode<T>> treeRoot) throws InvalidQueryException {
         if (requesting) {
             throw new IllegalStateException("Already requesting!");
         }
         requesting = true;
 
         // create the root request and model
-        final String requestPage = DBPEDIA_SITE.concat(request.getRequestPage());
-        this.ambiguousInputResolver = request.getAmbiguousInputResolver();
+        final String requestPage = DBPEDIA_SITE.concat(query);
         final OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
         try {
             LOGGER.debug(String.format("Requesting %s", requestPage));
@@ -105,19 +109,17 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
 
         // root subject and predicate
         final Resource subject = model.getResource(requestPage);
-        final Property predicate = model.getProperty(request.getNamespace(), request.getLink());
+        final Property predicate = model.getProperty(NAMESPACE, LINK);
         final Selector selector = getSelector(subject, predicate);
 
         // prepare the fields, don't put them as parameters, it will just
         // fill stack with duplicates
-        this.request = request;
         this.ontologyPathPredicate = predicate;
         this.usedURIs.clear();
 
         // now iterate recursively
         LOGGER.debug("Searching...");
 
-        final TreeItem<DataNode<T>> treeRoot = request.getTreeRoot();
         initialSearch(subject, model, selector, nodeFactory, treeRoot);
         bfs(model, selector, nodeFactory, treeRoot);
         LOGGER.debug("Done searching");
@@ -226,7 +228,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         }
 
         // only one found, that means it's going linearly
-        // pass in this call's parent
+        // pass in this resolveRequest's parent
         if (children.size() == 1) {
             final DataNode<T> first = children.get(0);
             searchFurther(model, nodeFactory, first, treeRoot);
@@ -239,7 +241,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         // to free this thread via unlockDialogPane method
         // the thread will wait up to 5 seconds and check for the result if the
         // dialogue fails to notify the monitor
-        final DataNodeReferenceHolder<T> next = ambiguousInputResolver.call(children, this, ontologyPathPredicate, request.getRestrictions(), model);
+        final DataNodeReferenceHolder<T> next = ambiguousInputResolver.resolveRequest(children, this, ontologyPathPredicate, restrictions, model);
         while (!next.isFinished()) {
             try {
                 wait(5000);
@@ -280,7 +282,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         final Resource resource = (Resource) data;
         readResource(model, resource);
         if (usedURIs.add(resource.getURI())) {
-            final Selector sel = getSelector(resource, model.getProperty(request.getNamespace(), request.getLink()));
+            final Selector sel = getSelector(resource, model.getProperty(NAMESPACE, LINK));
             bfs(model, sel, nodeFactory, treeRoot);
         }
     }
@@ -307,7 +309,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         readResource(model, resource);
 
         // check for the restrictions on the given request
-        for (final Restriction restriction : request.getRestrictions()) {
+        for (final Restriction restriction : restrictions) {
             final Selector sel = getSelector(resource, model.getProperty(restriction.getKey(), restriction.getValue()));
 
             // a statement with the given restriction was not found -> they were not met

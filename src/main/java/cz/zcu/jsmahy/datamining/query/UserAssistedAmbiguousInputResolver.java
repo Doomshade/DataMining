@@ -1,9 +1,9 @@
 package cz.zcu.jsmahy.datamining.query;
 
 import cz.zcu.jsmahy.datamining.Main;
+import cz.zcu.jsmahy.datamining.api.BlockingAmbiguousInputResolver;
 import cz.zcu.jsmahy.datamining.api.DataNode;
 import cz.zcu.jsmahy.datamining.api.DataNodeReferenceHolder;
-import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaAmbiguousInputResolver;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeListCellFactory;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
@@ -26,13 +26,13 @@ import java.util.ResourceBundle;
  * @author Jakub Šmrha
  * @version 1.0
  */
-public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements DBPediaAmbiguousInputResolver<T, Void> {
+public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements BlockingAmbiguousInputResolver<T, Void> {
 
     private static final Logger LOGGER = LogManager.getLogger(UserAssistedAmbiguousInputResolver.class);
 
     @Override
-    public DataNodeReferenceHolder<T> call(final ObservableList<DataNode<T>> list, final RequestHandler<T, Void> requestHandler, final Property ontologyPathPredicate,
-                                           final Collection<Restriction> restrictions, final Model model) {
+    public DataNodeReferenceHolder<T> resolveRequest(final ObservableList<DataNode<T>> list, final RequestHandler<T, Void> requestHandler, final Property ontologyPathPredicate,
+                                                     final Collection<Restriction> restrictions, final Model model) {
         // first off we check if we have an ontology path set
         // if not, pop up a dialogue
         final DataNodeReferenceHolder<T> ref = new DataNodeReferenceHolder<>();
@@ -63,6 +63,16 @@ public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements DB
             }
         });
         return ref;
+    }
+
+    @Override
+    public boolean isFinished() {
+        return false;
+    }
+
+    @Override
+    public boolean hasMultipleReferences() {
+        return false;
     }
 
     private class OntologyPathPredicateChoiceDialog {

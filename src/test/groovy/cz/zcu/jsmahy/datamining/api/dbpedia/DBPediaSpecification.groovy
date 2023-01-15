@@ -29,7 +29,7 @@ class DBPediaSpecification extends Specification {
         def requestHandler = injector.getInstance(RequestHandler.class)
 
         when:
-        requestHandler.query(null)
+        requestHandler.query(,)
 
         then:
         thrown(NullPointerException)
