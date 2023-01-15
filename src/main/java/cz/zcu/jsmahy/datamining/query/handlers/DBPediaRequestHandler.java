@@ -6,10 +6,7 @@ import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeListCellFactory;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
-import cz.zcu.jsmahy.datamining.query.AbstractRequestHandler;
-import cz.zcu.jsmahy.datamining.query.RequestHandler;
-import cz.zcu.jsmahy.datamining.query.Restriction;
-import cz.zcu.jsmahy.datamining.query.SparqlRequest;
+import cz.zcu.jsmahy.datamining.query.*;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -33,7 +30,7 @@ import java.util.stream.Collectors;
  * @author Jakub Šmrha
  * @version 1.0
  */
-public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends AbstractRequestHandler<T, R> {
+public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends AbstractRequestHandler<T, R> implements AsyncRequestHandler<T, R> {
     private static final Logger LOGGER = LogManager.getLogger(DBPediaRequestHandler.class);
     private static final String DBPEDIA_SITE = "http://dbpedia.org/resource/";
     /**
@@ -57,6 +54,13 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         injector.injectMembers(this);
         nodeFactory = injector.getInstance(DataNodeFactory.class);
         helper = injector.getInstance(DialogHelper.class);
+    }
+
+    /**
+     * Attempts to continue the search if the monitor is in wait queue.
+     */
+    public synchronized void unlockDialogPane() {
+        notify();
     }
 
 
@@ -117,7 +121,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
 
         final TreeItem<DataNode<T>> treeRoot = request.getTreeRoot();
         initialSearch(subject, model, selector, nodeFactory, treeRoot);
-//        bfs(model, selector, nodeFactory, treeRoot);
+        bfs(model, selector, nodeFactory, treeRoot);
         LOGGER.debug("Done searching");
         requesting = false;
         return null;
@@ -164,13 +168,13 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
                                        .getObject();
         stmtIterator = model.listStatements(s);
         stmtIterator.forEach(System.out::println);
-        final DataNodeReferenceHolder<T> ref = new DataNodeReferenceHolder<>();
-        final ObservableList<DataNode<T>> list = FXCollections.observableArrayList();
-        list.add(nodeFactory.newNode(test));
-        Platform.runLater(() -> {
-            final DialogHelper.ItemChooseDialog<T, R> dialog = helper.itemChooseDialog(ref, this, x -> new RDFNodeListCellFactory<>(), list, SelectionMode.SINGLE);
-            dialog.showDialogueAndWait();
-        });
+//        final DataNodeReferenceHolder<T> ref = new DataNodeReferenceHolder<>();
+//        final ObservableList<DataNode<T>> list = FXCollections.observableArrayList();
+//        list.add(nodeFactory.newNode(test));
+//        Platform.runLater(() -> {
+//            final DialogHelper.ItemChooseDialog<T, R> dialog = helper.itemChooseDialog(ref, this, x -> new RDFNodeListCellFactory<>(), list, SelectionMode.SINGLE);
+//            dialog.showDialogueAndWait();
+//        });
     }
 
     private Property ontologyPathPredicate = null;
@@ -234,7 +238,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         // the ambiguity solver might pop up a dialogue where it could wait
         // for the response of the user
         // the dialogue is then responsible for notifying the monitor of this object
-        // to free this thread via continueSearch method
+        // to free this thread via unlockDialogPane method
         // the thread will wait up to 5 seconds and check for the result if the
         // dialogue fails to notify the monitor
         final DataNodeReferenceHolder<T> next = ambiguitySolver.call(children, this, ontologyPathPredicate, request.getRestrictions(), model);

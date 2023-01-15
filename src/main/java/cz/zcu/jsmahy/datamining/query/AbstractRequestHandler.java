@@ -25,11 +25,6 @@ public abstract class AbstractRequestHandler<T, R> extends Service<R> implements
         };
     }
 
-    @Override
-    public synchronized void continueSearch() {
-        notify();
-    }
-
     /**
      * The internal query request called in the {@link Task} that's created by this {@link Service}.
      *

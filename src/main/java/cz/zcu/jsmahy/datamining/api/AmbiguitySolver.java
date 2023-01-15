@@ -1,10 +1,13 @@
 package cz.zcu.jsmahy.datamining.api;
 
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
+import cz.zcu.jsmahy.datamining.query.Restriction;
 import javafx.collections.ObservableList;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
 
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Collection;
 
 /**
  * <p>Solves ambiguities of nodes where a list of them occurs.</p>
@@ -17,7 +20,7 @@ public interface AmbiguitySolver<T, R> {
     /**
      * <p>WARNING: the program waits until {@link DataNodeReferenceHolder#isFinished()} returns true</p>
      * <p>The reference can be set any time. Once the reference is set, you are obliged to call {@link DataNodeReferenceHolder#finish()} to mark the reference as set followed by
-     * {@link RequestHandler#continueSearch()} if this method runs in a separate. If you do not call these methods the program will get stuck because it {@code wait}s for the user input if you
+     * {@link RequestHandler#unlockDialogPane()} if this method runs in a separate. If you do not call these methods the program will get stuck because it {@code wait}s for the user input if you
      * decide to run this in a different thread (e.g. in a {@link Platform#runLater(Runnable)} call).
      * </p>
      * <p>An example async (different thread) implementation:</p>
@@ -32,7 +35,7 @@ public interface AmbiguitySolver<T, R> {
      *                                                 .orElse(null);
      *           ref.set(result);
      *           ref.finish();
-     *           requestHandler.continueSearch();
+     *           requestHandler.unlockDialogPane();
      *         });
      *         return ref;
      *     }

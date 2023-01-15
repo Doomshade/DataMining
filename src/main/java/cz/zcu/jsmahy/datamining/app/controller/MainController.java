@@ -11,7 +11,8 @@ import cz.zcu.jsmahy.datamining.api.DataNodeRoot;
 import cz.zcu.jsmahy.datamining.api.DialogHelper;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
-import cz.zcu.jsmahy.datamining.query.RequestHandler;
+import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeListCellFactory;
+import cz.zcu.jsmahy.datamining.query.AsyncRequestHandler;
 import cz.zcu.jsmahy.datamining.query.SparqlRequest;
 import cz.zcu.jsmahy.datamining.query.UserAssistedAmbiguitySolver;
 import javafx.application.Platform;
@@ -83,7 +84,7 @@ order by ?pred
         }, "Title");
 
     };
-    private RequestHandler<T, Void> requestHandler;
+    private AsyncRequestHandler<T, Void> requestHandler;
 
     private static synchronized void exit() {
         LOGGER.info("Exiting application...");
@@ -95,7 +96,7 @@ order by ?pred
     public void initialize(final URL location, final ResourceBundle resources) {
         final Injector injector = Guice.createInjector(new DBPediaModule());
         nodeFactory = injector.getInstance(DataNodeFactory.class);
-        requestHandler = injector.getInstance(RequestHandler.class);
+        requestHandler = injector.getInstance(AsyncRequestHandler.class);
         dialogHelper = injector.getInstance(DialogHelper.class);
 
         // when user has focus on search field and presses enter -> search

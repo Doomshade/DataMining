@@ -42,7 +42,9 @@ public class UserAssistedAmbiguitySolver<T extends RDFNode> implements DBPediaAm
                 dialog.showDialogueAndWait();
 
                 ref.finish();
-                requestHandler.unlockDialogPane();
+                if (requestHandler instanceof AsyncRequestHandler<T, Void> asyncRequestHandler) {
+                    asyncRequestHandler.unlockDialogPane();
+                }
             });
             return ref;
         }
@@ -55,7 +57,10 @@ public class UserAssistedAmbiguitySolver<T extends RDFNode> implements DBPediaAm
             // that we got a response from the user
             // the thread waits otherwise for another 5 seconds
             ref.finish();
-            requestHandler.unlockDialogPane();
+
+            if (requestHandler instanceof AsyncRequestHandler<T, Void> asyncRequestHandler) {
+                asyncRequestHandler.unlockDialogPane();
+            }
         });
         return ref;
     }

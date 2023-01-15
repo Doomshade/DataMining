@@ -2,6 +2,7 @@ package cz.zcu.jsmahy.datamining.api;
 
 import com.jfoenix.controls.JFXListView;
 import cz.zcu.jsmahy.datamining.Main;
+import cz.zcu.jsmahy.datamining.query.AsyncRequestHandler;
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
@@ -31,7 +32,7 @@ public class DialogHelper {
         private final RequestHandler<T, R> requestHandler;
 
         private ItemChooseDialog(final DataNodeReferenceHolder<T> ref, final RequestHandler<T, R> requestHandler, final Callback<ListView<DataNode<T>>, ListCell<DataNode<T>>> cellFactory,
-                                final ObservableList<DataNode<T>> list, final SelectionMode selectionMode) {
+                                 final ObservableList<DataNode<T>> list, final SelectionMode selectionMode) {
             this.ref = ref;
             this.requestHandler = requestHandler;
 
@@ -83,13 +84,15 @@ public class DialogHelper {
             // that we got a response from the user
             // the thread waits otherwise for another 5 seconds
             ref.finish();
-            requestHandler.unlockDialogPane();
+            if (requestHandler instanceof AsyncRequestHandler<T, R> asyncRequestHandler) {
+                asyncRequestHandler.unlockDialogPane();
+            }
         }
     }
 
     public <T, R> ItemChooseDialog<T, R> itemChooseDialog(final DataNodeReferenceHolder<T> ref, final RequestHandler<T, R> requestHandler,
-                                                     final Callback<ListView<DataNode<T>>, ListCell<DataNode<T>>> cellFactory,
-                                                    final ObservableList<DataNode<T>> list, final SelectionMode selectionMode){
+                                                          final Callback<ListView<DataNode<T>>, ListCell<DataNode<T>>> cellFactory,
+                                                          final ObservableList<DataNode<T>> list, final SelectionMode selectionMode) {
         return new ItemChooseDialog<>(ref, requestHandler, cellFactory, list, selectionMode);
     }
 

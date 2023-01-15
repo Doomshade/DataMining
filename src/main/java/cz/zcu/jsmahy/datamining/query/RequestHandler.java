@@ -24,9 +24,4 @@ public interface RequestHandler<T, R> {
      * @throws InvalidQueryException if the request is invalid
      */
     Service<R> query(SparqlRequest<T, R> request) throws InvalidQueryException;
-
-    /**
-     * Attempts to continue the search if the monitor is in wait queue.
-     */
-    void continueSearch();
 }
