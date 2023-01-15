@@ -6,6 +6,8 @@ import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.scene.control.TreeItem;
 
+import static java.util.Objects.requireNonNull;
+
 
 public abstract class AbstractRequestHandler<T, R> extends Service<R> implements RequestHandler<T, R> {
     private String query;
@@ -13,6 +15,8 @@ public abstract class AbstractRequestHandler<T, R> extends Service<R> implements
 
     @Override
     public final Service<R> query(final String query, final TreeItem<DataNode<T>> treeRoot) throws InvalidQueryException {
+        requireNonNull(query);
+        requireNonNull(treeRoot);
         this.query = query;
         this.treeRoot = treeRoot;
         return this;
