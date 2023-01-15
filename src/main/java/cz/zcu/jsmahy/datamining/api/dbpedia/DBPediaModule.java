@@ -1,8 +1,7 @@
 package cz.zcu.jsmahy.datamining.api.dbpedia;
 
 import cz.zcu.jsmahy.datamining.api.DataMiningModule;
-import cz.zcu.jsmahy.datamining.query.AsyncRequestHandler;
-import cz.zcu.jsmahy.datamining.query.RequestHandler;
+import cz.zcu.jsmahy.datamining.query.BlockingRequestHandler;
 import cz.zcu.jsmahy.datamining.query.handlers.DBPediaRequestHandler;
 import lombok.SneakyThrows;
 
@@ -16,7 +15,7 @@ public class DBPediaModule extends DataMiningModule {
     @SneakyThrows
     protected void configure() {
         super.configure();
-        bind(AsyncRequestHandler.class).to(DBPediaRequestHandler.class);
+        bind(BlockingRequestHandler.class).to(DBPediaRequestHandler.class);
     }
 
 }

@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
  * @author Jakub Šmrha
  * @version 1.0
  */
-public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends AbstractRequestHandler<T, R> implements AsyncRequestHandler<T, R> {
+public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends AbstractRequestHandler<T, R> implements BlockingRequestHandler<T, R> {
     private static final Logger LOGGER = LogManager.getLogger(DBPediaRequestHandler.class);
     private static final String DBPEDIA_SITE = "http://dbpedia.org/resource/";
     /**

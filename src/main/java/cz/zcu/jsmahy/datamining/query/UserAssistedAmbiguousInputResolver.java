@@ -42,8 +42,8 @@ public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements DB
                 dialog.showDialogueAndWait();
 
                 ref.finish();
-                if (requestHandler instanceof AsyncRequestHandler<T, Void> asyncRequestHandler) {
-                    asyncRequestHandler.unlockDialogPane();
+                if (requestHandler instanceof BlockingRequestHandler<T, Void> blockingRequestHandler) {
+                    blockingRequestHandler.unlockDialogPane();
                 }
             });
             return ref;
@@ -58,8 +58,8 @@ public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements DB
             // the thread waits otherwise for another 5 seconds
             ref.finish();
 
-            if (requestHandler instanceof AsyncRequestHandler<T, Void> asyncRequestHandler) {
-                asyncRequestHandler.unlockDialogPane();
+            if (requestHandler instanceof BlockingRequestHandler<T, Void> blockingRequestHandler) {
+                blockingRequestHandler.unlockDialogPane();
             }
         });
         return ref;

@@ -2,7 +2,7 @@ package cz.zcu.jsmahy.datamining.api;
 
 import com.jfoenix.controls.JFXListView;
 import cz.zcu.jsmahy.datamining.Main;
-import cz.zcu.jsmahy.datamining.query.AsyncRequestHandler;
+import cz.zcu.jsmahy.datamining.query.BlockingRequestHandler;
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
@@ -84,8 +84,8 @@ public class DialogHelper {
             // that we got a response from the user
             // the thread waits otherwise for another 5 seconds
             ref.finish();
-            if (requestHandler instanceof AsyncRequestHandler<T, R> asyncRequestHandler) {
-                asyncRequestHandler.unlockDialogPane();
+            if (requestHandler instanceof BlockingRequestHandler<T, R> blockingRequestHandler) {
+                blockingRequestHandler.unlockDialogPane();
             }
         }
     }
