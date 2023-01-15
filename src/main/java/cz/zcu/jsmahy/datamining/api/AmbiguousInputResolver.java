@@ -16,7 +16,7 @@ import java.util.Collection;
  * @author Jakub Smrha
  * @since 1.0
  */
-public interface AmbiguitySolver<T, R> {
+public interface AmbiguousInputResolver<T, R> {
     /**
      * <p>WARNING: the program waits until {@link DataNodeReferenceHolder#isFinished()} returns true</p>
      * <p>The reference can be set any time. Once the reference is set, you are obliged to call {@link DataNodeReferenceHolder#finish()} to mark the reference as set followed by

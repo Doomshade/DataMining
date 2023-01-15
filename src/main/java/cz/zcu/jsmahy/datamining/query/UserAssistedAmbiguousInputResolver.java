@@ -3,7 +3,7 @@ package cz.zcu.jsmahy.datamining.query;
 import cz.zcu.jsmahy.datamining.Main;
 import cz.zcu.jsmahy.datamining.api.DataNode;
 import cz.zcu.jsmahy.datamining.api.DataNodeReferenceHolder;
-import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaAmbiguitySolver;
+import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaAmbiguousInputResolver;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeListCellFactory;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
@@ -26,9 +26,9 @@ import java.util.ResourceBundle;
  * @author Jakub Šmrha
  * @version 1.0
  */
-public class UserAssistedAmbiguitySolver<T extends RDFNode> implements DBPediaAmbiguitySolver<T, Void> {
+public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements DBPediaAmbiguousInputResolver<T, Void> {
 
-    private static final Logger LOGGER = LogManager.getLogger(UserAssistedAmbiguitySolver.class);
+    private static final Logger LOGGER = LogManager.getLogger(UserAssistedAmbiguousInputResolver.class);
 
     @Override
     public DataNodeReferenceHolder<T> call(final ObservableList<DataNode<T>> list, final RequestHandler<T, Void> requestHandler, final Property ontologyPathPredicate,

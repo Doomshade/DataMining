@@ -11,10 +11,9 @@ import cz.zcu.jsmahy.datamining.api.DataNodeRoot;
 import cz.zcu.jsmahy.datamining.api.DialogHelper;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
-import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeListCellFactory;
 import cz.zcu.jsmahy.datamining.query.AsyncRequestHandler;
 import cz.zcu.jsmahy.datamining.query.SparqlRequest;
-import cz.zcu.jsmahy.datamining.query.UserAssistedAmbiguitySolver;
+import cz.zcu.jsmahy.datamining.query.UserAssistedAmbiguousInputResolver;
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
@@ -238,7 +237,7 @@ order by ?pred
                                                             .namespace("http://dbpedia.org/ontology/")
                                                             .link("doctoralAdvisor")
                                                             .treeRoot(root)
-                                                            .ambiguitySolver(new UserAssistedAmbiguitySolver<>())
+                                                            .ambiguousInputResolver(new UserAssistedAmbiguousInputResolver<>())
                                                             .build();
         final Service<Void> query = requestHandler.query(request);
         query.setOnSucceeded(x -> {

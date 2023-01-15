@@ -4,14 +4,12 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
-import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeListCellFactory;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import cz.zcu.jsmahy.datamining.query.*;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TreeItem;
 import lombok.NonNull;
 import org.apache.jena.atlas.web.HttpException;
@@ -47,7 +45,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
 
     private DialogHelper helper = null;
     private final DataNodeFactory<T> nodeFactory;
-    private AmbiguitySolver<T, R> ambiguitySolver;
+    private AmbiguousInputResolver<T, R> ambiguousInputResolver;
 
     {
         final Injector injector = Guice.createInjector(new DBPediaModule());
@@ -92,7 +90,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
 
         // create the root request and model
         final String requestPage = DBPEDIA_SITE.concat(request.getRequestPage());
-        this.ambiguitySolver = request.getAmbiguitySolver();
+        this.ambiguousInputResolver = request.getAmbiguousInputResolver();
         final OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
         try {
             LOGGER.debug(String.format("Requesting %s", requestPage));
@@ -241,7 +239,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         // to free this thread via unlockDialogPane method
         // the thread will wait up to 5 seconds and check for the result if the
         // dialogue fails to notify the monitor
-        final DataNodeReferenceHolder<T> next = ambiguitySolver.call(children, this, ontologyPathPredicate, request.getRestrictions(), model);
+        final DataNodeReferenceHolder<T> next = ambiguousInputResolver.call(children, this, ontologyPathPredicate, request.getRestrictions(), model);
         while (!next.isFinished()) {
             try {
                 wait(5000);
