@@ -20,6 +20,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -176,30 +177,29 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         }
     };
 
-    private boolean initialSearch(final Resource subject, final Model model, final Selector selector, final DataNodeFactory<T> nodeFactory, final TreeItem<DataNode<T>> treeRoot) {
-        final Selector s = new SimpleSelector(subject, null, null, "en") {
-            @Override
-            public boolean selects(final Statement s) {
-                final Property predicate = s.getPredicate();
-                for (String ignoredPredicate : IGNORED_PREDICATES) {
-                    if (predicate.hasURI(ignoredPredicate)) {
-                        return false;
-                    }
+    private static final Function<Resource, Selector> PREDICATE_FILTER_SELECTOR = subject -> new SimpleSelector(subject, null, null, "en") {
+        @Override
+        public boolean selects(final Statement s) {
+            final Property predicate = s.getPredicate();
+            for (String ignoredPredicate : IGNORED_PREDICATES) {
+                if (predicate.hasURI(ignoredPredicate)) {
+                    return false;
                 }
-                return true;
             }
-        };
+            return true;
+        }
+    };
+
+    private boolean initialSearch(final Resource subject, final Model model, final Selector selector, final DataNodeFactory<T> nodeFactory, final TreeItem<DataNode<T>> treeRoot) {
+        final Selector s = PREDICATE_FILTER_SELECTOR.apply(subject);
 
         StmtIterator stmtIterator = model.listStatements(s);
         if (!stmtIterator.hasNext()) {
             return false;
         }
-        final List<DataNode<T>> properties = stmtIterator.toList()
-                                                         .stream()
-                                                         .map(statement -> (T) statement.getPredicate())
-                                                         .map(nodeFactory::newNode)
-                                                         .toList();
-        final DataNodeReferenceHolder<T> ref = ontologyPathPredicateInputResolver.resolveRequest(FXCollections.observableArrayList(properties), inputMetadata);
+
+        inputMetadata.setModel(model);
+        final DataNodeReferenceHolder<T> ref = ontologyPathPredicateInputResolver.resolveRequest(null, inputMetadata);
         if (ref instanceof BlockingDataNodeReferenceHolder<T> blockingRef) {
             while (!blockingRef.isFinished()) {
                 try {
@@ -209,39 +209,16 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
                 }
             }
         }
-//        final DataNodeReferenceHolder<T> ref = new DataNodeReferenceHolder<>();
-//        final ObservableList<DataNode<T>> list = FXCollections.observableArrayList();
-//        list.add(nodeFactory.newNode(test));
-//        Platform.runLater(() -> {
-//            final DialogHelper.ItemChooseDialog<T, R> dialog = helper.itemChooseDialog(ref, this, x -> new RDFNodeListCellFactory<>(), list, SelectionMode.SINGLE);
-//            dialog.showDialogueAndWait();
-//        });
         return true;
     }
 
     public static class OntologyPathPredicateInputResolver<T, R> implements BlockingAmbiguousInputResolver<T, R> {
         @Override
         public BlockingDataNodeReferenceHolder<T> resolveRequest(final ObservableList<DataNode<T>> ambiguousInput, final AmbiguousInputMetadata<T, R> inputMetadata) {
-            if (ambiguousInput.isEmpty()) {
-                throw new IllegalArgumentException("Ambiguous input cannot be empty.");
-            }
-            final DataNode<T> firstNode = ambiguousInput.get(0);
-            if (!(firstNode.getData() instanceof Property)) {
-                throw new IllegalArgumentException(String.format("Invalid input type. Received: %s. Expected: %s",
-                                                                 firstNode.getData()
-                                                                          .getClass(),
-                                                                 Property.class));
-            }
-
             final BlockingDataNodeReferenceHolder<T> ref = new BlockingDataNodeReferenceHolder<>();
-            if (ambiguousInput.size() == 1) {
-                ref.set(firstNode);
-                ref.unlock();
-                return ref;
-            }
 
             Platform.runLater(() -> {
-                final DialogWrapper dialog = new DialogWrapper(ref, ambiguousInput);
+                final DialogWrapper dialog = new DialogWrapper(ref, ambiguousInput, inputMetadata.getModel());
                 dialog.showDialogueAndWait(inputMetadata.getRequestHandler());
             });
             return ref;
@@ -261,102 +238,53 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
 
             private final Dialog<Property> dialog = new Dialog<>();
             private final DialogPane dialogPane = dialog.getDialogPane();
-            private final TableView<Property> content;
+            private final TableView<Statement> content;
             private final DataNodeReferenceHolder<T> ref;
             private final Map<String, Model> modelCache = new HashMap<>();
 
-            private DialogWrapper(final DataNodeReferenceHolder<T> ref, final ObservableList<DataNode<T>> input) {
+            private DialogWrapper(final DataNodeReferenceHolder<T> ref, final ObservableList<DataNode<T>> input, final Model model) {
                 final ResourceBundle resourceBundle = ResourceBundle.getBundle("lang");
                 this.ref = ref;
                 this.content = new TableView<>();
                 this.content.getItems()
-                            .addAll(input.stream()
-                                         .map(dataNode -> (Property) dataNode.getData())
+                            .addAll(model.listStatements()
                                          .toList());
-//                this.content.setRowFactory(tv -> new PropertyModel());
-                final TableColumn<Property, String> propertyColumn = new TableColumn<>();
+                final TableColumn<Statement, String> propertyColumn = new TableColumn<>();
                 propertyColumn.setCellValueFactory(features -> {
-                    final String uri = features.getValue()
-                                               .getURI();
+                    final Property predicate = features.getValue()
+                                                       .getPredicate();
+                    final String uri = predicate.getURI();
                     if (!uri.contains("dbpedia")) {
-//                        features.getTableView()
-//                                .getItems()
-//                                .remove(features.getValue());
                         return null;
                     }
-//
-//                    if (!modelCache.containsKey(uri)) {
-//                        final Service<Model> svc = new Service<>() {
-//                            @Override
-//                            protected Task<Model> createTask() {
-//                                return new Task<>() {
-//                                    @Override
-//                                    protected Model call() throws Exception {
-//                                        final OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
-//                                        model.read(uri);
-//                                        return model;
-//                                    }
-//                                };
-//                            }
-//                        };
-//                        svc.setOnSucceeded(ev -> {
-//                            final Model value = (Model) ev.getSource()
-//                                                          .getValue();
-//                            modelCache.put(uri, value);
-//                        });
-//                        svc.setOnFailed(ev -> {
-//                            svc.getException()
-//                               .printStackTrace();
-//                            synchronized (this) {
-//                                notify();
-//                            }
-//                        });
-//                        svc.restart();
-//                    }
-//                    synchronized (this) {
-//                        final long start = System.currentTimeMillis();
-//                        while (!modelCache.containsKey(uri) || System.currentTimeMillis() - start >= 5000L) {
-//                            try {
-//                                wait(5L);
-//                            } catch (InterruptedException e) {
-//                                throw new RuntimeException(e);
-//                            }
-//                        }
-//                    }
-                    modelCache.computeIfAbsent(uri, val -> {
-                        final OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
-                        try {
-                            model.read(val);
-                        } catch (Exception e) {
-                            LOGGER.throwing(e);
-                        }
-                        return model;
-                    });
+                    addModel(uri);
 
                     if (!modelCache.containsKey(uri)) {
                         LOGGER.info("(1) Failed to find " + uri);
-//                        features.getTableView()
-//                                .getItems()
-//                                .remove(features.getValue());
                         return null;
                     }
 
                     final Model propertyModel = modelCache.get(uri);
-                    final Property prop = propertyModel.getProperty("http://www.w3.org/2000/01/rdf-schema#", "label");
-                    final Statement val = propertyModel.getProperty(features.getValue(), prop, "en");
+                    final Property labelProperty = propertyModel.getProperty("http://www.w3.org/2000/01/rdf-schema#", "label");
+                    final Statement val = propertyModel.getProperty(predicate, labelProperty, "en");
                     if (val == null) {
                         LOGGER.info("(2) Failed to find " + uri);
-//                        features.getTableView()
-//                                .getItems()
-//                                .remove(features.getValue());
                         return null;
                     }
                     return new ReadOnlyObjectWrapper<>(val.getObject()
                                                           .asLiteral()
                                                           .getString());
                 });
-                this.content.getColumns()
-                            .add(propertyColumn);
+
+                final TableColumn<Statement, String> valueColumn = new TableColumn<>();
+                valueColumn.setCellValueFactory(features -> {
+                    return new ReadOnlyObjectWrapper<>(features.getValue()
+                                                               .getObject()
+                                                               .toString());
+                });
+                final ObservableList<TableColumn<Statement, ?>> columns = this.content.getColumns();
+                columns.add(propertyColumn);
+                columns.add(valueColumn);
 
                 this.dialog.setResultConverter(buttonType -> {
                     if (buttonType == ButtonType.CANCEL) {
@@ -364,7 +292,8 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
                     }
                     if (buttonType == ButtonType.OK) {
                         return content.getSelectionModel()
-                                      .getSelectedItem();
+                                      .getSelectedItem()
+                                      .getPredicate();
                     }
                     LOGGER.error("Unrecognized button type: {}", buttonType);
                     return null;
@@ -372,6 +301,18 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
                 this.dialogPane.getButtonTypes()
                                .addAll(ButtonType.OK, ButtonType.CANCEL);
                 this.dialogPane.setContent(content);
+            }
+
+            private void addModel(final String uri) {
+                modelCache.computeIfAbsent(uri, val -> {
+                    final OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
+                    try {
+                        model.read(val);
+                    } catch (Exception e) {
+                        LOGGER.throwing(e);
+                    }
+                    return model;
+                });
             }
 
 
