@@ -2,6 +2,8 @@ package cz.zcu.jsmahy.datamining.query.handlers;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.jfoenix.controls.JFXAlert;
+import cz.zcu.jsmahy.datamining.Main;
 import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
@@ -13,6 +15,7 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.scene.control.Alert;
 import javafx.scene.control.TreeItem;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.ontology.OntModel;
@@ -120,9 +123,26 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         // now iterate recursively
         LOGGER.debug("Searching...");
 
-        initialSearch(subject, model, selector, nodeFactory, treeRoot);
-        bfs(model, selector, nodeFactory, treeRoot);
-        LOGGER.debug("Done searching");
+        if (initialSearch(subject, model, selector, nodeFactory, treeRoot)) {
+            bfs(model, selector, nodeFactory, treeRoot);
+            LOGGER.debug("Done searching");
+        } else {
+            LOGGER.debug("Invalid query '{}' - no results were found.", query);
+            Platform.runLater(() -> {
+                final Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Invalid query");
+                alert.setHeaderText("ERROR - Invalid query");
+                final String exampleWikiUrl = "https://en.wikipedia.org/wiki/Charles_IV,_Holy_Roman_Emperor";
+                final String exampleUri = "Charles IV, Holy Roman Emperor";
+                alert.setContentText(String.format(
+                        "No results were found querying '%s'. The query must correspond to the wikipedia URI:%n%n%s%n%nIn this example '%s' is a valid query. Spaces instead of underscores are " +
+                        "allowed.",
+                        query,
+                        exampleWikiUrl,
+                        exampleUri));
+                alert.show();
+            });
+        }
         requesting = false;
         return null;
     }
@@ -149,7 +169,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         }
     };
 
-    private void initialSearch(final Resource subject, final Model model, final Selector selector, final DataNodeFactory<T> nodeFactory, final TreeItem<DataNode<T>> treeRoot) {
+    private boolean initialSearch(final Resource subject, final Model model, final Selector selector, final DataNodeFactory<T> nodeFactory, final TreeItem<DataNode<T>> treeRoot) {
         final Selector s = new SimpleSelector(subject, null, (Object) null) {
             @Override
             public boolean selects(final Statement s) {
@@ -164,8 +184,12 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         };
 
         StmtIterator stmtIterator = model.listStatements(s);
-        final T test = (T) stmtIterator.next()
-                                       .getObject();
+        if (!stmtIterator.hasNext()) {
+            return false;
+        }
+
+        final Statement next = stmtIterator.next();
+        final T test = (T) next.getObject();
         stmtIterator = model.listStatements(s);
         stmtIterator.forEach(System.out::println);
 //        final DataNodeReferenceHolder<T> ref = new DataNodeReferenceHolder<>();
@@ -175,6 +199,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
 //            final DialogHelper.ItemChooseDialog<T, R> dialog = helper.itemChooseDialog(ref, this, x -> new RDFNodeListCellFactory<>(), list, SelectionMode.SINGLE);
 //            dialog.showDialogueAndWait();
 //        });
+        return true;
     }
 
     private Property ontologyPathPredicate = null;

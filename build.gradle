@@ -20,7 +20,7 @@ repositories {
 
 
 javafx {
-    version = "11.0.2"
+    version = "19"
     modules = ['javafx.controls', 'javafx.fxml', 'javafx.web']
 }
 
@@ -28,7 +28,8 @@ application {
     mainClass = 'cz.zcu.jsmahy.datamining.Main'
     applicationDefaultJvmArgs = ["--add-opens", "java.base/jdk.internal.loader=ALL-UNNAMED",
                                  "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED",
-                                 "--add-exports", "javafx.graphics/com.sun.javafx.scene=ALL-UNNAMED",]
+                                 "--add-exports", "javafx.graphics/com.sun.javafx.scene=ALL-UNNAMED",
+                                 "--add-exports", "javafx.base/com.sun.javafx.event=ALL-UNNAMED",]
 }
 
 dependencies {
