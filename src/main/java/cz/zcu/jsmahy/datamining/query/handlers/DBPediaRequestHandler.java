@@ -122,7 +122,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         LOGGER.debug("Searching...");
 
         if (initialSearch(subject, model, selector, nodeFactory, treeRoot)) {
-            bfs(model, selector, nodeFactory, treeRoot);
+            search(model, selector, nodeFactory, treeRoot);
             LOGGER.debug("Done searching");
         } else {
             LOGGER.debug("Invalid query '{}' - no results were found.", query);
@@ -208,14 +208,14 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
     private Property ontologyPathPredicate = null;
 
     /**
-     * Performs a DFS on the given model, given selector, and a previous link. Adds the subject of the selector to the tree.
+     * Recursively searches based on the given model, selector, and a previous link. Adds the subject of the selector to the tree.
      *
      * @param model       the model
      * @param selector    the selector
      * @param nodeFactory the data node factory
      * @param treeRoot    the tree root
      */
-    private void bfs(final Model model, final Selector selector, final DataNodeFactory<T> nodeFactory, final TreeItem<DataNode<T>> treeRoot) {
+    private void search(final Model model, final Selector selector, final DataNodeFactory<T> nodeFactory, final TreeItem<DataNode<T>> treeRoot) {
         // add the current node to the tree node
         final DataNode<T> curr = nodeFactory.newNode((T) selector.getSubject());
         final ObservableList<TreeItem<DataNode<T>>> treeChildren = treeRoot.getChildren();
@@ -311,7 +311,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         readResource(model, resource);
         if (usedURIs.add(resource.getURI())) {
             final Selector sel = getSelector(resource, model.getProperty(NAMESPACE, LINK));
-            bfs(model, sel, nodeFactory, treeRoot);
+            search(model, sel, nodeFactory, treeRoot);
         }
     }
 
