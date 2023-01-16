@@ -2,6 +2,7 @@ package cz.zcu.jsmahy.datamining.query;
 
 import cz.zcu.jsmahy.datamining.Main;
 import cz.zcu.jsmahy.datamining.api.BlockingAmbiguousInputResolver;
+import cz.zcu.jsmahy.datamining.api.BlockingDataNodeReferenceHolder;
 import cz.zcu.jsmahy.datamining.api.DataNode;
 import cz.zcu.jsmahy.datamining.api.DataNodeReferenceHolder;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeListCellFactory;
@@ -31,11 +32,11 @@ public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements Bl
     private static final Logger LOGGER = LogManager.getLogger(UserAssistedAmbiguousInputResolver.class);
 
     @Override
-    public DataNodeReferenceHolder<T> resolveRequest(final ObservableList<DataNode<T>> list, final RequestHandler<T, Void> requestHandler, final Property ontologyPathPredicate,
-                                                     final Collection<Restriction> restrictions, final Model model) {
+    public BlockingDataNodeReferenceHolder<T> resolveRequest(final ObservableList<DataNode<T>> list, final RequestHandler<T, Void> requestHandler, final Property ontologyPathPredicate,
+                                                             final Collection<Restriction> restrictions, final Model model) {
         // first off we check if we have an ontology path set
         // if not, pop up a dialogue
-        final DataNodeReferenceHolder<T> ref = new DataNodeReferenceHolder<>();
+        final BlockingDataNodeReferenceHolder<T> ref = new BlockingDataNodeReferenceHolder<>();
         if (ontologyPathPredicate == null) {
             Platform.runLater(() -> {
                 final OntologyPathPredicateChoiceDialog dialog = new OntologyPathPredicateChoiceDialog(ref, model);

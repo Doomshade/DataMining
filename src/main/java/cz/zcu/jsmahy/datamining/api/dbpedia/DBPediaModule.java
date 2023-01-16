@@ -1,6 +1,7 @@
 package cz.zcu.jsmahy.datamining.api.dbpedia;
 
 import cz.zcu.jsmahy.datamining.api.AmbiguousInputResolver;
+import cz.zcu.jsmahy.datamining.api.BlockingAmbiguousInputResolver;
 import cz.zcu.jsmahy.datamining.api.DataMiningModule;
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
 import cz.zcu.jsmahy.datamining.query.UserAssistedAmbiguousInputResolver;
@@ -19,5 +20,6 @@ public class DBPediaModule extends DataMiningModule {
         super.configure();
         bind(RequestHandler.class).to(DBPediaRequestHandler.class);
         bind(AmbiguousInputResolver.class).to(UserAssistedAmbiguousInputResolver.class);
+        bind(BlockingAmbiguousInputResolver.class).to(UserAssistedAmbiguousInputResolver.class);
     }
 }

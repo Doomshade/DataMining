@@ -49,7 +49,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
 
     private DialogHelper helper = null;
     private final DataNodeFactory<T> nodeFactory;
-    private AmbiguousInputResolver<T, R> ambiguousInputResolver;
+    private AmbiguousInputResolver<T, R, ?> ambiguousInputResolver;
     private final Collection<Restriction> restrictions = new ArrayList<>();
 
     public DBPediaRequestHandler() {
@@ -262,11 +262,12 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
             searchFurther(model, nodeFactory, first, treeRoot);
             return;
         }
+
         // multiple children found, that means we need to branch out
         // the ambiguity solver might pop up a dialogue where it could wait
         // for the response of the user
         // the dialogue is then responsible for notifying the monitor of this object
-        // to free this thread via unlockDialogPane method
+        // to free this thread via #unlockDialogPane method
         // the thread will wait up to 5 seconds and check for the result if the
         // dialogue fails to notify the monitor
         final DataNodeReferenceHolder<T> next = ambiguousInputResolver.resolveRequest(children, this, ontologyPathPredicate, restrictions, model);
