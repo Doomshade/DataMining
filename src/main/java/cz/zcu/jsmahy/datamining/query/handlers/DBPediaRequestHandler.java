@@ -177,7 +177,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
     };
 
     private boolean initialSearch(final Resource subject, final Model model, final Selector selector, final DataNodeFactory<T> nodeFactory, final TreeItem<DataNode<T>> treeRoot) {
-        final Selector s = new SimpleSelector(subject, null, (Object) null) {
+        final Selector s = new SimpleSelector(subject, null, null, "en") {
             @Override
             public boolean selects(final Statement s) {
                 final Property predicate = s.getPredicate();
@@ -194,17 +194,11 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         if (!stmtIterator.hasNext()) {
             return false;
         }
-
-        final Statement next = stmtIterator.next();
-        final T test = (T) next.getObject();
-        stmtIterator = model.listStatements(s);
-        stmtIterator.forEach(System.out::println);
-        final List<DataNode<T>> properties = model.listStatements()
-                                                  .toList()
-                                                  .stream()
-                                                  .map(statement -> (T) statement.getPredicate())
-                                                  .map(nodeFactory::newNode)
-                                                  .toList();
+        final List<DataNode<T>> properties = stmtIterator.toList()
+                                                         .stream()
+                                                         .map(statement -> (T) statement.getPredicate())
+                                                         .map(nodeFactory::newNode)
+                                                         .toList();
         final DataNodeReferenceHolder<T> ref = ontologyPathPredicateInputResolver.resolveRequest(FXCollections.observableArrayList(properties), inputMetadata);
         if (ref instanceof BlockingDataNodeReferenceHolder<T> blockingRef) {
             while (!blockingRef.isFinished()) {
@@ -255,6 +249,8 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
 
 
         private class DialogWrapper {
+            private static final ReadOnlyObjectWrapper<String> UNKNOWN_VALUE = new ReadOnlyObjectWrapper<>("Unknown value");
+
             private class PropertyModel extends TableRow<Property> {
                 @Override
                 protected void updateItem(final Property item, final boolean empty) {
@@ -267,6 +263,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
             private final DialogPane dialogPane = dialog.getDialogPane();
             private final TableView<Property> content;
             private final DataNodeReferenceHolder<T> ref;
+            private final Map<String, Model> modelCache = new HashMap<>();
 
             private DialogWrapper(final DataNodeReferenceHolder<T> ref, final ObservableList<DataNode<T>> input) {
                 final ResourceBundle resourceBundle = ResourceBundle.getBundle("lang");
@@ -278,8 +275,86 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
                                          .toList());
 //                this.content.setRowFactory(tv -> new PropertyModel());
                 final TableColumn<Property, String> propertyColumn = new TableColumn<>();
-                propertyColumn.setCellValueFactory(features -> new ReadOnlyObjectWrapper<>(features.getValue()
-                                                                                                   .toString()));
+                propertyColumn.setCellValueFactory(features -> {
+                    final String uri = features.getValue()
+                                               .getURI();
+                    if (!uri.contains("dbpedia")) {
+//                        features.getTableView()
+//                                .getItems()
+//                                .remove(features.getValue());
+                        return null;
+                    }
+//
+//                    if (!modelCache.containsKey(uri)) {
+//                        final Service<Model> svc = new Service<>() {
+//                            @Override
+//                            protected Task<Model> createTask() {
+//                                return new Task<>() {
+//                                    @Override
+//                                    protected Model call() throws Exception {
+//                                        final OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
+//                                        model.read(uri);
+//                                        return model;
+//                                    }
+//                                };
+//                            }
+//                        };
+//                        svc.setOnSucceeded(ev -> {
+//                            final Model value = (Model) ev.getSource()
+//                                                          .getValue();
+//                            modelCache.put(uri, value);
+//                        });
+//                        svc.setOnFailed(ev -> {
+//                            svc.getException()
+//                               .printStackTrace();
+//                            synchronized (this) {
+//                                notify();
+//                            }
+//                        });
+//                        svc.restart();
+//                    }
+//                    synchronized (this) {
+//                        final long start = System.currentTimeMillis();
+//                        while (!modelCache.containsKey(uri) || System.currentTimeMillis() - start >= 5000L) {
+//                            try {
+//                                wait(5L);
+//                            } catch (InterruptedException e) {
+//                                throw new RuntimeException(e);
+//                            }
+//                        }
+//                    }
+                    modelCache.computeIfAbsent(uri, val -> {
+                        final OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
+                        try {
+                            model.read(val);
+                        } catch (Exception e) {
+                            LOGGER.throwing(e);
+                        }
+                        return model;
+                    });
+
+                    if (!modelCache.containsKey(uri)) {
+                        LOGGER.info("(1) Failed to find " + uri);
+//                        features.getTableView()
+//                                .getItems()
+//                                .remove(features.getValue());
+                        return null;
+                    }
+
+                    final Model propertyModel = modelCache.get(uri);
+                    final Property prop = propertyModel.getProperty("http://www.w3.org/2000/01/rdf-schema#", "label");
+                    final Statement val = propertyModel.getProperty(features.getValue(), prop, "en");
+                    if (val == null) {
+                        LOGGER.info("(2) Failed to find " + uri);
+//                        features.getTableView()
+//                                .getItems()
+//                                .remove(features.getValue());
+                        return null;
+                    }
+                    return new ReadOnlyObjectWrapper<>(val.getObject()
+                                                          .asLiteral()
+                                                          .getString());
+                });
                 this.content.getColumns()
                             .add(propertyColumn);
 
@@ -301,8 +376,12 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
 
 
             public void showDialogueAndWait(final RequestHandler<T, R> requestHandler) {
-                dialog.showAndWait()
-                      .ifPresent(ref::setOntologyPathPredicate);
+                try {
+                    final Optional<Property> property = dialog.showAndWait();
+                    property.ifPresent(ref::setOntologyPathPredicate);
+                } catch (Exception e) {
+                    LOGGER.throwing(e);
+                }
                 if (ref instanceof BlockingDataNodeReferenceHolder<T> blockingRef) {
                     blockingRef.unlock();
                     requestHandler.unlockDialogPane();

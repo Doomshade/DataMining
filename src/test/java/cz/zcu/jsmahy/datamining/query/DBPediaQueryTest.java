@@ -6,6 +6,9 @@ import com.sun.javafx.application.PlatformImpl;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import javafx.concurrent.Service;
 import javafx.scene.control.TreeItem;
+import org.apache.jena.ontology.OntModel;
+import org.apache.jena.ontology.OntModelSpec;
+import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,13 +22,13 @@ public class DBPediaQueryTest {
     public static final String PREDECESSOR = "predecessor";
     private static final Logger LOGGER = LogManager.getLogger(DBPediaQueryTest.class);
 
-    public static void main(String[] args) {
+    public static void main2(String[] args) {
         // start the JavaFX application otherwise we get errors
         PlatformImpl.startup(() -> {
-            final String requestPage = "Windows_10";
+            final String requestPage = "wikiPageWikiLink";
             final String namespace = "http://dbpedia.org/property/";
             final String link = "precededBy";
-            LOGGER.info("Querying {}{} in namespace {} by link {}", "http://dbpedia.org/resource/", requestPage, namespace, link);
+            LOGGER.info("Querying {}{} in namespace {} by link {}", "http://dbpedia.org/ontology/", requestPage, namespace, link);
             final Injector injector = Guice.createInjector(new DBPediaModule());
             final RequestHandler<RDFNode, Void> requestHandler = injector.getInstance(RequestHandler.class);
             final SparqlRequest<RDFNode, Void> request = new SparqlRequest<>(requestPage, namespace, link, new TreeItem<>(), new UserAssistedAmbiguousInputResolver<>());
@@ -38,5 +41,12 @@ public class DBPediaQueryTest {
             });
             query.start();
         });
+    }
+
+    public static void main(String[] args) {
+        final OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
+        model.read("https://dbpedia.org/ontology/wikiPageWikiLink");
+        model.listStatements()
+             .forEach(System.out::println);
     }
 }
