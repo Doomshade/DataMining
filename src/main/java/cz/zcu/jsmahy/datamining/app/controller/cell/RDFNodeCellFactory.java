@@ -54,7 +54,7 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
                 if (getItem() instanceof DataNodeRoot<T>) {
                     items.addAll(searchItem, addRestrictionItem, addItem, editItem, deleteItem);
                 } else {
-                    items.addAll(addItem, editItem, deleteItem);
+                    items.addAll(addItem, deleteItem);
                 }
                 setContextMenu(contextMenu);
             } else {
