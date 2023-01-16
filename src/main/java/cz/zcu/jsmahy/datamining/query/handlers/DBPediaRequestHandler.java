@@ -2,8 +2,6 @@ package cz.zcu.jsmahy.datamining.query.handlers;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.jfoenix.controls.JFXAlert;
-import cz.zcu.jsmahy.datamining.Main;
 import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
@@ -129,17 +127,22 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         } else {
             LOGGER.debug("Invalid query '{}' - no results were found.", query);
             Platform.runLater(() -> {
+                // TODO: resource bundle
                 final Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setTitle("Invalid query");
                 alert.setHeaderText("ERROR - Invalid query");
-                final String exampleWikiUrl = "https://en.wikipedia.org/wiki/Charles_IV,_Holy_Roman_Emperor";
+                final String wikiUrl = "https://en.wikipedia.org/wiki/";
+                final String queryWikiUrl = wikiUrl + query;
+                final String exampleWikiUrl = wikiUrl + "Charles_IV,_Holy_Roman_Emperor";
                 final String exampleUri = "Charles IV, Holy Roman Emperor";
                 alert.setContentText(String.format(
-                        "No results were found querying '%s'. The query must correspond to the wikipedia URI:%n%n%s%n%nIn this example '%s' is a valid query. Spaces instead of underscores are " +
-                        "allowed.",
+                        "No results were found querying '%s'. The query must correspond to the wikipedia URL:%n%n%s%n%nYour query corresponds to an unknown URL:%n%n%s%n%nIn this example '%s' is a " +
+                        "valid query. Spaces instead of underscores are allowed.",
                         query,
                         exampleWikiUrl,
+                        queryWikiUrl,
                         exampleUri));
+//                alert.initOwner(Main.getPrimaryStage());
                 alert.show();
             });
         }
