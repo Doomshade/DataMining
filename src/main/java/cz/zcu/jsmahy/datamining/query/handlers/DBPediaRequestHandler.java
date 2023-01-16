@@ -271,11 +271,13 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         // the thread will wait up to 5 seconds and check for the result if the
         // dialogue fails to notify the monitor
         final DataNodeReferenceHolder<T> next = ambiguousInputResolver.resolveRequest(children, this, ontologyPathPredicate, restrictions, model);
-        while (!next.isFinished()) {
-            try {
-                wait(5000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+        if (next instanceof BlockingDataNodeReferenceHolder<T> blockingRef) {
+            while (!blockingRef.isFinished()) {
+                try {
+                    wait(5000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
 

@@ -23,11 +23,6 @@ public class DataNodeReferenceHolder<V> {
     private final ObservableList<DataNode<V>> references = FXCollections.observableArrayList();
 
     private final ReadOnlyBooleanWrapper hasMultipleReferences = new ReadOnlyBooleanWrapper(false);
-    /**
-     * If true then the reference has been set. This exists because the default value of reference is {@code null}, and when setting null the request handler has no way of telling whether we actually
-     * set it because it would check for the default state -- and that being null. This is a workaround for that issue.
-     */
-    private final ReadOnlyBooleanWrapper finished = new ReadOnlyBooleanWrapper(false);
 
     private final ObjectProperty<Property> ontologyPathPredicate = new SimpleObjectProperty<>();
 
@@ -69,20 +64,6 @@ public class DataNodeReferenceHolder<V> {
         return hasMultipleReferences;
     }
 
-    /**
-     * Marks this reference as finished -- the reference has been set.
-     */
-    public void finish() {
-        finished.set(true);
-    }
-
-    public boolean isFinished() {
-        return finished.get();
-    }
-
-    public ReadOnlyBooleanProperty finishedProperty() {
-        return finished.getReadOnlyProperty();
-    }
 
     public void set(final DataNode<V> value) {
         this.references.clear();

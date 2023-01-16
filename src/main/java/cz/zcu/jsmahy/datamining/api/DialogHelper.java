@@ -83,7 +83,9 @@ public class DialogHelper {
             // once we receive the response notify the thread under the request handler's monitor
             // that we got a response from the user
             // the thread waits otherwise for another 5 seconds
-            ref.finish();
+            if (ref instanceof BlockingDataNodeReferenceHolder<T> blockingRef) {
+                blockingRef.finish();
+            }
             if (requestHandler instanceof BlockingRequestHandler<T, R> blockingRequestHandler) {
                 blockingRequestHandler.unlockDialogPane();
             }
