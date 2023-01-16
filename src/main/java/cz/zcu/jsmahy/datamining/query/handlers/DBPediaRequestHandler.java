@@ -270,8 +270,8 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         // to free this thread via #unlockDialogPane method
         // the thread will wait up to 5 seconds and check for the result if the
         // dialogue fails to notify the monitor
-        final DataNodeReferenceHolder<T> next = ambiguousInputResolver.resolveRequest(children, new AmbiguousInputMetadata<>(this, ontologyPathPredicate, restrictions, model));
-        if (next instanceof BlockingDataNodeReferenceHolder<T> blockingRef) {
+        final DataNodeReferenceHolder<T> ref = ambiguousInputResolver.resolveRequest(children, new AmbiguousInputMetadata<>(this, ontologyPathPredicate, restrictions, model));
+        if (ref instanceof BlockingDataNodeReferenceHolder<T> blockingRef) {
             while (!blockingRef.isFinished()) {
                 try {
                     wait(5000);
@@ -282,13 +282,13 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         }
 
         // if a node was chosen search further down that node
-        final boolean multipleReferences = next.hasMultipleReferences();
+        final boolean multipleReferences = ref.hasMultipleReferences();
         LOGGER.debug("Has multiple references: " + multipleReferences);
-        LOGGER.debug("References: " + next.getList());
+        LOGGER.debug("References: " + ref.getList());
         if (!multipleReferences) {
-            searchFurther(model, nodeFactory, next.get(), treeRoot);
+            searchFurther(model, nodeFactory, ref.get(), treeRoot);
         } else {
-            final List<DataNode<T>> values = next.getList();
+            final List<DataNode<T>> values = ref.getList();
             currTreeItem.getChildren()
                         .addAll(children.stream()
                                         .map(TreeItem::new)
