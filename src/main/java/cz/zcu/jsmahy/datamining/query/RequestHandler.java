@@ -27,4 +27,6 @@ public interface RequestHandler<T, R> {
      * @throws InvalidQueryException if the request is invalid
      */
     Service<R> query(final String query, final TreeItem<DataNode<T>> treeRoot) throws InvalidQueryException;
+
+    void unlockDialogPane();
 }

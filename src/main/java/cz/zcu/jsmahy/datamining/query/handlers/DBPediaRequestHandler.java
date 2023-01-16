@@ -5,16 +5,13 @@ import com.google.inject.Injector;
 import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
-import cz.zcu.jsmahy.datamining.query.AbstractRequestHandler;
-import cz.zcu.jsmahy.datamining.query.BlockingRequestHandler;
-import cz.zcu.jsmahy.datamining.query.RequestHandler;
-import cz.zcu.jsmahy.datamining.query.Restriction;
+import cz.zcu.jsmahy.datamining.query.*;
 import javafx.application.Platform;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.scene.control.Alert;
-import javafx.scene.control.TreeItem;
+import javafx.scene.control.*;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntModelSpec;
@@ -32,6 +29,9 @@ import java.util.stream.Collectors;
  * @version 1.0
  */
 public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends AbstractRequestHandler<T, R> implements BlockingRequestHandler<T, R> {
+    //<editor-fold desc="Constants">
+    private static final String NAMESPACE = "http://dbpedia.org/ontology/";
+    private static final String LINK = "doctoralAdvisor";
     private static final Logger LOGGER = LogManager.getLogger(DBPediaRequestHandler.class);
     private static final String DBPEDIA_SITE = "http://dbpedia.org/resource/";
     /**
@@ -42,22 +42,24 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
                                                                                                  .isURIResource(),
                                                                                                 y.getObject()
                                                                                                  .isURIResource());
-    public static final String NAMESPACE = "http://dbpedia.org/ontology/";
-    public static final String LINK = "doctoralAdvisor";
+    //</editor-fold>
+
     private static boolean requesting = false;
     private final Collection<String> usedURIs = new HashSet<>();
 
-    private DialogHelper helper = null;
     private final DataNodeFactory<T> nodeFactory;
-    private AmbiguousInputResolver<T, R, ?> ambiguousInputResolver;
-    private final Collection<Restriction> restrictions = new ArrayList<>();
 
+    private final AmbiguousInputResolver<T, R, ?> ambiguousInputResolver;
+
+    private final AmbiguousInputResolver<T, R, ?> ontologyPathPredicateInputResolver;
+    private final AmbiguousInputMetadata<T, R> inputMetadata = new AmbiguousInputMetadata<>();
+
+    @SuppressWarnings("unchecked")
     public DBPediaRequestHandler() {
         final Injector injector = Guice.createInjector(new DBPediaModule());
-        injector.injectMembers(this);
         nodeFactory = injector.getInstance(DataNodeFactory.class);
-        helper = injector.getInstance(DialogHelper.class);
-        ambiguousInputResolver = injector.getInstance(AmbiguousInputResolver.class);
+        ambiguousInputResolver = injector.getInstance(UserAssistedAmbiguousInputResolver.class);
+        ontologyPathPredicateInputResolver = injector.getInstance(OntologyPathPredicateInputResolver.class);
     }
 
     /**
@@ -115,7 +117,9 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
 
         // prepare the fields, don't put them as parameters, it will just
         // fill stack with duplicates
-        this.ontologyPathPredicate = predicate;
+        this.inputMetadata.setRequestHandler(this);
+        this.inputMetadata.setOntologyPathPredicate(predicate);
+        this.inputMetadata.setRestrictions(new ArrayList<>());
         this.usedURIs.clear();
 
         // now iterate recursively
@@ -195,6 +199,22 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         final T test = (T) next.getObject();
         stmtIterator = model.listStatements(s);
         stmtIterator.forEach(System.out::println);
+        final List<DataNode<T>> properties = model.listStatements()
+                                                  .toList()
+                                                  .stream()
+                                                  .map(statement -> (T) statement.getPredicate())
+                                                  .map(nodeFactory::newNode)
+                                                  .toList();
+        final DataNodeReferenceHolder<T> ref = ontologyPathPredicateInputResolver.resolveRequest(FXCollections.observableArrayList(properties), inputMetadata);
+        if (ref instanceof BlockingDataNodeReferenceHolder<T> blockingRef) {
+            while (!blockingRef.isFinished()) {
+                try {
+                    wait(5000L);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
 //        final DataNodeReferenceHolder<T> ref = new DataNodeReferenceHolder<>();
 //        final ObservableList<DataNode<T>> list = FXCollections.observableArrayList();
 //        list.add(nodeFactory.newNode(test));
@@ -205,7 +225,93 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         return true;
     }
 
-    private Property ontologyPathPredicate = null;
+    public static class OntologyPathPredicateInputResolver<T, R> implements BlockingAmbiguousInputResolver<T, R> {
+        @Override
+        public BlockingDataNodeReferenceHolder<T> resolveRequest(final ObservableList<DataNode<T>> ambiguousInput, final AmbiguousInputMetadata<T, R> inputMetadata) {
+            if (ambiguousInput.isEmpty()) {
+                throw new IllegalArgumentException("Ambiguous input cannot be empty.");
+            }
+            final DataNode<T> firstNode = ambiguousInput.get(0);
+            if (!(firstNode.getData() instanceof Property)) {
+                throw new IllegalArgumentException(String.format("Invalid input type. Received: %s. Expected: %s",
+                                                                 firstNode.getData()
+                                                                          .getClass(),
+                                                                 Property.class));
+            }
+
+            final BlockingDataNodeReferenceHolder<T> ref = new BlockingDataNodeReferenceHolder<>();
+            if (ambiguousInput.size() == 1) {
+                ref.set(firstNode);
+                ref.unlock();
+                return ref;
+            }
+
+            Platform.runLater(() -> {
+                final DialogWrapper dialog = new DialogWrapper(ref, ambiguousInput);
+                dialog.showDialogueAndWait(inputMetadata.getRequestHandler());
+            });
+            return ref;
+        }
+
+
+        private class DialogWrapper {
+            private class PropertyModel extends TableRow<Property> {
+                @Override
+                protected void updateItem(final Property item, final boolean empty) {
+                    super.updateItem(item, empty);
+                }
+
+            }
+
+            private final Dialog<Property> dialog = new Dialog<>();
+            private final DialogPane dialogPane = dialog.getDialogPane();
+            private final TableView<Property> content;
+            private final DataNodeReferenceHolder<T> ref;
+
+            private DialogWrapper(final DataNodeReferenceHolder<T> ref, final ObservableList<DataNode<T>> input) {
+                final ResourceBundle resourceBundle = ResourceBundle.getBundle("lang");
+                this.ref = ref;
+                this.content = new TableView<>();
+                this.content.getItems()
+                            .addAll(input.stream()
+                                         .map(dataNode -> (Property) dataNode.getData())
+                                         .toList());
+//                this.content.setRowFactory(tv -> new PropertyModel());
+                final TableColumn<Property, String> propertyColumn = new TableColumn<>();
+                propertyColumn.setCellValueFactory(features -> new ReadOnlyObjectWrapper<>(features.getValue()
+                                                                                                   .toString()));
+                this.content.getColumns()
+                            .add(propertyColumn);
+
+                this.dialog.setResultConverter(buttonType -> {
+                    if (buttonType == ButtonType.CANCEL) {
+                        return null;
+                    }
+                    if (buttonType == ButtonType.OK) {
+                        return content.getSelectionModel()
+                                      .getSelectedItem();
+                    }
+                    LOGGER.error("Unrecognized button type: {}", buttonType);
+                    return null;
+                });
+                this.dialogPane.getButtonTypes()
+                               .addAll(ButtonType.OK, ButtonType.CANCEL);
+                this.dialogPane.setContent(content);
+            }
+
+
+            public void showDialogueAndWait(final RequestHandler<T, R> requestHandler) {
+                dialog.showAndWait()
+                      .ifPresent(ref::setOntologyPathPredicate);
+                if (ref instanceof BlockingDataNodeReferenceHolder<T> blockingRef) {
+                    blockingRef.unlock();
+                    requestHandler.unlockDialogPane();
+                }
+            }
+        }
+
+    }
+
 
     /**
      * Recursively searches based on the given model, selector, and a previous link. Adds the subject of the selector to the tree.
@@ -216,6 +322,8 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
      * @param treeRoot    the tree root
      */
     private void search(final Model model, final Selector selector, final DataNodeFactory<T> nodeFactory, final TreeItem<DataNode<T>> treeRoot) {
+        inputMetadata.setModel(model);
+
         // add the current node to the tree node
         final DataNode<T> curr = nodeFactory.newNode((T) selector.getSubject());
         final ObservableList<TreeItem<DataNode<T>>> treeChildren = treeRoot.getChildren();
@@ -270,7 +378,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         // to free this thread via #unlockDialogPane method
         // the thread will wait up to 5 seconds and check for the result if the
         // dialogue fails to notify the monitor
-        final DataNodeReferenceHolder<T> ref = ambiguousInputResolver.resolveRequest(children, new AmbiguousInputMetadata<>(this, ontologyPathPredicate, restrictions, model));
+        final DataNodeReferenceHolder<T> ref = ambiguousInputResolver.resolveRequest(children, inputMetadata);
         if (ref instanceof BlockingDataNodeReferenceHolder<T> blockingRef) {
             while (!blockingRef.isFinished()) {
                 try {
@@ -340,7 +448,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         readResource(model, resource);
 
         // check for the restrictions on the given request
-        for (final Restriction restriction : restrictions) {
+        for (final Restriction restriction : inputMetadata.getRestrictions()) {
             final Selector sel = getSelector(resource, model.getProperty(restriction.getKey(), restriction.getValue()));
 
             // a statement with the given restriction was not found -> they were not met

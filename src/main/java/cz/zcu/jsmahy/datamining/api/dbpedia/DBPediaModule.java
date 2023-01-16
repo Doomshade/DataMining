@@ -1,12 +1,12 @@
 package cz.zcu.jsmahy.datamining.api.dbpedia;
 
-import cz.zcu.jsmahy.datamining.api.AmbiguousInputResolver;
-import cz.zcu.jsmahy.datamining.api.BlockingAmbiguousInputResolver;
 import cz.zcu.jsmahy.datamining.api.DataMiningModule;
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
 import cz.zcu.jsmahy.datamining.query.UserAssistedAmbiguousInputResolver;
 import cz.zcu.jsmahy.datamining.query.handlers.DBPediaRequestHandler;
 import lombok.SneakyThrows;
+
+import static com.google.inject.Scopes.SINGLETON;
 
 /**
  * <p>Module for <a href="https://www.dbpedia.org/">DBPedia</a> SPARQL queries</p>
@@ -19,7 +19,6 @@ public class DBPediaModule extends DataMiningModule {
     protected void configure() {
         super.configure();
         bind(RequestHandler.class).to(DBPediaRequestHandler.class);
-        bind(AmbiguousInputResolver.class).to(UserAssistedAmbiguousInputResolver.class);
-        bind(BlockingAmbiguousInputResolver.class).to(UserAssistedAmbiguousInputResolver.class);
+        bind(DBPediaRequestHandler.OntologyPathPredicateInputResolver.class).in(SINGLETON);
     }
 }

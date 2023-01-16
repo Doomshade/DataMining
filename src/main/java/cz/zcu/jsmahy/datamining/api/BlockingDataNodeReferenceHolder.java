@@ -17,6 +17,15 @@ public class BlockingDataNodeReferenceHolder<V> extends DataNodeReferenceHolder<
         finished.set(true);
     }
 
+    /**
+     * Calls {@link BlockingDataNodeReferenceHolder#finish()}.
+     *
+     * @see BlockingDataNodeReferenceHolder#finish()
+     */
+    public void unlock() {
+        finish();
+    }
+
     public boolean isFinished() {
         return finished.get();
     }

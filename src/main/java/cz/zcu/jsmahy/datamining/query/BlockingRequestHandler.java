@@ -7,6 +7,4 @@ package cz.zcu.jsmahy.datamining.query;
  * @since 1.0
  */
 public interface BlockingRequestHandler<T, R> extends RequestHandler<T, R> {
-
-    void unlockDialogPane();
 }
