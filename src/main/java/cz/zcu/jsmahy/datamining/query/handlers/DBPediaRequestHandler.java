@@ -270,7 +270,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         // to free this thread via #unlockDialogPane method
         // the thread will wait up to 5 seconds and check for the result if the
         // dialogue fails to notify the monitor
-        final DataNodeReferenceHolder<T> next = ambiguousInputResolver.resolveRequest(children, this, ontologyPathPredicate, restrictions, model);
+        final DataNodeReferenceHolder<T> next = ambiguousInputResolver.resolveRequest(children, new AmbiguousInputMetadata<>(this, ontologyPathPredicate, restrictions, model));
         if (next instanceof BlockingDataNodeReferenceHolder<T> blockingRef) {
             while (!blockingRef.isFinished()) {
                 try {

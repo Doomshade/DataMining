@@ -1,10 +1,7 @@
 package cz.zcu.jsmahy.datamining.query;
 
 import cz.zcu.jsmahy.datamining.Main;
-import cz.zcu.jsmahy.datamining.api.BlockingAmbiguousInputResolver;
-import cz.zcu.jsmahy.datamining.api.BlockingDataNodeReferenceHolder;
-import cz.zcu.jsmahy.datamining.api.DataNode;
-import cz.zcu.jsmahy.datamining.api.DataNodeReferenceHolder;
+import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeListCellFactory;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
@@ -17,8 +14,8 @@ import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 /**
@@ -32,11 +29,13 @@ public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements Bl
     private static final Logger LOGGER = LogManager.getLogger(UserAssistedAmbiguousInputResolver.class);
 
     @Override
-    public BlockingDataNodeReferenceHolder<T> resolveRequest(final ObservableList<DataNode<T>> list, final RequestHandler<T, Void> requestHandler, final Property ontologyPathPredicate,
-                                                             final Collection<Restriction> restrictions, final Model model) {
+    public BlockingDataNodeReferenceHolder<T> resolveRequest(final ObservableList<DataNode<T>> ambiguousInput, final AmbiguousInputMetadata<T, Void> inputMetadata) {
         // first off we check if we have an ontology path set
         // if not, pop up a dialogue
         final BlockingDataNodeReferenceHolder<T> ref = new BlockingDataNodeReferenceHolder<>();
+        final Property ontologyPathPredicate = inputMetadata.getOntologyPathPredicate();
+        final Model model = inputMetadata.getModel();
+        final RequestHandler<T, Void> requestHandler = inputMetadata.getRequestHandler();
         if (ontologyPathPredicate == null) {
             Platform.runLater(() -> {
                 final OntologyPathPredicateChoiceDialog dialog = new OntologyPathPredicateChoiceDialog(ref, model);
@@ -51,7 +50,7 @@ public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements Bl
         }
 
         Platform.runLater(() -> {
-            final MultipleItemChoiceDialog dialog = new MultipleItemChoiceDialog(list, ref, x -> new RDFNodeListCellFactory<>(), SelectionMode.SINGLE);
+            final MultipleItemChoiceDialog dialog = new MultipleItemChoiceDialog(ambiguousInput, ref, x -> new RDFNodeListCellFactory<>(), SelectionMode.SINGLE);
             dialog.showDialogueAndWait();
 
             // once we receive the response notify the thread under the request handler's monitor
@@ -64,16 +63,6 @@ public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements Bl
             }
         });
         return ref;
-    }
-
-    @Override
-    public boolean isFinished() {
-        return false;
-    }
-
-    @Override
-    public boolean hasMultipleReferences() {
-        return false;
     }
 
     private class OntologyPathPredicateChoiceDialog {
@@ -185,9 +174,8 @@ public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements Bl
 
         public void showDialogueAndWait() {
             // show the dialogue and wait for response
-            final List<DataNode<T>> result = dialog.showAndWait()
-                                                   .orElse(null);
-            ref.set(result);
+            final Optional<List<DataNode<T>>> result = dialog.showAndWait();
+            result.ifPresent(ref::set);
         }
     }
 }
