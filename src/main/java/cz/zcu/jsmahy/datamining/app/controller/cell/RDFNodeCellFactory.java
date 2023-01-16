@@ -71,7 +71,7 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
                 mainController.search(getTreeItem(), searchValue.replaceAll(" ", "_"));
             }, "Title");
         });
-        menuItem.setAccelerator(KeyCombination.keyCombination("ALT + H"));
+        menuItem.setAccelerator(KeyCombination.keyCombination("CTRL + H"));
         return menuItem;
     }
 
@@ -119,7 +119,7 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
             getTreeView().edit(getTreeView().getSelectionModel()
                                             .getSelectedItem());
         });
-        menuItem.setAccelerator(KeyCombination.keyCombination("ALT + E"));
+        menuItem.setAccelerator(KeyCombination.keyCombination("CTRL + E"));
         return menuItem;
     }
 
@@ -128,7 +128,7 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
         menuItem.textProperty()
                 .bind(Bindings.format(resources.getString("ontology-prompt-add-restriction"), textProperty()));
 
-        menuItem.setAccelerator(KeyCombination.keyCombination("ALT + R"));
+        menuItem.setAccelerator(KeyCombination.keyCombination("CTRL + R"));
         return menuItem;
     }
 

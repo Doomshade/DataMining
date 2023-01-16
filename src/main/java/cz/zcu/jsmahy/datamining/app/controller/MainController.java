@@ -179,7 +179,7 @@ order by ?pred
         fileMenu.setMnemonicParsing(true);
 
         final MenuItem exportToFile = new MenuItem(resources.getString("export"));
-        exportToFile.setAccelerator(KeyCombination.keyCombination("CTRL + E"));
+        exportToFile.setAccelerator(KeyCombination.keyCombination("ALT + E"));
 
         fileMenu.getItems()
                 .addAll(exportToFile);
