@@ -2,8 +2,8 @@ package cz.zcu.jsmahy.datamining.api.dbpedia;
 
 import cz.zcu.jsmahy.datamining.api.DataMiningModule;
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
-import cz.zcu.jsmahy.datamining.query.UserAssistedAmbiguousInputResolver;
 import cz.zcu.jsmahy.datamining.query.handlers.DBPediaRequestHandler;
+import cz.zcu.jsmahy.datamining.query.handlers.OntologyPathPredicateInputResolver;
 import lombok.SneakyThrows;
 
 import static com.google.inject.Scopes.SINGLETON;
@@ -19,6 +19,6 @@ public class DBPediaModule extends DataMiningModule {
     protected void configure() {
         super.configure();
         bind(RequestHandler.class).to(DBPediaRequestHandler.class);
-        bind(DBPediaRequestHandler.OntologyPathPredicateInputResolver.class).in(SINGLETON);
+        bind(OntologyPathPredicateInputResolver.class).in(SINGLETON);
     }
 }
