@@ -22,8 +22,6 @@ import java.util.List;
 public class DataNodeReferenceHolder<V> {
     private final ObservableList<DataNode<V>> references = FXCollections.observableArrayList();
 
-    private final ReadOnlyBooleanWrapper hasMultipleReferences = new ReadOnlyBooleanWrapper(false);
-
     private final ObjectProperty<Property> ontologyPathPredicate = new SimpleObjectProperty<>();
 
     private final ListProperty<Restriction> restrictions = new SimpleListProperty<>();
@@ -52,16 +50,8 @@ public class DataNodeReferenceHolder<V> {
         this.ontologyPathPredicate.set(ontologyPathPredicate);
     }
 
-    public DataNodeReferenceHolder() {
-        this.hasMultipleReferences.bind(Bindings.greaterThanOrEqual(2, Bindings.createIntegerBinding(references::size)));
-    }
-
     public boolean hasMultipleReferences() {
-        return hasMultipleReferences.get();
-    }
-
-    public ReadOnlyBooleanProperty hasMultipleReferencesProperty() {
-        return hasMultipleReferences;
+        return references.size() > 1;
     }
 
 

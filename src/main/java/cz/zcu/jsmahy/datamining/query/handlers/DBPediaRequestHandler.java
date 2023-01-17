@@ -29,8 +29,6 @@ import java.util.function.Function;
  */
 public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends AbstractRequestHandler<T, R> implements BlockingRequestHandler<T, R> {
     //<editor-fold desc="Constants">
-    private static final String NAMESPACE = "http://dbpedia.org/ontology/";
-    private static final String LINK = "doctoralAdvisor";
     private static final Logger LOGGER = LogManager.getLogger(DBPediaRequestHandler.class);
     private static final String DBPEDIA_SITE = "http://dbpedia.org/resource/";
     /**
@@ -415,14 +413,14 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         LOGGER.debug("References: " + ref.getList());
         if (!multipleReferences) {
             searchFurther(inputMetadata, nodeFactory, ref.get(), treeRoot);
-        } else {
-            final List<DataNode<T>> values = ref.getList();
             currTreeItem.getChildren()
                         .addAll(children.stream()
                                         .map(TreeItem::new)
                                         .toList());
             currTreeItem.setExpanded(true);
+        } else {
             // TODO: add another dialog to choose where to continue
+            final List<DataNode<T>> values = ref.getList();
             if (!values.isEmpty()) {
                 searchFurther(inputMetadata, nodeFactory, values.get(0), treeRoot);
             }
@@ -438,7 +436,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         final Resource resource = (Resource) data;
         readResource(model, resource);
         if (usedURIs.add(resource.getURI())) {
-            final Selector sel = getSelector(resource, model.getProperty(NAMESPACE, LINK));
+            final Selector sel = getSelector(resource, inputMetadata.getOntologyPathPredicate());
             search(inputMetadata, sel, nodeFactory, treeRoot);
         }
     }
