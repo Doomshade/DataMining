@@ -29,13 +29,13 @@ public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements Bl
     private static final Logger LOGGER = LogManager.getLogger(UserAssistedAmbiguousInputResolver.class);
 
     @Override
-    public BlockingDataNodeReferenceHolder<T> resolveRequest(final ObservableList<DataNode<T>> ambiguousInput, final AmbiguousInputMetadata<T, Void> inputMetadata) {
+    public BlockingDataNodeReferenceHolder<T> resolveRequest(final ObservableList<DataNode<T>> ambiguousInput, final QueryData inputMetadata, final RequestHandler<T, Void> requestHandler) {
         // first off we check if we have an ontology path set
         // if not, pop up a dialogue
         final BlockingDataNodeReferenceHolder<T> ref = new BlockingDataNodeReferenceHolder<>();
         final Property ontologyPathPredicate = inputMetadata.getOntologyPathPredicate();
         final Model model = inputMetadata.getModel();
-        final RequestHandler<T, Void> requestHandler = inputMetadata.getRequestHandler();
+
         if (ontologyPathPredicate == null) {
             Platform.runLater(() -> {
                 final OntologyPathPredicateChoiceDialog dialog = new OntologyPathPredicateChoiceDialog(ref, model);

@@ -62,8 +62,9 @@ public interface AmbiguousInputResolver<T, R, DNRef extends DataNodeReferenceHol
      *
      * @param ambiguousInput The list of {@link RDFNode}s to choose the result from
      * @param inputMetadata
+     * @param requestHandler
      *
      * @return an atomic reference
      */
-    DNRef resolveRequest(ObservableList<DataNode<T>> ambiguousInput, final AmbiguousInputMetadata<T, R> inputMetadata);
+    DNRef resolveRequest(ObservableList<DataNode<T>> ambiguousInput, final QueryData inputMetadata, final RequestHandler<T, R> requestHandler);
 }

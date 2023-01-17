@@ -9,7 +9,6 @@ import cz.zcu.jsmahy.datamining.query.*;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.scene.control.*;
 import org.apache.jena.atlas.web.HttpException;
@@ -21,7 +20,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * The DBPedia {@link RequestHandler}.
@@ -53,7 +51,6 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
     private final AmbiguousInputResolver<T, R, ?> ambiguousInputResolver;
 
     private final AmbiguousInputResolver<T, R, ?> ontologyPathPredicateInputResolver;
-    private final AmbiguousInputMetadata<T, R> inputMetadata = new AmbiguousInputMetadata<>();
 
     @SuppressWarnings("unchecked")
     public DBPediaRequestHandler() {
@@ -97,12 +94,13 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         }
         requesting = true;
 
-        // create the root request and model
         final String requestPage = DBPEDIA_SITE.concat(query);
         final OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
+        final QueryData inputMetadata = new QueryData();
         try {
             LOGGER.debug(String.format("Requesting %s", requestPage));
             model.read(requestPage);
+            inputMetadata.setModel(model);
         } catch (HttpException e) {
             requesting = false;
             throw LOGGER.throwing(e);
@@ -111,23 +109,17 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
             throw new InvalidQueryException(e);
         }
 
-        // root subject and predicate
         final Resource subject = model.getResource(requestPage);
-        final Property predicate = model.getProperty(NAMESPACE, LINK);
-        final Selector selector = getSelector(subject, predicate);
 
-        // prepare the fields, don't put them as parameters, it will just
-        // fill stack with duplicates
-        this.inputMetadata.setRequestHandler(this);
-        this.inputMetadata.setOntologyPathPredicate(predicate);
-        this.inputMetadata.setRestrictions(new ArrayList<>());
+        inputMetadata.setSubject(subject);
+        inputMetadata.setRestrictions(new ArrayList<>());
         this.usedURIs.clear();
 
-        // now iterate recursively
         LOGGER.debug("Searching...");
 
-        if (initialSearch(subject, model, selector, nodeFactory, treeRoot)) {
-            search(model, selector, nodeFactory, treeRoot);
+        if (initialSearch(inputMetadata)) {
+            final Selector selector = getSelector(subject, inputMetadata.getOntologyPathPredicate());
+            search(inputMetadata, selector, nodeFactory, treeRoot);
             LOGGER.debug("Done searching");
         } else {
             LOGGER.debug("Invalid query '{}' - no results were found.", query);
@@ -147,7 +139,6 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
                         exampleWikiUrl,
                         queryWikiUrl,
                         exampleUri));
-//                alert.initOwner(Main.getPrimaryStage());
                 alert.show();
             });
         }
@@ -190,16 +181,20 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         }
     };
 
-    private boolean initialSearch(final Resource subject, final Model model, final Selector selector, final DataNodeFactory<T> nodeFactory, final TreeItem<DataNode<T>> treeRoot) {
-        final Selector s = PREDICATE_FILTER_SELECTOR.apply(subject);
+    /**
+     * @return {@code true} if a statement was found with the given subject (aka the query), {@code false} otherwise
+     */
+    private boolean initialSearch(final QueryData inputMetadata) {
+        final Selector selector = PREDICATE_FILTER_SELECTOR.apply(inputMetadata.getSubject());
+        final Model model = inputMetadata.getModel();
 
-        StmtIterator stmtIterator = model.listStatements(s);
+        final StmtIterator stmtIterator = model.listStatements(selector);
         if (!stmtIterator.hasNext()) {
             return false;
         }
+        inputMetadata.setCandidateOntologyPathPredicates(stmtIterator);
 
-        inputMetadata.setModel(model);
-        final DataNodeReferenceHolder<T> ref = ontologyPathPredicateInputResolver.resolveRequest(null, inputMetadata);
+        final DataNodeReferenceHolder<T> ref = ontologyPathPredicateInputResolver.resolveRequest(null, inputMetadata, this);
         if (ref instanceof BlockingDataNodeReferenceHolder<T> blockingRef) {
             while (!blockingRef.isFinished()) {
                 try {
@@ -209,17 +204,18 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
                 }
             }
         }
+        inputMetadata.setOntologyPathPredicate(ref.getOntologyPathPredicate());
         return true;
     }
 
     public static class OntologyPathPredicateInputResolver<T, R> implements BlockingAmbiguousInputResolver<T, R> {
         @Override
-        public BlockingDataNodeReferenceHolder<T> resolveRequest(final ObservableList<DataNode<T>> ambiguousInput, final AmbiguousInputMetadata<T, R> inputMetadata) {
+        public BlockingDataNodeReferenceHolder<T> resolveRequest(final ObservableList<DataNode<T>> ambiguousInput, final QueryData inputMetadata, final RequestHandler<T, R> requestHandler) {
             final BlockingDataNodeReferenceHolder<T> ref = new BlockingDataNodeReferenceHolder<>();
 
             Platform.runLater(() -> {
-                final DialogWrapper dialog = new DialogWrapper(ref, ambiguousInput, inputMetadata.getModel());
-                dialog.showDialogueAndWait(inputMetadata.getRequestHandler());
+                final DialogWrapper dialog = new DialogWrapper(ref, ambiguousInput, inputMetadata.getModel(), inputMetadata.getCandidateOntologyPathPredicates());
+                dialog.showDialogueAndWait(requestHandler);
             });
             return ref;
         }
@@ -227,6 +223,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
 
         private class DialogWrapper {
             private static final ReadOnlyObjectWrapper<String> UNKNOWN_VALUE = new ReadOnlyObjectWrapper<>("Unknown value");
+            private static final Model EMPTY_MODEL = ModelFactory.createDefaultModel();
 
             private class PropertyModel extends TableRow<Property> {
                 @Override
@@ -242,13 +239,12 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
             private final DataNodeReferenceHolder<T> ref;
             private final Map<String, Model> modelCache = new HashMap<>();
 
-            private DialogWrapper(final DataNodeReferenceHolder<T> ref, final ObservableList<DataNode<T>> input, final Model model) {
+            private DialogWrapper(final DataNodeReferenceHolder<T> ref, final ObservableList<DataNode<T>> input, final Model model, final StmtIterator candidateOntologyPathPredicates) {
                 final ResourceBundle resourceBundle = ResourceBundle.getBundle("lang");
                 this.ref = ref;
                 this.content = new TableView<>();
                 this.content.getItems()
-                            .addAll(model.listStatements()
-                                         .toList());
+                            .addAll(candidateOntologyPathPredicates.toList());
                 final TableColumn<Statement, String> propertyColumn = new TableColumn<>();
                 propertyColumn.setCellValueFactory(features -> {
                     final Property predicate = features.getValue()
@@ -260,15 +256,18 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
                     addModel(uri);
 
                     if (!modelCache.containsKey(uri)) {
-                        LOGGER.info("(1) Failed to find " + uri);
-                        return null;
+                        modelCache.put(uri, EMPTY_MODEL);
                     }
 
                     final Model propertyModel = modelCache.get(uri);
+                    if (propertyModel == EMPTY_MODEL) {
+                        return null;
+                    }
                     final Property labelProperty = propertyModel.getProperty("http://www.w3.org/2000/01/rdf-schema#", "label");
                     final Statement val = propertyModel.getProperty(predicate, labelProperty, "en");
                     if (val == null) {
-                        LOGGER.info("(2) Failed to find " + uri);
+                        LOGGER.info("Failed to find " + uri);
+                        modelCache.put(uri, EMPTY_MODEL);
                         return null;
                     }
                     return new ReadOnlyObjectWrapper<>(val.getObject()
@@ -304,15 +303,17 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
             }
 
             private void addModel(final String uri) {
-                modelCache.computeIfAbsent(uri, val -> {
-                    final OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
-                    try {
-                        model.read(val);
-                    } catch (Exception e) {
-                        LOGGER.throwing(e);
-                    }
-                    return model;
-                });
+                if (modelCache.containsKey(uri)) {
+                    return;
+                }
+                Model model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
+                try {
+                    model.read(uri);
+                } catch (Exception e) {
+                    LOGGER.throwing(e);
+                    model = EMPTY_MODEL;
+                }
+                modelCache.putIfAbsent(uri, model);
             }
 
 
@@ -336,13 +337,12 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
     /**
      * Recursively searches based on the given model, selector, and a previous link. Adds the subject of the selector to the tree.
      *
-     * @param model       the model
      * @param selector    the selector
      * @param nodeFactory the data node factory
      * @param treeRoot    the tree root
      */
-    private void search(final Model model, final Selector selector, final DataNodeFactory<T> nodeFactory, final TreeItem<DataNode<T>> treeRoot) {
-        inputMetadata.setModel(model);
+    private void search(final QueryData inputMetadata, final Selector selector, final DataNodeFactory<T> nodeFactory, final TreeItem<DataNode<T>> treeRoot) {
+        final Model model = inputMetadata.getModel();
 
         // add the current node to the tree node
         final DataNode<T> curr = nodeFactory.newNode((T) selector.getSubject());
@@ -363,7 +363,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
             final T next = (T) stmt.getObject();
             final boolean meetsRequirements;
             try {
-                meetsRequirements = meetsRequirements(model, previous, next);
+                meetsRequirements = meetsRequirements(inputMetadata, previous, next);
             } catch (AssertionError e) {
                 LOGGER.error("An internal error occurred when trying to check for the requirements of the node {}.", next, e);
                 return;
@@ -387,7 +387,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         // pass in this resolveRequest's parent
         if (children.size() == 1) {
             final DataNode<T> first = children.get(0);
-            searchFurther(model, nodeFactory, first, treeRoot);
+            searchFurther(inputMetadata, nodeFactory, first, treeRoot);
             return;
         }
 
@@ -398,7 +398,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         // to free this thread via #unlockDialogPane method
         // the thread will wait up to 5 seconds and check for the result if the
         // dialogue fails to notify the monitor
-        final DataNodeReferenceHolder<T> ref = ambiguousInputResolver.resolveRequest(children, inputMetadata);
+        final DataNodeReferenceHolder<T> ref = ambiguousInputResolver.resolveRequest(children, inputMetadata, this);
         if (ref instanceof BlockingDataNodeReferenceHolder<T> blockingRef) {
             while (!blockingRef.isFinished()) {
                 try {
@@ -414,7 +414,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         LOGGER.debug("Has multiple references: " + multipleReferences);
         LOGGER.debug("References: " + ref.getList());
         if (!multipleReferences) {
-            searchFurther(model, nodeFactory, ref.get(), treeRoot);
+            searchFurther(inputMetadata, nodeFactory, ref.get(), treeRoot);
         } else {
             final List<DataNode<T>> values = ref.getList();
             currTreeItem.getChildren()
@@ -424,25 +424,22 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
             currTreeItem.setExpanded(true);
             // TODO: add another dialog to choose where to continue
             if (!values.isEmpty()) {
-                searchFurther(model, nodeFactory, values.get(0), treeRoot);
+                searchFurther(inputMetadata, nodeFactory, values.get(0), treeRoot);
             }
         }
-
-//        for (final DataNode<T> child : children) {
-//            searchFurther(model, nodeFactory, child, treeRoot);
-//        }
     }
 
-    private void searchFurther(final Model model, final DataNodeFactory<T> nodeFactory, final DataNode<T> next, final TreeItem<DataNode<T>> treeRoot) {
+    private void searchFurther(final QueryData inputMetadata, final DataNodeFactory<T> nodeFactory, final DataNode<T> next, final TreeItem<DataNode<T>> treeRoot) {
         final T data = next.getData();
         if (!data.isURIResource()) {
             return;
         }
+        final Model model = inputMetadata.getModel();
         final Resource resource = (Resource) data;
         readResource(model, resource);
         if (usedURIs.add(resource.getURI())) {
             final Selector sel = getSelector(resource, model.getProperty(NAMESPACE, LINK));
-            search(model, sel, nodeFactory, treeRoot);
+            search(inputMetadata, sel, nodeFactory, treeRoot);
         }
     }
 
@@ -451,7 +448,6 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
      * <p><b>IMPORTANT:</b> this method reads the resource to the model and <b>STAYS</b> there if this method returns {@code true}</p>
      * <p>If this method returns {@code false} it rolls back to the {@code previous} node.</p>
      *
-     * @param model    the current model
      * @param previous the previous node
      * @param curr     the current node
      *
@@ -459,10 +455,11 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
      *
      * @throws IllegalStateException if the previous is not a URI resource
      */
-    private boolean meetsRequirements(final Model model, final T previous, final T curr) throws IllegalArgumentException {
+    private boolean meetsRequirements(final QueryData inputMetadata, final T previous, final T curr) throws IllegalArgumentException {
         if (!curr.isURIResource()) {
             return true;
         }
+        final Model model = inputMetadata.getModel();
 
         final Resource resource = curr.asResource();
         readResource(model, resource);
@@ -472,10 +469,11 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
             final Selector sel = getSelector(resource, model.getProperty(restriction.getKey(), restriction.getValue()));
 
             // a statement with the given restriction was not found -> they were not met
-            if (!model.listStatements(sel)
-                      .hasNext()) {
-                // stop the search
-                // and go back to the previous node
+            final boolean foundStatement = model.listStatements(sel)
+                                                .hasNext();
+            if (!foundStatement) {
+                // NOTE: previous HAS to be a resource because it's the curr's parent
+                // the only way to get to curr is for its parent to be a resource
                 if (previous != null) {
                     readResource(model, previous.asResource());
                 }
@@ -488,52 +486,6 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
     private void readResource(final Model model, final Resource resource) {
         String uri = resource.getURI();
         model.read(uri);
-    }
-
-    private class TreeItemListChangeListener implements ListChangeListener<TreeItem<DataNode<T>>> {
-
-        private final ObservableList<DataNode<T>> dataNodeRootChildren;
-
-        public TreeItemListChangeListener(final ObservableList<DataNode<T>> dataNodeRootChildren) {
-            this.dataNodeRootChildren = dataNodeRootChildren;
-        }
-
-        private List<? extends DataNode<T>> mapToDataNode(Collection<? extends TreeItem<DataNode<T>>> collection) {
-            return collection.stream()
-                             .map(this::mapToDataNode)
-                             .collect(Collectors.toList());
-        }
-
-        private DataNode<T> mapToDataNode(TreeItem<DataNode<T>> treeItem) {
-            return nodeFactory.newNode(treeItem.getValue()
-                                               .getData());
-        }
-
-        @Override
-        public void onChanged(final Change<? extends TreeItem<DataNode<T>>> change) {
-            while (change.next()) {
-                if (change.wasPermutated()) {
-                    for (int i = change.getFrom(); i < change.getTo(); i++) {
-                        final DataNode<T> tmp = dataNodeRootChildren.get(i);
-                        final int permutation = change.getPermutation(i);
-                        dataNodeRootChildren.set(i, dataNodeRootChildren.get(permutation));
-                        dataNodeRootChildren.set(permutation, tmp);
-                    }
-                } else if (change.wasReplaced()) {
-                    dataNodeRootChildren.removeAll(mapToDataNode(change.getRemoved()));
-                    dataNodeRootChildren.addAll(mapToDataNode(change.getAddedSubList()));
-                } else if (change.wasRemoved()) {
-                    dataNodeRootChildren.removeAll(mapToDataNode(change.getRemoved()));
-                } else if (change.wasAdded()) {
-                    dataNodeRootChildren.addAll(mapToDataNode(change.getAddedSubList()));
-                } else if (change.wasUpdated()) {
-                    for (int i = change.getFrom(); i < change.getTo(); i++) {
-                        dataNodeRootChildren.add(mapToDataNode(change.getList()
-                                                                     .get(i)));
-                    }
-                }
-            }
-        }
     }
 
 }
