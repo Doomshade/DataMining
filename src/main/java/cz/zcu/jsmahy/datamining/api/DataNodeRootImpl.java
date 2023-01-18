@@ -1,14 +1,12 @@
 package cz.zcu.jsmahy.datamining.api;
 
 import javafx.collections.ObservableList;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.function.BiConsumer;
 
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 class DataNodeRootImpl<T> extends DataNodeImpl<T> implements DataNodeRoot<T> {
     /**
      * The display name of the root. If null then there's no display name.
@@ -45,29 +43,5 @@ class DataNodeRootImpl<T> extends DataNodeImpl<T> implements DataNodeRoot<T> {
                 iterate(biConsumer, depth, node);
             }
         }
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof DataNodeRootImpl)) {
-            return false;
-        }
-        if (!super.equals(o)) {
-            return false;
-        }
-
-        final DataNodeRootImpl<?> that = (DataNodeRootImpl<?>) o;
-
-        return getName() != null ? getName().equals(that.getName()) : that.getName() == null;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + name.hashCode();
-        return result;
     }
 }

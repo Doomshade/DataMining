@@ -9,14 +9,12 @@ import java.util.function.BiConsumer
 
 class APISpecification extends Specification {
     @Shared
-    static Injector injector
-    @Shared
     static DataNodeFactory<?> nodeFactory
 
     private DataNodeRoot<?> root
 
     void setupSpec() {
-        injector = Guice.createInjector(new DataMiningModule() {})
+        Injector injector = Guice.createInjector(new DataMiningModule() {})
         nodeFactory = injector.getInstance(DataNodeFactory)
     }
 
@@ -72,12 +70,48 @@ class APISpecification extends Specification {
         thrown(NullPointerException)
     }
 
+    def "Should add children to the data node using Iterable"() {
+        given:
+        def nodes = new ArrayList<DataNode<?>>()
+        nodes.add(nodeFactory.newNode("A"))
+        nodes.add(nodeFactory.newNode("B"))
+        nodes.add(nodeFactory.newNode("C"))
+
+        when:
+        root.addChildren((Iterable<DataNode<?>>) nodes)
+
+        then:
+        root.getChildren().size() == nodes.size()
+    }
+
+    def "Should add children to the data node using Collection"() {
+        given:
+        def nodes = new ArrayList<DataNode<?>>()
+        nodes.add(nodeFactory.newNode("A"))
+        nodes.add(nodeFactory.newNode("B"))
+        nodes.add(nodeFactory.newNode("C"))
+
+        when:
+        root.addChildren((Collection<DataNode<?>>) nodes)
+
+        then:
+        root.getChildren().size() == nodes.size()
+    }
+
     def "Should throw NPE when passing in null collection"() {
         when:
         root.addChildren((Collection<DataNodeImpl>) null)
 
         then:
         thrown(NullPointerException)
+    }
+
+    def "Should return a valid iterator"() {
+        when:
+        root.addChild(nodeFactory.newNode(_))
+
+        then:
+        root.iterator().hasNext()
     }
 
     def "Should throw IAE when adding root to the children of any node type"() {

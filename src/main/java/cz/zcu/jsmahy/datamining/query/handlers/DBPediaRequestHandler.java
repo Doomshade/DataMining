@@ -9,7 +9,8 @@ import cz.zcu.jsmahy.datamining.query.*;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.TreeItem;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntModelSpec;
@@ -102,6 +103,8 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
 
     @Override
     protected synchronized R internalQuery(final String query, final TreeItem<DataNode<T>> treeRoot) throws InvalidQueryException {
+        Objects.requireNonNull(query);
+        Objects.requireNonNull(treeRoot);
         if (requesting) {
             throw new IllegalStateException("Already requesting!");
         }

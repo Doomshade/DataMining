@@ -12,7 +12,6 @@ import java.util.Iterator;
 @Data
 class DataNodeImpl<T> implements DataNode<T> {
     private static long ID_SEQ = 0;
-    @NonNull
     private final T data;
     private final long id;
 

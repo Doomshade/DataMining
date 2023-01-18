@@ -1,7 +1,10 @@
-package cz.zcu.jsmahy.datamining.api;
+package cz.zcu.jsmahy.datamining.util;
 
 import com.jfoenix.controls.JFXListView;
 import cz.zcu.jsmahy.datamining.Main;
+import cz.zcu.jsmahy.datamining.api.BlockingDataNodeReferenceHolder;
+import cz.zcu.jsmahy.datamining.api.DataNode;
+import cz.zcu.jsmahy.datamining.api.DataNodeReferenceHolder;
 import cz.zcu.jsmahy.datamining.query.BlockingRequestHandler;
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
 import javafx.application.Platform;
@@ -21,7 +24,7 @@ import java.util.function.Consumer;
  * @version 1.0
  */
 public class DialogHelper {
-    DialogHelper() {
+    public DialogHelper() {
     }
 
     public class ItemChooseDialog<T, R> {

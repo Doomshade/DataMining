@@ -2,7 +2,7 @@ package cz.zcu.jsmahy.datamining.app.controller.cell;
 
 import cz.zcu.jsmahy.datamining.api.DataNode;
 import cz.zcu.jsmahy.datamining.api.DataNodeRoot;
-import cz.zcu.jsmahy.datamining.api.DialogHelper;
+import cz.zcu.jsmahy.datamining.util.DialogHelper;
 import cz.zcu.jsmahy.datamining.app.controller.MainController;
 import javafx.beans.binding.Bindings;
 import javafx.collections.ObservableList;

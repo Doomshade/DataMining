@@ -3,6 +3,7 @@ package cz.zcu.jsmahy.datamining.api;
 import com.google.inject.AbstractModule;
 import cz.zcu.jsmahy.datamining.config.Config;
 import cz.zcu.jsmahy.datamining.query.UserAssistedAmbiguousInputResolver;
+import cz.zcu.jsmahy.datamining.util.DialogHelper;
 
 import static com.google.inject.Scopes.SINGLETON;
 

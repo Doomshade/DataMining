@@ -47,39 +47,39 @@ public class PredecessorQueryTest {
                                                     .query(query)
                                                     .build();
             LOGGER.info("SPARQL endpoint: {}", DBPEDIA_SERVICE);
-
-            // execute the query on a separate thread via Service
-            final Service<ResultSet> queryService = new QueryService(qe);
-            queryService.setOnSucceeded(e -> {
-                final ResultSet results = (ResultSet) e.getSource()
-                                                       .getValue();
-                LOGGER.info("Query successfully executed");
-                LOGGER.info("Query returned {} results", results.hasNext() ? "some" : "no");
-
-                // print the results
-                while (results.hasNext()) {
-                    final QuerySolution soln = results.next();
-                    final RDFNode resource = soln.get("name");
-                    // TODO: we can now work with this resource
-                    LOGGER.debug(resource);
-                }
-                exit();
-            });
-
-            queryService.setOnFailed(e -> {
-                LOGGER.error(queryService.getException());
-                exit();
-            });
-            queryService.setOnCancelled(e -> {
-                exit();
-            });
-            queryService.start();
+//
+//            // execute the query on a separate thread via Service
+//            final Service<ResultSet> queryService = new QueryService(qe);
+//            queryService.setOnSucceeded(e -> {
+//                final ResultSet results = (ResultSet) e.getSource()
+//                                                       .getValue();
+//                LOGGER.info("Query successfully executed");
+//                LOGGER.info("Query returned {} results", results.hasNext() ? "some" : "no");
+//
+//                // print the results
+//                while (results.hasNext()) {
+//                    final QuerySolution soln = results.next();
+//                    final RDFNode resource = soln.get("name");
+//                    // TODO: we can now work with this resource
+//                    LOGGER.debug(resource);
+//                }
+//                exit();
+//            });
+//
+//            queryService.setOnFailed(e -> {
+//                LOGGER.error(queryService.getException());
+//                exit();
+//            });
+//            queryService.setOnCancelled(e -> {
+//                exit();
+//            });
+//            queryService.start();
         });
     }
 
-    private static synchronized void exit() {
-        LOGGER.info("Exiting application...");
-        Platform.exit();
-        System.exit(0);
-    }
+//    private static synchronized void exit() {
+//        LOGGER.info("Exiting application...");
+//        Platform.exit();
+//        System.exit(0);
+//    }
 }

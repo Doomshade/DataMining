@@ -8,7 +8,7 @@ import com.jfoenix.controls.JFXTextField;
 import cz.zcu.jsmahy.datamining.api.DataNode;
 import cz.zcu.jsmahy.datamining.api.DataNodeFactory;
 import cz.zcu.jsmahy.datamining.api.DataNodeRoot;
-import cz.zcu.jsmahy.datamining.api.DialogHelper;
+import cz.zcu.jsmahy.datamining.util.DialogHelper;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
