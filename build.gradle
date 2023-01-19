@@ -41,7 +41,7 @@ dependencies {
     implementation 'org.jsoup:jsoup:1.15.3'
     implementation 'org.openjfx:javafx-base:19'
     implementation 'org.openjfx:javafx-controls:19'
-    implementation 'org.openjfx:javafx-graphics:19'
+    implementation 'org.openjfx:javafx-graphics:19.0.2'
     implementation 'org.openjfx:javafx-fxml:19'
     implementation 'org.openjfx:javafx-web:19'
     implementation 'org.openjfx:javafx-media:19'
