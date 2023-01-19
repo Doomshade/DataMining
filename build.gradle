@@ -45,7 +45,7 @@ dependencies {
     implementation 'org.openjfx:javafx-fxml:19'
     implementation 'org.openjfx:javafx-web:19'
     implementation 'org.openjfx:javafx-media:19'
-    implementation 'org.openjfx:javafx-swing:19'
+    implementation 'org.openjfx:javafx-swing:19.0.2'
     implementation 'org.controlsfx:controlsfx:11.1.2'
     implementation 'org.slf4j:slf4j-api:2.0.6'
     implementation 'org.slf4j:slf4j-simple:2.0.6'
