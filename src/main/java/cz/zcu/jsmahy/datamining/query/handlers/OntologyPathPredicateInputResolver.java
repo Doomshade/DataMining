@@ -4,14 +4,20 @@ import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Service;
+import javafx.concurrent.Task;
 import javafx.scene.control.*;
 import org.apache.jena.ontology.OntModelSpec;
 import org.apache.jena.rdf.model.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class OntologyPathPredicateInputResolver<T, R> implements BlockingAmbiguousInputResolver<T, R> {
     private static final Logger LOGGER = LogManager.getLogger(OntologyPathPredicateInputResolver.class);
@@ -34,44 +40,17 @@ public class OntologyPathPredicateInputResolver<T, R> implements BlockingAmbiguo
         private final Dialog<Property> dialog = new Dialog<>();
         private final TableView<Statement> content;
         private final DataNodeReferenceHolder<T> ref;
-        private final Map<String, Model> modelCache = new HashMap<>();
+        private final Map<String, String> modelCache = new HashMap<>();
 
         private DialogWrapper(final DataNodeReferenceHolder<T> ref, final StmtIterator candidateOntologyPathPredicates) {
             this.ref = ref;
             this.content = new TableView<>();
+            this.content.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             this.content.getItems()
                         .addAll(candidateOntologyPathPredicates.toList());
             final TableColumn<Statement, String> propertyColumn = new TableColumn<>();
 
-            // FIXME: this runs on FX UI thread, perhaps try to find a workaround for that someday
-            propertyColumn.setCellValueFactory(features -> {
-                final Property predicate = features.getValue()
-                                                   .getPredicate();
-                final String uri = predicate.getURI();
-                if (!uri.contains("dbpedia")) {
-                    return null;
-                }
-                addModel(uri);
-
-                if (!modelCache.containsKey(uri)) {
-                    modelCache.put(uri, EMPTY_MODEL);
-                }
-
-                final Model propertyModel = modelCache.get(uri);
-                if (propertyModel == EMPTY_MODEL) {
-                    return null;
-                }
-                final Property labelProperty = propertyModel.getProperty("http://www.w3.org/2000/01/rdf-schema#", "label");
-                final Statement val = propertyModel.getProperty(predicate, labelProperty, "en");
-                if (val == null) {
-                    LOGGER.info("Failed to find " + uri);
-                    modelCache.put(uri, EMPTY_MODEL);
-                    return null;
-                }
-                return new ReadOnlyObjectWrapper<>(val.getObject()
-                                                      .asLiteral()
-                                                      .getString());
-            });
+            propertyColumn.setCellValueFactory(this::cellValueFactoryCallback);
 
             final TableColumn<Statement, String> valueColumn = new TableColumn<>();
             valueColumn.setCellValueFactory(features -> new ReadOnlyObjectWrapper<>(features.getValue()
@@ -99,20 +78,6 @@ public class OntologyPathPredicateInputResolver<T, R> implements BlockingAmbiguo
             dialogPane.setContent(content);
         }
 
-        private void addModel(final String uri) {
-            if (modelCache.containsKey(uri)) {
-                return;
-            }
-            Model model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
-            try {
-                model.read(uri);
-            } catch (Exception e) {
-                LOGGER.throwing(e);
-                model = EMPTY_MODEL;
-            }
-            modelCache.putIfAbsent(uri, model);
-        }
-
 
         public void showDialogueAndWait(final RequestHandler<T, R> requestHandler) {
             try {
@@ -125,6 +90,67 @@ public class OntologyPathPredicateInputResolver<T, R> implements BlockingAmbiguo
                 blockingRef.unlock();
                 requestHandler.unlockDialogPane();
             }
+        }
+
+        private final Object lock = new Object();
+
+        private ObservableValue<String> cellValueFactoryCallback(TableColumn.CellDataFeatures<Statement, String> features) {
+            final Property predicate = features.getValue()
+                                               .getPredicate();
+            final String uri = predicate.getURI();
+            if (!uri.contains("dbpedia")) {
+                return null;
+            }
+            final ReadOnlyObjectWrapper<String> observableValue = new ReadOnlyObjectWrapper<>();
+            if (modelCache.containsKey(uri)) {
+                observableValue.set(modelCache.get(uri));
+                return observableValue;
+            }
+            final Service<String> bgService = new Service<>() {
+                @Override
+                protected Task<String> createTask() {
+                    return new Task<>() {
+                        @Override
+                        protected String call() throws Exception {
+                            synchronized (lock) {
+                                if (modelCache.containsKey(uri)) {
+                                    return modelCache.get(uri);
+                                }
+                                modelCache.put(uri, "");
+                            }
+                            final Model model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
+                            try {
+                                model.read(uri);
+                            } catch (Exception e) {
+                                LOGGER.throwing(e);
+                                return null;
+                            }
+                            final Property labelProperty = model.getProperty("http://www.w3.org/2000/01/rdf-schema#", "label");
+                            final Statement val = model.getProperty(predicate, labelProperty, "en");
+                            if (val == null) {
+                                LOGGER.info("Failed to find " + uri);
+                                return null;
+                            }
+                            final String str = val.getString();
+                            modelCache.put(uri, str);
+                            LOGGER.info("URI: {}, STR: {}", uri, str);
+                            return str;
+                        }
+                    };
+                }
+            };
+            bgService.setOnSucceeded(e -> {
+                final String value = (String) e.getSource()
+                                               .getValue();
+                observableValue.setValue(value);
+                LOGGER.debug("Setting value to " + value);
+            });
+            bgService.setOnFailed(e -> {
+                observableValue.setValue("");
+            });
+            bgService.start();
+
+            return observableValue;
         }
     }
 

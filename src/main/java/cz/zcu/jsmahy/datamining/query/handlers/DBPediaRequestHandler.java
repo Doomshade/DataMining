@@ -169,6 +169,9 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
             }
         }
         final Property ontologyPathPredicate = ref.getOntologyPathPredicate();
+        if (ontologyPathPredicate == null) {
+            return false;
+        }
         inputMetadata.setOntologyPathPredicate(ontologyPathPredicate);
         progressListener.onSetOntologyPathPredicate(ontologyPathPredicate);
         return true;

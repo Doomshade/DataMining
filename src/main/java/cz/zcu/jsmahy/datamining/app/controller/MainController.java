@@ -270,23 +270,24 @@ order by ?pred
 
     @Override
     public void onInvalidQuery(final String invalidQuery) {
-
-        // TODO: resource bundle
-        final Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Invalid query");
-        alert.setHeaderText("ERROR - Invalid query");
-        final String wikiUrl = "https://en.wikipedia.org/wiki/";
-        final String queryWikiUrl = wikiUrl + invalidQuery;
-        final String exampleWikiUrl = wikiUrl + "Charles_IV,_Holy_Roman_Emperor";
-        final String exampleUri = "Charles IV, Holy Roman Emperor";
-        alert.setContentText(String.format(
-                "No results were found querying '%s'. The query must correspond to the wikipedia URL:%n%n%s%n%nYour query corresponds to an unknown URL:%n%n%s%n%nIn this example '%s' is a " +
-                "valid query. Spaces instead of underscores are allowed.",
-                invalidQuery,
-                exampleWikiUrl,
-                queryWikiUrl,
-                exampleUri));
-        alert.show();
+        Platform.runLater(() -> {
+            // TODO: resource bundle
+            final Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Invalid query");
+            alert.setHeaderText("ERROR - Invalid query");
+            final String wikiUrl = "https://en.wikipedia.org/wiki/";
+            final String queryWikiUrl = wikiUrl + invalidQuery;
+            final String exampleWikiUrl = wikiUrl + "Charles_IV,_Holy_Roman_Emperor";
+            final String exampleUri = "Charles IV, Holy Roman Emperor";
+            alert.setContentText(String.format(
+                    "No results were found querying '%s'. The query must correspond to the wikipedia URL:%n%n%s%n%nYour query corresponds to an unknown URL:%n%n%s%n%nIn this example '%s' is a " +
+                    "valid query. Spaces instead of underscores are allowed.",
+                    invalidQuery,
+                    exampleWikiUrl,
+                    queryWikiUrl,
+                    exampleUri));
+            alert.show();
+        });
     }
 
     @Override
