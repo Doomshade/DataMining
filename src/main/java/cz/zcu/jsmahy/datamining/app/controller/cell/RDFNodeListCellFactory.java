@@ -10,7 +10,7 @@ import static cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory.fo
 /**
  * TODO
  *
- * @author Jakub Smrha
+ * @author Jakub Šmrha
  * @since 1.0
  */
 public class RDFNodeListCellFactory<T extends RDFNode> extends ListCell<DataNode<T>> {

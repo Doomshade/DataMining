@@ -10,7 +10,7 @@ import static com.google.inject.Scopes.SINGLETON;
 /**
  * The base module for this project.
  *
- * @author Jakub Smrha
+ * @author Jakub Šmrha
  * @since 1.0
  */
 public abstract class DataMiningModule extends AbstractModule {

@@ -5,7 +5,7 @@ import lombok.NonNull;
 /**
  * A factory for {@link DataNode}s.
  *
- * @author Jakub Smrha
+ * @author Jakub Šmrha
  * @see DataNode
  * @see DataNodeRoot
  * @since 1.0

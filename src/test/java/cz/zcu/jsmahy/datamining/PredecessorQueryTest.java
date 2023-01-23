@@ -11,7 +11,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * TODO
  *
- * @author Jakub Smrha
+ * @author Jakub Šmrha
  * @version 0.0.1
  * @since 11.04.2022
  */

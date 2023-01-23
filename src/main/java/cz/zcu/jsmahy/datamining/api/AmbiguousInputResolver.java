@@ -8,7 +8,7 @@ import org.apache.jena.rdf.model.RDFNode;
  * <p>Solves ambiguities of nodes where a list of them occurs.</p>
  * <p>An example would be a ruler having multiple descendents.</p>
  *
- * @author Jakub Smrha
+ * @author Jakub Šmrha
  * @since 1.0
  */
 public interface AmbiguousInputResolver<T, R, DNRef extends DataNodeReferenceHolder<T>> {

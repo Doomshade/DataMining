@@ -26,7 +26,7 @@ import java.util.ResourceBundle;
  * <p>Implementation details from the official site:
  * <a href="https://docs.oracle.com/javase/8/javafx/api/javafx/scene/control/Cell.html">here</a></p>
  *
- * @author Jakub Smrha
+ * @author Jakub Šmrha
  * @since 1.0
  */
 public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>> {

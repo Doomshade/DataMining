@@ -37,7 +37,7 @@ import java.util.ResourceBundle;
 /**
  * TODO
  *
- * @author Jakub Smrha
+ * @author Jakub Šmrha
  * @since
  */
 public class MainController<T extends RDFNode> implements Initializable {

@@ -7,7 +7,7 @@ import java.util.function.BiConsumer;
  * <p>There can only be <b>ONE</b> root in the whole hierarchy/tree. Methods such as {@link DataNodeImpl#addChild(DataNode)} with
  * {@link DataNodeRootImpl} instance as an argument will throw an {@link IllegalArgumentException}.</p>
  *
- * @author Jakub Smrha
+ * @author Jakub Šmrha
  * @since 1.0
  */
 public interface DataNodeRoot<T> extends DataNode<T> {

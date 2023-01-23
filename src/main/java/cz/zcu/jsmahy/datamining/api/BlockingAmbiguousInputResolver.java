@@ -3,7 +3,7 @@ package cz.zcu.jsmahy.datamining.api;
 /**
  * Resolver that <b>does</b> block the thread.
  *
- * @author Jakub Smrha
+ * @author Jakub Šmrha
  * @since 1.0
  */
 public interface BlockingAmbiguousInputResolver<T, R> extends AmbiguousInputResolver<T, R, BlockingDataNodeReferenceHolder<T>> {

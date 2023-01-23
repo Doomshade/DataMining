@@ -19,7 +19,7 @@ import java.util.Map;
 /**
  * TODO
  *
- * @author Jakub Smrha
+ * @author Jakub Šmrha
  * @version 06.04.2022
  * @since 06.04.2022
  */

@@ -8,7 +8,7 @@ import java.util.Collection;
 /**
  * This node represents a single node in the tree with a link to next nodes.
  *
- * @author Jakub Smrha
+ * @author Jakub Šmrha
  * @since 1.0
  */
 public interface DataNode<T> extends Iterable<DataNode<T>> {

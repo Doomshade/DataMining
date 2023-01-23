@@ -5,7 +5,7 @@ import lombok.NonNull;
 /**
  * Default implementation of {@link DataNodeFactory}.
  *
- * @author Jakub Smrha
+ * @author Jakub Šmrha
  * @since 1.0
  */
 final class DataNodeFactoryImpl<T> implements DataNodeFactory<T> {
