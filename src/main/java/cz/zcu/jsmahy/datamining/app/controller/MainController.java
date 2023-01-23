@@ -11,6 +11,7 @@ import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
 import cz.zcu.jsmahy.datamining.util.DialogHelper;
+import cz.zcu.jsmahy.datamining.util.RDFNodeUtil;
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
@@ -202,7 +203,7 @@ order by ?pred
         }
 
         final DataNode<T> dataNode = selectedItem.getValue();
-        final String formattedItem = RDFNodeCellFactory.formatRDFNode(dataNode.getData());
+        final String formattedItem = RDFNodeUtil.formatRDFNode(dataNode.getData());
         wikiPageWebView.getEngine()
                        .load(String.format(WIKI_URL, formattedItem));
 

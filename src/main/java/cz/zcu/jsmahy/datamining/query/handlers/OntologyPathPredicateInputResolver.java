@@ -42,6 +42,8 @@ public class OntologyPathPredicateInputResolver<T, R> implements BlockingAmbiguo
             this.content.getItems()
                         .addAll(candidateOntologyPathPredicates.toList());
             final TableColumn<Statement, String> propertyColumn = new TableColumn<>();
+
+            // FIXME: this runs on FX UI thread, perhaps try to find a workaround for that someday
             propertyColumn.setCellValueFactory(features -> {
                 final Property predicate = features.getValue()
                                                    .getPredicate();

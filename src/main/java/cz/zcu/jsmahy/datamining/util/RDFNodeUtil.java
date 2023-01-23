@@ -1,0 +1,52 @@
+package cz.zcu.jsmahy.datamining.util;
+
+import org.apache.jena.rdf.model.Literal;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
+
+public class RDFNodeUtil {
+    private static final Logger LOGGER = LogManager.getLogger(RDFNodeUtil.class);
+    public static final String SPECIAL_CHARACTERS = "_";
+
+    /**
+     * <p>Formats the {@link RDFNode} to be "pretty" on output.</p>
+     * <p>This method will strip any domain off the {@link RDFNode} if it's a {@link Resource}. If it's a {@link Literal}, this will
+     * simply return {@link Literal#toString()}. If it's neither, it will return {@link RDFNode#toString()}.</p>
+     *
+     * @param node the node to format. if null, {@code "null"} is returned.
+     *
+     * @return {@link RDFNode} in a simple {@link String} representation
+     */
+    public static <T extends RDFNode> String formatRDFNode(T node) {
+        if (node == null) {
+            return "null";
+        }
+        final Marker marker = MarkerManager.getMarker("node-type");
+        if (node.isLiteral()) {
+            String str = node.asLiteral()
+                             .toString();
+            final int languageIndex = str.lastIndexOf('@');
+            if (languageIndex > 0) {
+                str = str.substring(0, languageIndex);
+            }
+            LOGGER.trace(marker, "Literal \"{}\"", str);
+            return str;
+        }
+        if (node.isResource()) {
+            final Resource resource = node.asResource();
+            final String uri = resource.getURI();
+            final int lastPartIndex = uri.lastIndexOf('/') + 1;
+
+            final String localName = uri.substring(lastPartIndex);
+            LOGGER.trace(marker, "Resource \"{}\"", localName);
+            return localName;
+        }
+
+        LOGGER.debug(marker, "RDFNode \"{}\" was neither literal or resource, using default toString method.", node);
+        return node.toString();
+    }
+}
