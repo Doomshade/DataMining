@@ -6,9 +6,12 @@ import com.google.common.cache.Weigher;
 import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.ObservableSet;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.scene.control.*;
@@ -45,7 +48,8 @@ public class OntologyPathPredicateInputResolver<T, R> implements BlockingAmbiguo
         private final TableView<Statement> content;
         private final DataNodeReferenceHolder<T> ref;
         private final Object lock = new Object();
-
+        @SuppressWarnings("unchecked")
+        private final ObservableSet<Service<String>> services = FXCollections.synchronizedObservableSet(FXCollections.observableSet());
 
         private DialogWrapper(final DataNodeReferenceHolder<T> ref, final StmtIterator candidateOntologyPathPredicates) {
             this.ref = ref;
@@ -76,10 +80,15 @@ public class OntologyPathPredicateInputResolver<T, R> implements BlockingAmbiguo
                 LOGGER.error("Unrecognized button type: {}", buttonType);
                 return null;
             });
-            DialogPane dialogPane = dialog.getDialogPane();
+            final DialogPane dialogPane = dialog.getDialogPane();
             dialogPane.getButtonTypes()
                       .addAll(ButtonType.OK, ButtonType.CANCEL);
             dialogPane.setContent(content);
+
+            // TODO: progress indicator is not shown
+            dialogPane.disableProperty()
+                      .bind(Bindings.size(services)
+                                    .greaterThan(0));
         }
 
         public void showDialogueAndWait(final RequestHandler<T, R> requestHandler) {
@@ -94,6 +103,7 @@ public class OntologyPathPredicateInputResolver<T, R> implements BlockingAmbiguo
                 requestHandler.unlockDialogPane();
             }
         }
+
 
         private ObservableValue<String> cellValueFactoryCallback(TableColumn.CellDataFeatures<Statement, String> features) {
             final Property predicate = features.getValue()
@@ -143,13 +153,21 @@ public class OntologyPathPredicateInputResolver<T, R> implements BlockingAmbiguo
                 }
             };
             bgService.setOnSucceeded(e -> {
+                services.remove(bgService);
                 final String value = (String) e.getSource()
                                                .getValue();
                 observableValue.setValue(value);
-                LOGGER.debug("Setting value to " + value);
+                final TableView<Statement> tv = features.getTableView();
+                tv.refresh();
+                // WARN: this could be expensive
+                tv.sort();
             });
-            bgService.setOnFailed(e -> observableValue.setValue(""));
+            bgService.setOnFailed(e -> {
+                services.remove(bgService);
+                observableValue.setValue("");
+            });
             bgService.start();
+            services.add(bgService);
 
             return observableValue;
         }
