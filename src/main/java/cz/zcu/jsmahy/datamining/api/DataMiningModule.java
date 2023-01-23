@@ -1,6 +1,7 @@
 package cz.zcu.jsmahy.datamining.api;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.name.Names;
 import cz.zcu.jsmahy.datamining.config.Config;
 import cz.zcu.jsmahy.datamining.query.UserAssistedAmbiguousInputResolver;
 import cz.zcu.jsmahy.datamining.util.DialogHelper;
@@ -27,7 +28,9 @@ public abstract class DataMiningModule extends AbstractModule {
         bind(DataNodeFactory.class).to(DataNodeFactoryImpl.class);
         bind(Config.class).in(SINGLETON);
         bind(DialogHelper.class).in(SINGLETON);
-        bind(UserAssistedAmbiguousInputResolver.class).in(SINGLETON);
+        bind(AmbiguousInputResolver.class).annotatedWith(Names.named("userAssisted"))
+                                          .to(UserAssistedAmbiguousInputResolver.class)
+                                          .in(SINGLETON);
     }
 
 }

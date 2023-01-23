@@ -1,5 +1,7 @@
 package cz.zcu.jsmahy.datamining.api.dbpedia;
 
+import com.google.inject.name.Names;
+import cz.zcu.jsmahy.datamining.api.AmbiguousInputResolver;
 import cz.zcu.jsmahy.datamining.api.DataMiningModule;
 import cz.zcu.jsmahy.datamining.api.RequestProgressListener;
 import cz.zcu.jsmahy.datamining.app.controller.MainController;
@@ -21,7 +23,9 @@ public class DBPediaModule extends DataMiningModule {
     protected void configure() {
         super.configure();
         bind(RequestProgressListener.class).toInstance(MainController.getInstance());
+        bind(AmbiguousInputResolver.class).annotatedWith(Names.named("ontologyPathPredicate"))
+                                          .to(OntologyPathPredicateInputResolver.class)
+                                          .in(SINGLETON);
         bind(RequestHandler.class).to(DBPediaRequestHandler.class);
-        bind(OntologyPathPredicateInputResolver.class).in(SINGLETON);
     }
 }

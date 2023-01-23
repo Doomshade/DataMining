@@ -1,12 +1,13 @@
 package cz.zcu.jsmahy.datamining.query.handlers;
 
-import com.google.inject.Guice;
 import com.google.inject.Inject;
-import com.google.inject.Injector;
+import com.google.inject.name.Named;
 import cz.zcu.jsmahy.datamining.api.*;
-import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
-import cz.zcu.jsmahy.datamining.query.*;
+import cz.zcu.jsmahy.datamining.query.AbstractRequestHandler;
+import cz.zcu.jsmahy.datamining.query.BlockingRequestHandler;
+import cz.zcu.jsmahy.datamining.query.RequestHandler;
+import cz.zcu.jsmahy.datamining.query.Restriction;
 import javafx.scene.control.TreeItem;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.ontology.OntModel;
@@ -85,12 +86,14 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
 
     @Inject
     @SuppressWarnings("unchecked, rawtypes")
-    public DBPediaRequestHandler(final RequestProgressListener progressListener) {
+    public DBPediaRequestHandler(final RequestProgressListener progressListener,
+                                 final DataNodeFactory nodeFactory,
+                                 final @Named("userAssisted") AmbiguousInputResolver ambiguousInputResolver,
+                                 final @Named("ontologyPathPredicate") AmbiguousInputResolver ontologyPathPredicateInputResolver) {
         super(progressListener);
-        final Injector injector = Guice.createInjector(new DBPediaModule());
-        nodeFactory = injector.getInstance(DataNodeFactory.class);
-        ambiguousInputResolver = injector.getInstance(UserAssistedAmbiguousInputResolver.class);
-        ontologyPathPredicateInputResolver = injector.getInstance(OntologyPathPredicateInputResolver.class);
+        this.nodeFactory = nodeFactory;
+        this.ambiguousInputResolver = ambiguousInputResolver;
+        this.ontologyPathPredicateInputResolver = ontologyPathPredicateInputResolver;
     }
 
     /**
@@ -185,6 +188,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
      * @param nodeFactory the data node factory
      * @param treeRoot    the tree root
      */
+    @SuppressWarnings("unchecked")
     private void search(final QueryData inputMetadata, final Selector selector, final DataNodeFactory<T> nodeFactory, final TreeItem<DataNode<T>> treeRoot) {
         final Model model = inputMetadata.getModel();
 

@@ -95,42 +95,42 @@ order by ?pred
     private RequestHandler<T, Void> requestHandler;
 
     @Override
+    @SuppressWarnings("unchecked")
     public void initialize(final URL location, final ResourceBundle resources) {
         instance = this;
         final Injector injector = Guice.createInjector(new DBPediaModule());
-        nodeFactory = injector.getInstance(DataNodeFactory.class);
-        requestHandler = injector.getInstance(RequestHandler.class);
-        dialogHelper = injector.getInstance(DialogHelper.class);
+        this.nodeFactory = injector.getInstance(DataNodeFactory.class);
+        this.requestHandler = injector.getInstance(RequestHandler.class);
+        this.dialogHelper = injector.getInstance(DialogHelper.class);
 
         final MenuBar menuBar = createMenuBar(resources);
-        rootPane.setTop(menuBar);
+        this.rootPane.setTop(menuBar);
+        this.rootPane.setPadding(new Insets(10));
+        this.rootPane.disableProperty()
+                     .bind(progressIndicator.visibleProperty());
 
-        rootPane.setPadding(new Insets(10));
-        rootPane.disableProperty()
-                .bind(progressIndicator.visibleProperty());
-
-        final MultipleSelectionModel<TreeItem<DataNode<T>>> selectionModel = ontologyTreeView.getSelectionModel();
+        final MultipleSelectionModel<TreeItem<DataNode<T>>> selectionModel = this.ontologyTreeView.getSelectionModel();
         selectionModel.setSelectionMode(SelectionMode.SINGLE);
 
         // TODO: this will likely be a popup
         selectionModel.selectedItemProperty()
                       .addListener(this::onSelection);
 
-        ontologyTreeView.setShowRoot(false);
-        ontologyTreeView.getSelectionModel()
-                        .setSelectionMode(SelectionMode.MULTIPLE);
-        ontologyTreeView.setEditable(true);
-        ontologyTreeView.setOnMouseClicked(event -> {
+        this.ontologyTreeView.setShowRoot(false);
+        this.ontologyTreeView.getSelectionModel()
+                             .setSelectionMode(SelectionMode.MULTIPLE);
+        this.ontologyTreeView.setEditable(true);
+        this.ontologyTreeView.setOnMouseClicked(event -> {
             if (event.getClickCount() == 1) {
                 event.consume();
             }
         });
-        ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory<>(lv, resources, this, dialogHelper));
+        this.ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory<>(lv, resources, this, dialogHelper));
 
         final TreeItem<DataNode<T>> root = new TreeItem<>(null);
-        ontologyTreeView.setRoot(root);
+        this.ontologyTreeView.setRoot(root);
         final ContextMenu contextMenu = createContextMenu(resources);
-        ontologyTreeView.setContextMenu(contextMenu);
+        this.ontologyTreeView.setContextMenu(contextMenu);
     }
 
     private ContextMenu createContextMenu(final ResourceBundle resources) {
@@ -204,17 +204,18 @@ order by ?pred
 
         final DataNode<T> dataNode = selectedItem.getValue();
         final String formattedItem = RDFNodeUtil.formatRDFNode(dataNode.getData());
-        wikiPageWebView.getEngine()
-                       .load(String.format(WIKI_URL, formattedItem));
+        this.wikiPageWebView.getEngine()
+                            .load(String.format(WIKI_URL, formattedItem));
 
     }
 
     /**
      * Handler for mouse press on the search button.
      *
-     * @param root
-     * @param searchValue
+     * @param root        the tree root
+     * @param searchValue the search value
      */
+    @SuppressWarnings("ThrowableNotThrown")
     public void search(final TreeItem<DataNode<T>> root, final String searchValue) {
         if (searchValue.isBlank()) {
             LOGGER.info("Search field is blank, not searching for anything.");
@@ -225,15 +226,10 @@ order by ?pred
         }
 
         final Service<Void> query = requestHandler.query(searchValue, root);
-        query.setOnSucceeded(x -> {
-            ontologyTreeView.getSelectionModel()
-                            .selectFirst();
-
-        });
-        query.setOnFailed(x -> {
-            query.getException()
-                 .printStackTrace();
-        });
+        query.setOnSucceeded(x -> ontologyTreeView.getSelectionModel()
+                                                  .selectFirst());
+        query.setOnFailed(x -> query.getException()
+                                    .printStackTrace());
         query.restart();
 
         this.rootPane.disableProperty()
