@@ -149,6 +149,8 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
     }
 
     /**
+     * TODO: make the return value an enum
+     *
      * @return {@code true} if a statement was found with the given subject (aka the query), {@code false} otherwise
      */
     private boolean initialSearch(final QueryData inputMetadata) {
@@ -170,6 +172,9 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
                     throw new RuntimeException(e);
                 }
             }
+        }
+        if (ref == null) {
+            return false;
         }
         final Property ontologyPathPredicate = ref.getOntologyPathPredicate();
         if (ontologyPathPredicate == null) {
