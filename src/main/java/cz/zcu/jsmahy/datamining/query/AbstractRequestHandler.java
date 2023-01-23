@@ -1,6 +1,7 @@
 package cz.zcu.jsmahy.datamining.query;
 
 import cz.zcu.jsmahy.datamining.api.DataNode;
+import cz.zcu.jsmahy.datamining.api.RequestProgressListener;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -12,6 +13,11 @@ import static java.util.Objects.requireNonNull;
 public abstract class AbstractRequestHandler<T, R> extends Service<R> implements RequestHandler<T, R> {
     private String query;
     private TreeItem<DataNode<T>> treeRoot;
+    protected final RequestProgressListener<T> progressListener;
+
+    protected AbstractRequestHandler(final RequestProgressListener<T> progressListener) {
+        this.progressListener = progressListener;
+    }
 
     @Override
     public final Service<R> query(final String query, final TreeItem<DataNode<T>> treeRoot) throws InvalidQueryException {

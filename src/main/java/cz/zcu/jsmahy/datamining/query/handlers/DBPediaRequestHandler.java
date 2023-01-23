@@ -1,6 +1,7 @@
 package cz.zcu.jsmahy.datamining.query.handlers;
 
 import com.google.inject.Guice;
+import com.google.inject.Inject;
 import com.google.inject.Injector;
 import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
@@ -86,8 +87,10 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
 
     private final AmbiguousInputResolver<T, R, ?> ontologyPathPredicateInputResolver;
 
+    @Inject
     @SuppressWarnings("unchecked")
-    public DBPediaRequestHandler() {
+    public DBPediaRequestHandler(final RequestProgressListener<T> progressListener) {
+        super(progressListener);
         final Injector injector = Guice.createInjector(new DBPediaModule());
         nodeFactory = injector.getInstance(DataNodeFactory.class);
         ambiguousInputResolver = injector.getInstance(UserAssistedAmbiguousInputResolver.class);

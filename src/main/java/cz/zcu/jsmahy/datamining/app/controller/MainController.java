@@ -8,6 +8,7 @@ import com.jfoenix.controls.JFXTextField;
 import cz.zcu.jsmahy.datamining.api.DataNode;
 import cz.zcu.jsmahy.datamining.api.DataNodeFactory;
 import cz.zcu.jsmahy.datamining.api.DataNodeRoot;
+import cz.zcu.jsmahy.datamining.api.RequestProgressListener;
 import cz.zcu.jsmahy.datamining.util.DialogHelper;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
@@ -40,7 +41,7 @@ import java.util.ResourceBundle;
  * @author Jakub Šmrha
  * @since
  */
-public class MainController<T extends RDFNode> implements Initializable {
+public class MainController<T extends RDFNode> implements Initializable, RequestProgressListener<T> {
     /*
 PREFIX rdf: <https://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX r: <http://dbpedia.org/resource/>
