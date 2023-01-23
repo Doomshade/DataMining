@@ -35,7 +35,7 @@ class DataNodeReferenceHolderTest extends Specification {
 
     def "Should set restrictions"() {
         when:
-        ref.setRestrictions(FXCollections.observableArrayList(new Restriction("key", "value")))
+        ref.setRestrictions(FXCollections.observableArrayList(new Restriction("namespace", "link")))
 
         then:
         ref.getRestrictions().size() == 1

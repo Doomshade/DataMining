@@ -1,5 +1,6 @@
 package cz.zcu.jsmahy.datamining.query;
 
+import cz.zcu.jsmahy.datamining.api.DataMiningModule;
 import cz.zcu.jsmahy.datamining.api.DataNode;
 import cz.zcu.jsmahy.datamining.api.RequestProgressListener;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
@@ -15,7 +16,13 @@ public abstract class AbstractRequestHandler<T, R> extends Service<R> implements
     private TreeItem<DataNode<T>> treeRoot;
     protected final RequestProgressListener<T> progressListener;
 
-    protected AbstractRequestHandler(final RequestProgressListener<T> progressListener) {
+    /**
+     * Reason for this parameter not having a generic parameter: {@link DataMiningModule}
+     *
+     * @param progressListener the progress listener
+     */
+    @SuppressWarnings("unchecked, rawtypes")
+    protected AbstractRequestHandler(final RequestProgressListener progressListener) {
         this.progressListener = progressListener;
     }
 

@@ -7,10 +7,6 @@ import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import cz.zcu.jsmahy.datamining.query.*;
-import javafx.application.Platform;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.scene.control.Alert;
 import javafx.scene.control.TreeItem;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.ontology.OntModel;
@@ -88,8 +84,8 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
     private final AmbiguousInputResolver<T, R, ?> ontologyPathPredicateInputResolver;
 
     @Inject
-    @SuppressWarnings("unchecked")
-    public DBPediaRequestHandler(final RequestProgressListener<T> progressListener) {
+    @SuppressWarnings("unchecked, rawtypes")
+    public DBPediaRequestHandler(final RequestProgressListener progressListener) {
         super(progressListener);
         final Injector injector = Guice.createInjector(new DBPediaModule());
         nodeFactory = injector.getInstance(DataNodeFactory.class);
@@ -140,38 +136,14 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
             final Selector selector = new SimpleSelector(subject, inputMetadata.getOntologyPathPredicate(), (RDFNode) null);
             search(inputMetadata, selector, nodeFactory, treeRoot);
             LOGGER.info("Done searching");
+            progressListener.onSearchDone();
         } else {
             LOGGER.info("Invalid query '{}' - no results were found.", query);
-            Platform.runLater(() -> alertInvalidQuery(query));
+            progressListener.onInvalidQuery(query);
         }
         requesting = false;
         return null;
     }
-
-    /**
-     * Constructs an {@link Alert} that informs the user about an invalid query.
-     *
-     * @param invalidQuery the invalid query
-     */
-    private static void alertInvalidQuery(final String invalidQuery) {
-        // TODO: resource bundle
-        final Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Invalid query");
-        alert.setHeaderText("ERROR - Invalid query");
-        final String wikiUrl = "https://en.wikipedia.org/wiki/";
-        final String queryWikiUrl = wikiUrl + invalidQuery;
-        final String exampleWikiUrl = wikiUrl + "Charles_IV,_Holy_Roman_Emperor";
-        final String exampleUri = "Charles IV, Holy Roman Emperor";
-        alert.setContentText(String.format(
-                "No results were found querying '%s'. The query must correspond to the wikipedia URL:%n%n%s%n%nYour query corresponds to an unknown URL:%n%n%s%n%nIn this example '%s' is a " +
-                "valid query. Spaces instead of underscores are allowed.",
-                invalidQuery,
-                exampleWikiUrl,
-                queryWikiUrl,
-                exampleUri));
-        alert.show();
-    }
-
 
     /**
      * @return {@code true} if a statement was found with the given subject (aka the query), {@code false} otherwise
@@ -196,7 +168,9 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
                 }
             }
         }
-        inputMetadata.setOntologyPathPredicate(ref.getOntologyPathPredicate());
+        final Property ontologyPathPredicate = ref.getOntologyPathPredicate();
+        inputMetadata.setOntologyPathPredicate(ontologyPathPredicate);
+        progressListener.onSetOntologyPathPredicate(ontologyPathPredicate);
         return true;
     }
 
@@ -211,17 +185,14 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
     private void search(final QueryData inputMetadata, final Selector selector, final DataNodeFactory<T> nodeFactory, final TreeItem<DataNode<T>> treeRoot) {
         final Model model = inputMetadata.getModel();
 
-        // add the current node to the tree node
         final DataNode<T> curr = nodeFactory.newNode((T) selector.getSubject());
-        final ObservableList<TreeItem<DataNode<T>>> treeChildren = treeRoot.getChildren();
-        final TreeItem<DataNode<T>> currTreeItem = new TreeItem<>(curr);
-        Platform.runLater(() -> treeChildren.add(currTreeItem));
+        final TreeItem<DataNode<T>> currTreeItem = progressListener.onCreateNewDataNode(curr, treeRoot);
 
         final List<Statement> statements = model.listStatements(selector)
                                                 .toList();
         statements.sort(STATEMENT_COMPARATOR);
 
-        final ObservableList<DataNode<T>> children = FXCollections.observableArrayList();
+        final List<DataNode<T>> foundData = new ArrayList<>();
         T previous = null;
         for (final Statement stmt : statements) {
             final T next = (T) stmt.getObject();
@@ -240,18 +211,18 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
 
             final DataNode<T> nextNode = nodeFactory.newNode(next);
             LOGGER.debug("Found {}", next);
-            children.add(nextNode);
+            foundData.add(nextNode);
         }
 
         // no nodes found, stop searching
-        if (children.isEmpty()) {
+        if (foundData.isEmpty()) {
             return;
         }
 
         // only one found, that means it's going linearly
         // we can continue searching
-        if (children.size() == 1) {
-            final DataNode<T> first = children.get(0);
+        if (foundData.size() == 1) {
+            final DataNode<T> first = foundData.get(0);
             searchFurther(inputMetadata, nodeFactory, first, treeRoot);
             return;
         }
@@ -264,7 +235,10 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         // the thread will wait up to 5 seconds and check for the result if the
         // dialogue fails to notify the monitor
         // the dialogue also has to be marked as finished
-        final DataNodeReferenceHolder<T> ref = ambiguousInputResolver.resolveRequest(children, inputMetadata, this);
+        // --------------
+        // the reference can either be non-blocking or blocking, depending on the implementation
+        // usually when user input is required it's blocking
+        final DataNodeReferenceHolder<T> ref = ambiguousInputResolver.resolveRequest(foundData, inputMetadata, this);
         if (ref instanceof BlockingDataNodeReferenceHolder<T> blockingRef) {
             while (!blockingRef.isFinished()) {
                 try {
@@ -275,26 +249,17 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
             }
         }
 
-        final boolean multipleReferences = ref.hasMultipleReferences();
-        LOGGER.debug("Has multiple references: " + multipleReferences);
-        LOGGER.debug("References: " + ref.getList());
-        if (!multipleReferences) {
-            currTreeItem.getChildren()
-                        .addAll(children.stream()
-                                        .map(TreeItem::new)
-                                        .toList());
-            currTreeItem.setExpanded(true);
-            searchFurther(inputMetadata, nodeFactory, ref.get(), treeRoot);
-        } else {
-            // TODO: add another dialog to choose where to continue
-            final List<DataNode<T>> values = ref.getList();
-            if (!values.isEmpty()) {
-                searchFurther(inputMetadata, nodeFactory, values.get(0), treeRoot);
-            }
-        }
+        // WARN: Deleted handling for multiple references as it might not even be in the final version.
+        progressListener.onAddMultipleDataNodes(currTreeItem, foundData, ref.get());
+        searchFurther(inputMetadata, nodeFactory, ref.get(), treeRoot);
     }
 
     private void searchFurther(final QueryData inputMetadata, final DataNodeFactory<T> nodeFactory, final DataNode<T> next, final TreeItem<DataNode<T>> treeRoot) {
+        // attempts to search further down the line if the given data is a URI resource
+        // if it's not a URI resource the searching terminates
+        // if it's a URI resource we first check if we've been here already - we don't want to be stuck in a cycle,
+        // that's what usedURIs is for
+        // otherwise build a selector and continue searching down the line
         final T data = next.getData();
         if (!data.isURIResource()) {
             return;
@@ -311,8 +276,11 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
 
     /**
      * <p>Checks whether the {@code curr}ent node meets the requirements to be added to the search list.</p>
-     * <p><b>IMPORTANT:</b> this method reads the resource to the model and <b>STAYS</b> there if this method returns {@code true}</p>
-     * <p>If this method returns {@code false} it rolls back to the {@code previous} node.</p>
+     * <p><b>IMPORTANT:</b> this method reads the resource to the model and:</p>
+     * <ul>
+     *     <li><b>STAYS</b> there if this method returns <b>{@code true}</b>.</li>
+     *     <li><b>ROLLS BACK</b> to the {@code previous} node if this method returns <b>{@code false}</b>.</li>
+     * </ul>
      *
      * @param previous the previous node
      * @param curr     the current node
@@ -332,11 +300,12 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
 
         // check for the restrictions on the given request
         for (final Restriction restriction : inputMetadata.getRestrictions()) {
-            final Selector sel = new SimpleSelector(resource, model.getProperty(restriction.getKey(), restriction.getValue()), (RDFNode) null);
+            final Property predicate = model.getProperty(restriction.getNamespace(), restriction.getLink());
+            final Selector sel = new SimpleSelector(resource, predicate, (RDFNode) null);
             final boolean foundSomething = model.listStatements(sel)
                                                 .hasNext();
             if (!foundSomething) {
-                // NOTE: previous HAS to be a resource because it's the curr's parent
+                // NOTE: previous HAS to be a resource because it's the curr's parent, so we don't need to check whether it's a resource
                 // the only way to get to curr is for its parent to be a resource
                 if (previous != null) {
                     readResource(model, previous.asResource());

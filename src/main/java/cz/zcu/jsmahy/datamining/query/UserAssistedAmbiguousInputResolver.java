@@ -4,7 +4,7 @@ import cz.zcu.jsmahy.datamining.Main;
 import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeListCellFactory;
 import javafx.application.Platform;
-import javafx.collections.ObservableList;
+import javafx.collections.FXCollections;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.util.Callback;
@@ -29,7 +29,7 @@ public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements Bl
     private static final Logger LOGGER = LogManager.getLogger(UserAssistedAmbiguousInputResolver.class);
 
     @Override
-    public BlockingDataNodeReferenceHolder<T> resolveRequest(final ObservableList<DataNode<T>> ambiguousInput, final QueryData inputMetadata, final RequestHandler<T, Void> requestHandler) {
+    public BlockingDataNodeReferenceHolder<T> resolveRequest(final List<DataNode<T>> ambiguousInput, final QueryData inputMetadata, final RequestHandler<T, Void> requestHandler) {
         // first off we check if we have an ontology path set
         // if not, pop up a dialogue
         final BlockingDataNodeReferenceHolder<T> ref = new BlockingDataNodeReferenceHolder<>();
@@ -125,7 +125,7 @@ public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements Bl
         private final ListView<DataNode<T>> content = new ListView<>();
         private final DataNodeReferenceHolder<T> ref;
 
-        public MultipleItemChoiceDialog(final ObservableList<DataNode<T>> list, final DataNodeReferenceHolder<T> ref, final Callback<ListView<DataNode<T>>, ListCell<DataNode<T>>> cellFactory,
+        public MultipleItemChoiceDialog(final List<DataNode<T>> list, final DataNodeReferenceHolder<T> ref, final Callback<ListView<DataNode<T>>, ListCell<DataNode<T>>> cellFactory,
                                         final SelectionMode selectionMode) {
             final ResourceBundle resourceBundle = ResourceBundle.getBundle("lang");
             this.ref = ref;
@@ -156,7 +156,7 @@ public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements Bl
 
             // dialog content
             this.content.setCellFactory(cellFactory);
-            this.content.setItems(list);
+            this.content.setItems(FXCollections.observableArrayList(list));
             final MultipleSelectionModel<DataNode<T>> selectionModel = this.content.getSelectionModel();
             selectionModel.setSelectionMode(selectionMode);
             this.content.setOnKeyPressed(event -> {

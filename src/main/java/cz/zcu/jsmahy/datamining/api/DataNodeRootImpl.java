@@ -8,12 +8,6 @@ import java.util.function.BiConsumer;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 class DataNodeRootImpl<T> extends DataNodeImpl<T> implements DataNodeRoot<T> {
-    /**
-     * The display name of the root. If null then there's no display name.
-     */
-    @Getter
-    @Setter
-    private String name;
 
     @Override
     public void iterate(BiConsumer<DataNode<T>, Integer> biConsumer) {

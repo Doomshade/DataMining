@@ -20,7 +20,7 @@ public class DBPediaModule extends DataMiningModule {
     @SneakyThrows
     protected void configure() {
         super.configure();
-        bind(RequestProgressListener.class).to(MainController.class);
+        bind(RequestProgressListener.class).toInstance(MainController.getInstance());
         bind(RequestHandler.class).to(DBPediaRequestHandler.class);
         bind(OntologyPathPredicateInputResolver.class).in(SINGLETON);
     }

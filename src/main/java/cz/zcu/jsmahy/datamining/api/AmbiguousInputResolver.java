@@ -1,8 +1,9 @@
 package cz.zcu.jsmahy.datamining.api;
 
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
-import javafx.collections.ObservableList;
 import org.apache.jena.rdf.model.RDFNode;
+
+import java.util.List;
 
 /**
  * <p>Solves ambiguities of nodes where a list of them occurs.</p>
@@ -66,5 +67,5 @@ public interface AmbiguousInputResolver<T, R, DNRef extends DataNodeReferenceHol
      *
      * @return an atomic reference
      */
-    DNRef resolveRequest(ObservableList<DataNode<T>> ambiguousInput, final QueryData inputMetadata, final RequestHandler<T, R> requestHandler);
+    DNRef resolveRequest(List<DataNode<T>> ambiguousInput, final QueryData inputMetadata, final RequestHandler<T, R> requestHandler);
 }

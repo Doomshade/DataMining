@@ -1,10 +1,55 @@
 package cz.zcu.jsmahy.datamining.api;
 
+import javafx.application.Platform;
+import javafx.scene.control.TreeItem;
+import org.apache.jena.rdf.model.Property;
+
+import java.util.List;
+
 /**
- * A listener for request callbacks. For example when a {@link DataNode} is created the front end would want to handle that fact and update the UI.
+ * <p>A listener for request callbacks. For example when a {@link DataNode} is created the front end would want to handle that fact and update the UI.</p>
+ * <p>NOTE: The methods are not necessarily called on the FX UI thread! Make sure to update UI on the UI thread via {@link Platform#runLater(Runnable)}.</p>
  *
  * @author Jakub Šmrha
  * @version 1.0
  */
 public interface RequestProgressListener<T> {
+    /**
+     * Called when the ontology path predicate is set. This callback should highlight the current ontology path predicate in the UI somewhere.
+     *
+     * @param ontologyPathPredicate the ontology path predicate
+     */
+    void onSetOntologyPathPredicate(Property ontologyPathPredicate);
+
+    /**
+     * Called when a new data node is created. This callback should create a new tree item under the tree root with the given data and return the tree new tree item.
+     *
+     * @param dataNode the new data node
+     * @param treeRoot the corresponding tree root for the data node
+     *
+     * @return A new tree item that was added to the tree root or {@code null} if none was added.
+     */
+    TreeItem<DataNode<T>> onCreateNewDataNode(DataNode<T> dataNode, TreeItem<DataNode<T>> treeRoot);
+
+    /**
+     * <p>Called when multiple {@link DataNode}s were found and they can be added under a tree item. The {@code treeItem} is not the tree root!</p>
+     * <p>An example scenario could be {@code Charles IV, Holy Roman Emperor} having multiple successors (successors from different dynasties) and one would like to see the options under a tree
+     * item -- what the user was able to choose from the list and what was chosen -- that can be used for highlighting for example. The chosen data node is guaranteed to be in the data nodes list and
+     * the data nodes list is guaranteed to have size &gt;= 2</p>
+     * <p>NOTE: This is optional to handle, but it adds clarity to the building progress.</p>
+     *
+     * @param treeItem       the tree item the data nodes should be added under
+     * @param dataNodes      the data nodes
+     * @param chosenDataNode the data node that the user chose to continue under
+     */
+    void onAddMultipleDataNodes(TreeItem<DataNode<T>> treeItem, List<DataNode<T>> dataNodes, DataNode<T> chosenDataNode);
+
+    /**
+     * Called when an invalid query is passed. The cause is usually the resource not existing.
+     *
+     * @param query the query
+     */
+    void onInvalidQuery(String query);
+
+    void onSearchDone();
 }

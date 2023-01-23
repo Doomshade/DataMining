@@ -14,6 +14,7 @@ class DataNodeImpl<T> implements DataNode<T> {
     private static long ID_SEQ = 0;
     private final T data;
     private final long id;
+    private String name;
 
     {
         this.id = ID_SEQ++;

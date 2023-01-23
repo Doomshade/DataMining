@@ -63,4 +63,16 @@ public interface DataNode<T> extends Iterable<DataNode<T>> {
      * @return The ID of this data node.
      */
     long getId();
+
+    /**
+     * @return The display name of the root. If null then there's no display name.
+     */
+    String getName();
+
+    /**
+     * Sets the display name of the root. If null then there's no display name.
+     *
+     * @param name the display name.
+     */
+    void setName(String name);
 }

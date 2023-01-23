@@ -2,22 +2,21 @@ package cz.zcu.jsmahy.datamining.app.controller;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXSpinner;
-import com.jfoenix.controls.JFXTextField;
 import cz.zcu.jsmahy.datamining.api.DataNode;
 import cz.zcu.jsmahy.datamining.api.DataNodeFactory;
 import cz.zcu.jsmahy.datamining.api.DataNodeRoot;
 import cz.zcu.jsmahy.datamining.api.RequestProgressListener;
-import cz.zcu.jsmahy.datamining.util.DialogHelper;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
 import cz.zcu.jsmahy.datamining.query.RequestHandler;
-import cz.zcu.jsmahy.datamining.query.SparqlRequest;
-import cz.zcu.jsmahy.datamining.query.UserAssistedAmbiguousInputResolver;
+import cz.zcu.jsmahy.datamining.util.DialogHelper;
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.ObservableList;
 import javafx.concurrent.Service;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -28,18 +27,20 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.web.WebView;
+import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.net.URL;
+import java.util.List;
 import java.util.ResourceBundle;
 
 /**
- * TODO
+ * The controller for main UI where user builds the ontology.
  *
  * @author Jakub Šmrha
- * @since
+ * @version 1.0
  */
 public class MainController<T extends RDFNode> implements Initializable, RequestProgressListener<T> {
     /*
@@ -56,13 +57,7 @@ order by ?pred
      */
     private static final String WIKI_URL = "https://wikipedia.org/wiki/%s";
     private static final Logger LOGGER = LogManager.getLogger(MainController.class);
-    private static final String DBPEDIA_SERVICE = "http://dbpedia.org/sparql/";
-    private static final int LINE_BREAK_LIMIT = 20;
-    private static int SEQUENCE_NUM = 1;
-    @FXML
-    private JFXTextField searchField;
-    @FXML
-    private JFXButton searchButton;
+    //<editor-fold desc="UI related attributes">
     @FXML
     private BorderPane rootPane;
     @FXML
@@ -73,6 +68,18 @@ order by ?pred
     private JFXSpinner progressIndicator;
     private DataNodeFactory<T> nodeFactory;
     private DialogHelper dialogHelper;
+    //</editor-fold>
+
+    //<editor-fold desc="Attributes for query building">
+    private final ObjectProperty<Property> ontologyPathPredicate = new SimpleObjectProperty<>();
+    //</editor-fold>
+
+
+    private static MainController<?> instance = null;
+
+    public static MainController<?> getInstance() {
+        return instance;
+    }
 
     private final EventHandler<ActionEvent> createNewLineAction = e -> {
         final ResourceBundle lang = ResourceBundle.getBundle("lang");
@@ -86,44 +93,28 @@ order by ?pred
     };
     private RequestHandler<T, Void> requestHandler;
 
-    private static synchronized void exit() {
-        LOGGER.info("Exiting application...");
-        Platform.exit();
-        System.exit(0);
-    }
-
     @Override
     public void initialize(final URL location, final ResourceBundle resources) {
+        instance = this;
         final Injector injector = Guice.createInjector(new DBPediaModule());
         nodeFactory = injector.getInstance(DataNodeFactory.class);
         requestHandler = injector.getInstance(RequestHandler.class);
         dialogHelper = injector.getInstance(DialogHelper.class);
 
-        // when user has focus on search field and presses enter -> search
-//        searchField.setOnKeyPressed(e -> {
-//            if (e.getCode() == KeyCode.ENTER) {
-//                search(ontologyTreeView.getRoot());
-//            }
-//        });
-//        searchField.requestFocus();
-
         final MenuBar menuBar = createMenuBar(resources);
         rootPane.setTop(menuBar);
 
         rootPane.setPadding(new Insets(10));
-        // this will ensure the pane is disabled when progress indicator is visible
         rootPane.disableProperty()
                 .bind(progressIndicator.visibleProperty());
 
         final MultipleSelectionModel<TreeItem<DataNode<T>>> selectionModel = ontologyTreeView.getSelectionModel();
         selectionModel.setSelectionMode(SelectionMode.SINGLE);
 
-        // show a web view on selection
         // TODO: this will likely be a popup
         selectionModel.selectedItemProperty()
                       .addListener(this::onSelection);
 
-        // use custom cell factory for display
         ontologyTreeView.setShowRoot(false);
         ontologyTreeView.getSelectionModel()
                         .setSelectionMode(SelectionMode.MULTIPLE);
@@ -169,7 +160,6 @@ order by ?pred
     private Menu createLineMenu(final ResourceBundle resources) {
         final Menu lineMenu = new Menu("_" + resources.getString("line"));
         final MenuItem newLineMenuItem = createAddNewLineMenuItem(resources);
-
         lineMenu.getItems()
                 .addAll(newLineMenuItem);
         return lineMenu;
@@ -181,7 +171,6 @@ order by ?pred
 
         final MenuItem exportToFile = new MenuItem(resources.getString("export"));
         exportToFile.setAccelerator(KeyCombination.keyCombination("ALT + E"));
-
         fileMenu.getItems()
                 .addAll(exportToFile);
         return fileMenu;
@@ -233,13 +222,7 @@ order by ?pred
             alert.setContentText("Please enter some text to search.");
             return;
         }
-        final SparqlRequest<T, Void> request = SparqlRequest.<T, Void>builder()
-                                                            .requestPage(searchValue)
-                                                            .namespace("http://dbpedia.org/ontology/")
-                                                            .link("doctoralAdvisor")
-                                                            .treeRoot(root)
-                                                            .ambiguousInputResolver(new UserAssistedAmbiguousInputResolver<>())
-                                                            .build();
+
         final Service<Void> query = requestHandler.query(searchValue, root);
         query.setOnSucceeded(x -> {
             ontologyTreeView.getSelectionModel()
@@ -258,5 +241,55 @@ order by ?pred
                               .bind(query.runningProperty());
         this.progressIndicator.progressProperty()
                               .bind(query.progressProperty());
+    }
+
+    @Override
+    public void onSetOntologyPathPredicate(final Property ontologyPathPredicate) {
+        this.ontologyPathPredicate.setValue(ontologyPathPredicate);
+    }
+
+    @Override
+    public TreeItem<DataNode<T>> onCreateNewDataNode(final DataNode<T> dataNode, final TreeItem<DataNode<T>> treeRoot) {
+        final ObservableList<TreeItem<DataNode<T>>> treeChildren = treeRoot.getChildren();
+        final TreeItem<DataNode<T>> currTreeItem = new TreeItem<>(dataNode);
+        Platform.runLater(() -> treeChildren.add(currTreeItem));
+        return currTreeItem;
+    }
+
+    @Override
+    public void onAddMultipleDataNodes(final TreeItem<DataNode<T>> treeItem, final List<DataNode<T>> dataNodes, final DataNode<T> chosenDataNode) {
+        Platform.runLater(() -> {
+            treeItem.getChildren()
+                    .addAll(dataNodes.stream()
+                                     .map(TreeItem::new)
+                                     .toList());
+            treeItem.setExpanded(true);
+        });
+    }
+
+    @Override
+    public void onInvalidQuery(final String invalidQuery) {
+
+        // TODO: resource bundle
+        final Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Invalid query");
+        alert.setHeaderText("ERROR - Invalid query");
+        final String wikiUrl = "https://en.wikipedia.org/wiki/";
+        final String queryWikiUrl = wikiUrl + invalidQuery;
+        final String exampleWikiUrl = wikiUrl + "Charles_IV,_Holy_Roman_Emperor";
+        final String exampleUri = "Charles IV, Holy Roman Emperor";
+        alert.setContentText(String.format(
+                "No results were found querying '%s'. The query must correspond to the wikipedia URL:%n%n%s%n%nYour query corresponds to an unknown URL:%n%n%s%n%nIn this example '%s' is a " +
+                "valid query. Spaces instead of underscores are allowed.",
+                invalidQuery,
+                exampleWikiUrl,
+                queryWikiUrl,
+                exampleUri));
+        alert.show();
+    }
+
+    @Override
+    public void onSearchDone() {
+
     }
 }
