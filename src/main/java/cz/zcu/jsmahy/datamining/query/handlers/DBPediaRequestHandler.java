@@ -263,6 +263,9 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         // if it's a URI resource we first check if we've been here already - we don't want to be stuck in a cycle,
         // that's what usedURIs is for
         // otherwise build a selector and continue searching down the line
+        if (next == null) {
+            return;
+        }
         final T data = next.getData();
         if (!data.isURIResource()) {
             return;
