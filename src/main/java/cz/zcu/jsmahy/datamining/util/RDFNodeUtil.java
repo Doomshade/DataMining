@@ -9,8 +9,8 @@ import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
 public class RDFNodeUtil {
-    private static final Logger LOGGER = LogManager.getLogger(RDFNodeUtil.class);
     public static final String SPECIAL_CHARACTERS = "_";
+    private static final Logger LOGGER = LogManager.getLogger(RDFNodeUtil.class);
 
     /**
      * <p>Formats the {@link RDFNode} to be "pretty" on output.</p>

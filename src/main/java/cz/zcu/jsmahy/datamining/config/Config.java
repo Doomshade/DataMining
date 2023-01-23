@@ -25,19 +25,18 @@ public class Config {
     private final Logger logger = LogManager.getLogger(Config.class);
     private final Properties defaultProperties = new Properties();
     private final Properties properties = new Properties();
-
-    Config() {
-    }
+    //<editor-fold desc="Config properties">
+    @Property(key = "max-depth",
+              defaultValue = "10")
+    @Getter
+    private final int maxDepth = 0;
 
     {
         load();
     }
 
-    //<editor-fold desc="Config properties">
-    @Property(key = "max-depth",
-              defaultValue = "10")
-    @Getter
-    private int maxDepth;
+    Config() {
+    }
     //</editor-fold>
 
     public void load() {

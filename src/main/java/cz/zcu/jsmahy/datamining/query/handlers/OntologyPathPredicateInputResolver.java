@@ -44,6 +44,8 @@ public class OntologyPathPredicateInputResolver<T, R> implements BlockingAmbiguo
         private final Dialog<Property> dialog = new Dialog<>();
         private final TableView<Statement> content;
         private final DataNodeReferenceHolder<T> ref;
+        private final Object lock = new Object();
+
 
         private DialogWrapper(final DataNodeReferenceHolder<T> ref, final StmtIterator candidateOntologyPathPredicates) {
             this.ref = ref;
@@ -80,7 +82,6 @@ public class OntologyPathPredicateInputResolver<T, R> implements BlockingAmbiguo
             dialogPane.setContent(content);
         }
 
-
         public void showDialogueAndWait(final RequestHandler<T, R> requestHandler) {
             try {
                 final Optional<Property> property = dialog.showAndWait();
@@ -93,8 +94,6 @@ public class OntologyPathPredicateInputResolver<T, R> implements BlockingAmbiguo
                 requestHandler.unlockDialogPane();
             }
         }
-
-        private final Object lock = new Object();
 
         private ObservableValue<String> cellValueFactoryCallback(TableColumn.CellDataFeatures<Statement, String> features) {
             final Property predicate = features.getValue()
@@ -114,7 +113,7 @@ public class OntologyPathPredicateInputResolver<T, R> implements BlockingAmbiguo
                 protected Task<String> createTask() {
                     return new Task<>() {
                         @Override
-                        protected String call() throws Exception {
+                        protected String call() {
                             synchronized (lock) {
                                 final String cachedValue = modelCache.getIfPresent(uri);
                                 if (cachedValue != null) {
@@ -149,9 +148,7 @@ public class OntologyPathPredicateInputResolver<T, R> implements BlockingAmbiguo
                 observableValue.setValue(value);
                 LOGGER.debug("Setting value to " + value);
             });
-            bgService.setOnFailed(e -> {
-                observableValue.setValue("");
-            });
+            bgService.setOnFailed(e -> observableValue.setValue(""));
             bgService.start();
 
             return observableValue;

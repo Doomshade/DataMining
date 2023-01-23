@@ -4,9 +4,11 @@
 </div>
 
 ## Build
+
 ![build](https://github.com/Doomshade/DataMining/actions/workflows/gradle.yml/badge.svg)
 
 ## Tools used
+
 - neo4j
 - JavaFX
 - JFoenix

@@ -8,7 +8,6 @@ import javafx.collections.FXCollections;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.util.Callback;
-import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
@@ -34,11 +33,10 @@ public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements Bl
         // if not, pop up a dialogue
         final BlockingDataNodeReferenceHolder<T> ref = new BlockingDataNodeReferenceHolder<>();
         final Property ontologyPathPredicate = inputMetadata.getOntologyPathPredicate();
-        final Model model = inputMetadata.getModel();
 
         if (ontologyPathPredicate == null) {
             Platform.runLater(() -> {
-                final OntologyPathPredicateChoiceDialog dialog = new OntologyPathPredicateChoiceDialog(ref, model);
+                final OntologyPathPredicateChoiceDialog dialog = new OntologyPathPredicateChoiceDialog(ref);
                 dialog.showDialogueAndWait();
 
                 ref.finish();
@@ -66,26 +64,18 @@ public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements Bl
     }
 
     private class OntologyPathPredicateChoiceDialog {
-        private class RDFNodeModel {
-            private final DataNode<T> node;
-
-            private RDFNodeModel(final DataNode<T> node) {
-                this.node = node;
-            }
-        }
-
         private final Dialog<List<DataNode<T>>> dialog = new Dialog<>();
-        private final DialogPane dialogPane = dialog.getDialogPane();
         private final TableView<RDFNodeModel> content = new TableView<>();
         private final DataNodeReferenceHolder<T> ref;
 
-        private OntologyPathPredicateChoiceDialog(final DataNodeReferenceHolder<T> ref, final Model model) {
+        private OntologyPathPredicateChoiceDialog(final DataNodeReferenceHolder<T> ref) {
             final ResourceBundle resourceBundle = ResourceBundle.getBundle("lang");
             this.ref = ref;
 
             // setup dialog, such as buttons, title etc
-            this.dialogPane.getButtonTypes()
-                           .addAll(ButtonType.OK, ButtonType.CANCEL);
+            final DialogPane dialogPane = dialog.getDialogPane();
+            dialogPane.getButtonTypes()
+                      .addAll(ButtonType.OK, ButtonType.CANCEL);
             this.dialog.initOwner(Main.getPrimaryStage());
             this.dialog.setResultConverter(buttonType -> {
                 if (buttonType == ButtonType.CANCEL) {
@@ -102,13 +92,11 @@ public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements Bl
                 return null;
             });
             this.dialog.setTitle(resourceBundle.getString("ambiguity-dialog-title"));
-            this.dialog.setOnShown(event -> {
-                Platform.runLater(() -> {
-                    this.content.requestFocus();
-                    this.content.getSelectionModel()
-                                .selectFirst();
-                });
-            });
+            this.dialog.setOnShown(event -> Platform.runLater(() -> {
+                this.content.requestFocus();
+                this.content.getSelectionModel()
+                            .selectFirst();
+            }));
         }
 
         public void showDialogueAndWait() {
@@ -116,6 +104,14 @@ public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements Bl
             final List<DataNode<T>> result = dialog.showAndWait()
                                                    .orElse(null);
             ref.set(result);
+        }
+
+        private class RDFNodeModel {
+            private final DataNode<T> node;
+
+            private RDFNodeModel(final DataNode<T> node) {
+                this.node = node;
+            }
         }
     }
 
@@ -146,13 +142,11 @@ public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements Bl
                 return null;
             });
             this.dialog.setTitle(resourceBundle.getString("ambiguity-dialog-title"));
-            this.dialog.setOnShown(event -> {
-                Platform.runLater(() -> {
-                    this.content.requestFocus();
-                    this.content.getSelectionModel()
-                                .selectFirst();
-                });
-            });
+            this.dialog.setOnShown(event -> Platform.runLater(() -> {
+                this.content.requestFocus();
+                this.content.getSelectionModel()
+                            .selectFirst();
+            }));
 
             // dialog content
             this.content.setCellFactory(cellFactory);

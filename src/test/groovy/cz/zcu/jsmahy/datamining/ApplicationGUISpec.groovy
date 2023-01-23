@@ -10,7 +10,8 @@ import org.testfx.matcher.control.LabeledMatchers
 import org.testfx.util.WaitForAsyncUtils
 import spock.lang.Ignore
 
-import static javafx.scene.input.KeyCombination.ModifierValue.*
+import static javafx.scene.input.KeyCombination.ModifierValue.ANY
+import static javafx.scene.input.KeyCombination.ModifierValue.DOWN
 
 /**
  * @author Jakub Šmrha
@@ -27,9 +28,9 @@ class ApplicationGUISpec extends ApplicationSpec {
     @Override
     void init() throws Exception {
         FxToolkit.registerPrimaryStage()
-        FxToolkit.setupApplication(Main.class);
+        FxToolkit.setupApplication(Main.class)
         FxToolkit.showStage()
-        WaitForAsyncUtils.waitForFxEvents(100);
+        WaitForAsyncUtils.waitForFxEvents(100)
     }
 
     @Override

@@ -1,7 +1,9 @@
 package cz.zcu.jsmahy.datamining.api;
 
 import javafx.collections.ObservableList;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.NonNull;
 
 import java.util.function.BiConsumer;
 

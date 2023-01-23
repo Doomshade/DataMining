@@ -1,8 +1,10 @@
 package cz.zcu.jsmahy.datamining.api;
 
 import cz.zcu.jsmahy.datamining.query.Restriction;
-import javafx.beans.binding.Bindings;
-import javafx.beans.property.*;
+import javafx.beans.property.ListProperty;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleListProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import org.apache.jena.rdf.model.Property;
@@ -30,24 +32,24 @@ public class DataNodeReferenceHolder<V> {
         return restrictions.get();
     }
 
-    public ListProperty<Restriction> restrictionsProperty() {
-        return restrictions;
-    }
-
     public void setRestrictions(final ObservableList<Restriction> restrictions) {
         this.restrictions.set(restrictions);
+    }
+
+    public ListProperty<Restriction> restrictionsProperty() {
+        return restrictions;
     }
 
     public Property getOntologyPathPredicate() {
         return ontologyPathPredicate.get();
     }
 
-    public ObjectProperty<Property> ontologyPathPredicateProperty() {
-        return ontologyPathPredicate;
-    }
-
     public void setOntologyPathPredicate(final Property ontologyPathPredicate) {
         this.ontologyPathPredicate.set(ontologyPathPredicate);
+    }
+
+    public ObjectProperty<Property> ontologyPathPredicateProperty() {
+        return ontologyPathPredicate;
     }
 
     public boolean hasMultipleReferences() {

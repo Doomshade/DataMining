@@ -5,8 +5,6 @@ import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.apache.commons.cli.ParseException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * @author Jakub Šmrha
@@ -15,7 +13,6 @@ import org.apache.logging.log4j.Logger;
  */
 public class Main extends Application {
     private static Stage stage = null;
-    private static final Logger LOGGER = LogManager.getLogger(Main.class);
 
     public static void main(String[] args) throws ParseException {
         CommandParser.parseAndExecuteCommands(args);

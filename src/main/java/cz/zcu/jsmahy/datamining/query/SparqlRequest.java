@@ -1,7 +1,6 @@
 package cz.zcu.jsmahy.datamining.query;
 
 import cz.zcu.jsmahy.datamining.api.AmbiguousInputResolver;
-import cz.zcu.jsmahy.datamining.api.DefaultAmbiguousInputResolver;
 import cz.zcu.jsmahy.datamining.api.DataNode;
 import javafx.scene.control.TreeItem;
 import lombok.AllArgsConstructor;

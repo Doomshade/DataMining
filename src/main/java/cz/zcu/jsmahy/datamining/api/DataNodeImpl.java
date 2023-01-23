@@ -14,13 +14,12 @@ class DataNodeImpl<T> implements DataNode<T> {
     private static long ID_SEQ = 0;
     private final T data;
     private final long id;
+    private final ObservableList<DataNode<T>> children = FXCollections.observableArrayList();
     private String name;
 
     {
         this.id = ID_SEQ++;
     }
-
-    private final ObservableList<DataNode<T>> children = FXCollections.observableArrayList();
 
     protected DataNodeImpl() {
         this.data = null;

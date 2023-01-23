@@ -1,10 +1,6 @@
 package cz.zcu.jsmahy.datamining;
 
 import com.sun.javafx.application.PlatformImpl;
-import javafx.application.Platform;
-import javafx.concurrent.Service;
-import org.apache.jena.query.*;
-import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -26,28 +22,27 @@ public class PredecessorQueryTest {
             // query for all predecessors (recursively)
             //"select distinct ?name ?pred\n" +
             // TODO: make a (SPARQL)QueryBuilder
-            final String rawQuery = new StringBuilder().append("PREFIX rdf: <https://www.w3.org/1999/02/22-rdf-syntax-ns#>\n")
-                                                       .append("PREFIX r: <http://dbpedia.org/resource/>\n")
-                                                       .append("PREFIX dbo: <http://dbpedia.org/ontology/>\n")
-                                                       .append("PREFIX dbp: <http://dbpedia.org/property/>\n")
-                                                       .append("select distinct ?name\n")
-                                                       .append("{\n")
-                                                       .append("?pred dbp:predecessor ")
-                                                       .append(RESOURCE)
-                                                       .append(" .\n")
-                                                       .append("?pred dbp:predecessor+ ?name\n")
-                                                       .append("}\n")
-                                                       .append("order by ?pred")
-                                                       .toString();
+            final String rawQuery = "PREFIX rdf: <https://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
+                                    "PREFIX r: <http://dbpedia.org/resource/>\n" +
+                                    "PREFIX dbo: <http://dbpedia.org/ontology/>\n" +
+                                    "PREFIX dbp: <http://dbpedia.org/property/>\n" +
+                                    "select distinct ?name\n" +
+                                    "{\n" +
+                                    "?pred dbp:predecessor " +
+                                    RESOURCE +
+                                    " .\n" +
+                                    "?pred dbp:predecessor+ ?name\n" +
+                                    "}\n" +
+                                    "order by ?pred";
             LOGGER.debug("Raw query:\n{}", rawQuery);
 
             // build the query via Jena
-            final Query query = QueryFactory.create(rawQuery);
-            final QueryExecution qe = QueryExecution.service(DBPEDIA_SERVICE)
-                                                    .query(query)
-                                                    .build();
             LOGGER.info("SPARQL endpoint: {}", DBPEDIA_SERVICE);
 //
+//            final Query query = QueryFactory.create(rawQuery);
+//            final QueryExecution qe = QueryExecution.service(DBPEDIA_SERVICE)
+//                                                    .query(query)
+//                                                    .build();
 //            // execute the query on a separate thread via Service
 //            final Service<ResultSet> queryService = new QueryService(qe);
 //            queryService.setOnSucceeded(e -> {

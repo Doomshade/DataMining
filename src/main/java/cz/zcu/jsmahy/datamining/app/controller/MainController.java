@@ -58,6 +58,9 @@ order by ?pred
      */
     private static final String WIKI_URL = "https://wikipedia.org/wiki/%s";
     private static final Logger LOGGER = LogManager.getLogger(MainController.class);
+    private static MainController<?> instance = null;
+    //<editor-fold desc="Attributes for query building">
+    private final ObjectProperty<Property> ontologyPathPredicate = new SimpleObjectProperty<>();
     //<editor-fold desc="UI related attributes">
     @FXML
     private BorderPane rootPane;
@@ -67,21 +70,10 @@ order by ?pred
     private WebView wikiPageWebView;
     @FXML
     private JFXSpinner progressIndicator;
+    //</editor-fold>
     private DataNodeFactory<T> nodeFactory;
+    //</editor-fold>
     private DialogHelper dialogHelper;
-    //</editor-fold>
-
-    //<editor-fold desc="Attributes for query building">
-    private final ObjectProperty<Property> ontologyPathPredicate = new SimpleObjectProperty<>();
-    //</editor-fold>
-
-
-    private static MainController<?> instance = null;
-
-    public static MainController<?> getInstance() {
-        return instance;
-    }
-
     private final EventHandler<ActionEvent> createNewLineAction = e -> {
         final ResourceBundle lang = ResourceBundle.getBundle("lang");
         dialogHelper.textInputDialog(lang.getString("create-new-line"), lineName -> {
@@ -93,6 +85,10 @@ order by ?pred
 
     };
     private RequestHandler<T, Void> requestHandler;
+
+    public static MainController<?> getInstance() {
+        return instance;
+    }
 
     @Override
     @SuppressWarnings("unchecked")

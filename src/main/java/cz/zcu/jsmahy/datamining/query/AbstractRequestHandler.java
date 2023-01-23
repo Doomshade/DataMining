@@ -12,9 +12,9 @@ import static java.util.Objects.requireNonNull;
 
 
 public abstract class AbstractRequestHandler<T, R> extends Service<R> implements RequestHandler<T, R> {
+    protected final RequestProgressListener<T> progressListener;
     private String query;
     private TreeItem<DataNode<T>> treeRoot;
-    protected final RequestProgressListener<T> progressListener;
 
     /**
      * Reason for this parameter not having a generic parameter: {@link DataMiningModule}
@@ -48,8 +48,8 @@ public abstract class AbstractRequestHandler<T, R> extends Service<R> implements
     /**
      * The internal query request called in the {@link Task} that's created by this {@link Service}.
      *
-     * @param query
-     * @param treeRoot
+     * @param query    the query
+     * @param treeRoot the tree root
      *
      * @return Anything that the subclasses of this want to return.
      *
