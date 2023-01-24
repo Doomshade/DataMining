@@ -23,9 +23,10 @@ public interface DataNodeFactory<T> {
     /**
      * Creates a new data node with the given data.
      *
-     * @param data the data
+     * @param data   the data
+     * @param parent
      *
      * @return a new data node
      */
-    DataNode<T> newNode(@NonNull T data);
+    DataNode<T> newNode(@NonNull T data, final DataNode<T> parent);
 }

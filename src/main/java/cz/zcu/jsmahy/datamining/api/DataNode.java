@@ -75,4 +75,12 @@ public interface DataNode<T> extends Iterable<DataNode<T>> {
      * @param name the display name.
      */
     void setName(String name);
+
+    String getUri();
+
+    void setUri(String uri);
+
+    DataNode<T> getParent();
+
+    DataNodeRoot<T> findRoot();
 }

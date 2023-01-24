@@ -1,7 +1,9 @@
 package cz.zcu.jsmahy.datamining.app.controller.cell;
 
 import cz.zcu.jsmahy.datamining.api.DataNode;
+import cz.zcu.jsmahy.datamining.api.DataNodeFactory;
 import cz.zcu.jsmahy.datamining.api.DataNodeRoot;
+import cz.zcu.jsmahy.datamining.api.RequestHandler;
 import cz.zcu.jsmahy.datamining.app.controller.MainController;
 import cz.zcu.jsmahy.datamining.util.DialogHelper;
 import cz.zcu.jsmahy.datamining.util.RDFNodeUtil;
@@ -30,7 +32,12 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
     private final MainController<T> mainController;
     private TextField textField;
 
-    public RDFNodeCellFactory(final TreeView<DataNode<T>> treeView, final ResourceBundle resources, final MainController<T> mainController, final DialogHelper dialogHelper) {
+    public RDFNodeCellFactory(final TreeView<DataNode<T>> treeView,
+                              final ResourceBundle resources,
+                              final MainController<T> mainController,
+                              final DialogHelper dialogHelper,
+                              final DataNodeFactory<T> nodeFactory,
+                              final RequestHandler<T, ?> requestHandler) {
         this.treeView = treeView;
         this.mainController = mainController;
         emptyProperty().addListener((obs, wasEmpty, isNowEmpty) -> {
@@ -43,17 +50,32 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
                 final MenuItem addItem = buildAddItem(resources);
                 final MenuItem editItem = buildEditItem(resources);
                 final MenuItem deleteItem = buildDeleteItem(resources);
+                final MenuItem newLineItem = buildNewLineItem(resources, nodeFactory, requestHandler);
                 final ObservableList<MenuItem> items = contextMenu.getItems();
                 if (getItem() instanceof DataNodeRoot<T>) {
                     items.addAll(searchItem, addRestrictionItem, addItem, editItem, deleteItem);
                 } else {
-                    items.addAll(addItem, deleteItem);
+                    items.addAll(newLineItem, addItem, deleteItem);
                 }
                 setContextMenu(contextMenu);
             } else {
                 setContextMenu(null);
             }
         });
+    }
+
+    private MenuItem buildNewLineItem(final ResourceBundle resources, final DataNodeFactory<T> nodeFactory, final RequestHandler<T, ?> requestHandler) {
+        final MenuItem menuItem = new MenuItem(resources.getString("create-new-line"));
+        menuItem.setOnAction(event -> {
+            final TreeItem<DataNode<T>> root = treeView.getRoot();
+            System.out.println(root.getValue());
+            final DataNodeRoot<T> dataNodeRoot = getItem().findRoot();
+            final DataNodeRoot<T> newDataNodeRoot = nodeFactory.newRoot(dataNodeRoot.getName() + " - copy");
+            root.getChildren()
+                .add(new TreeItem<>(newDataNodeRoot));
+            requestHandler.query(getItem().getUri(), root);
+        });
+        return menuItem;
     }
 
     private MenuItem buildSearchItem(final ResourceBundle resources, final DialogHelper dialogHelper) {

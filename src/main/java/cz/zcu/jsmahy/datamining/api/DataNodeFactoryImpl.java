@@ -22,12 +22,15 @@ final class DataNodeFactoryImpl<T> implements DataNodeFactory<T> {
     }
 
     @Override
-    public DataNode<T> newNode(final @NonNull T data) {
-        final DataNode<T> dataNode = new DataNodeImpl<>(data);
+    public DataNode<T> newNode(final @NonNull T data, final DataNode<T> parent) {
+        final DataNode<T> dataNode = new DataNodeImpl<>(data, parent);
         // implicitly set the name of the data node to its formatted state if it's an RDFNode implementation
         if (data instanceof RDFNode rdfNode) {
-            dataNode.setName(formatRDFNode(rdfNode)
-                                     .replaceAll(SPECIAL_CHARACTERS, " "));
+            dataNode.setName(formatRDFNode(rdfNode).replaceAll(SPECIAL_CHARACTERS, " "));
+            if (rdfNode.isURIResource()) {
+                dataNode.setUri(rdfNode.asResource()
+                                       .getURI());
+            }
         }
         return dataNode;
     }

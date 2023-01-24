@@ -13,7 +13,9 @@ import java.util.Iterator;
 class DataNodeImpl<T> implements DataNode<T> {
     private static long ID_SEQ = 0;
     private final T data;
+    private final DataNode<T> parent;
     private final long id;
+    private String uri;
     private final ObservableList<DataNode<T>> children = FXCollections.observableArrayList();
     private String name;
 
@@ -23,10 +25,12 @@ class DataNodeImpl<T> implements DataNode<T> {
 
     protected DataNodeImpl() {
         this.data = null;
+        this.parent = null;
     }
 
-    DataNodeImpl(final @NonNull T data) {
+    DataNodeImpl(final @NonNull T data, final DataNode<T> parent) {
         this.data = data;
+        this.parent = parent;
     }
 
     @Override
@@ -60,5 +64,14 @@ class DataNodeImpl<T> implements DataNode<T> {
     @Override
     public Iterator<DataNode<T>> iterator() {
         return children.iterator();
+    }
+
+    @Override
+    public DataNodeRoot<T> findRoot() {
+        DataNode<T> prev = parent;
+        while (prev != null && !(prev instanceof DataNodeRoot<T>)) {
+            prev = parent.getParent();
+        }
+        return prev == null ? null : (DataNodeRoot<T>) prev;
     }
 }

@@ -117,7 +117,7 @@ order by ?pred
                 event.consume();
             }
         });
-        this.ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory<>(lv, resources, this, dialogHelper));
+        this.ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory<>(lv, resources, this, dialogHelper, nodeFactory, requestHandler));
 
         final TreeItem<DataNode<T>> root = new TreeItem<>(null);
         this.ontologyTreeView.setRoot(root);

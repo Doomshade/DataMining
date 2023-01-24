@@ -58,7 +58,6 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
     };
     //</editor-fold>
 
-    private static boolean requesting = false;
     private final Collection<String> usedURIs = new HashSet<>();
 
 
@@ -75,10 +74,6 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
     protected synchronized R internalQuery(final String query, final TreeItem<DataNode<T>> treeRoot) throws InvalidQueryException {
         Objects.requireNonNull(query);
         Objects.requireNonNull(treeRoot);
-        if (requesting) {
-            throw new IllegalStateException("Already requesting!");
-        }
-        requesting = true;
 
         final String requestPage = DBPEDIA_SITE.concat(query);
         final OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
@@ -88,10 +83,8 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
             model.read(requestPage);
             inputMetadata.setCurrentModel(model);
         } catch (HttpException e) {
-            requesting = false;
             throw LOGGER.throwing(e);
         } catch (Exception e) {
-            requesting = false;
             throw new InvalidQueryException(e);
         }
 
@@ -112,7 +105,6 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
             LOGGER.info("Invalid query '{}' - no results were found.", query);
             progressListener.onInvalidQuery(query);
         }
-        requesting = false;
         return null;
     }
 
@@ -176,7 +168,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
     private void search(final QueryData inputMetadata, final Selector selector, final DataNodeFactory<T> nodeFactory, final TreeItem<DataNode<T>> treeRoot) {
         final Model model = inputMetadata.getCurrentModel();
 
-        final DataNode<T> curr = nodeFactory.newNode((T) selector.getSubject());
+        final DataNode<T> curr = nodeFactory.newNode((T) selector.getSubject(), null);
         final TreeItem<DataNode<T>> currTreeItem = progressListener.onCreateNewDataNode(curr, treeRoot);
 
         final List<Statement> statements = model.listStatements(selector)
@@ -200,7 +192,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
                 return;
             }
 
-            final DataNode<T> nextNode = nodeFactory.newNode(next);
+            final DataNode<T> nextNode = nodeFactory.newNode(next, null);
             LOGGER.debug("Found {}", next);
             foundData.add(nextNode);
         }

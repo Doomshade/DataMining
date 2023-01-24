@@ -24,6 +24,11 @@ class DataNodeRootImpl<T> extends DataNodeImpl<T> implements DataNodeRoot<T> {
         throw new UnsupportedOperationException("Root has no data");
     }
 
+    @Override
+    public DataNode<T> getParent() {
+        throw new UnsupportedOperationException("Root has no parent");
+    }
+
     private void iterate(BiConsumer<DataNode<T>, Integer> biConsumer, int depth, DataNode<T> dataNode) {
         if (dataNode == null) {
             return;

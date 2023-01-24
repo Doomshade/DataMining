@@ -62,7 +62,7 @@ class DataNodeReferenceHolderTest extends Specification {
         !ref.hasMultipleReferences()
 
         where:
-        node << [nodeFactory.newNode(_) as DataNode<?>, Arrays.asList(nodeFactory.newNode(_)) as Collection<DataNode<?>>]
+        node << [nodeFactory.newNode(_, null) as DataNode<?>, Arrays.asList(nodeFactory.newNode(_, null)) as Collection<DataNode<?>>]
     }
 
     def "Should return a null reference when none is set and have a single reference"() {
@@ -73,8 +73,8 @@ class DataNodeReferenceHolderTest extends Specification {
 
     def "Should throw ISE if multiple references are set"() {
         given:
-        ref.add(nodeFactory.newNode(_))
-        ref.add(nodeFactory.newNode(_))
+        ref.add(nodeFactory.newNode(_, null))
+        ref.add(nodeFactory.newNode(_, null))
 
         when:
         ref.get()
@@ -91,8 +91,8 @@ class DataNodeReferenceHolderTest extends Specification {
 
     def "Should return list of references and have multiple references"() {
         when:
-        ref.add(nodeFactory.newNode(_))
-        ref.add(nodeFactory.newNode(_))
+        ref.add(nodeFactory.newNode(_, null))
+        ref.add(nodeFactory.newNode(_, null))
 
         then:
         ref.getList().size() == 2
