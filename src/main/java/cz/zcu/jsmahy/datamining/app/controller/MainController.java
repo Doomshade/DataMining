@@ -13,7 +13,6 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.collections.ObservableList;
 import javafx.concurrent.Service;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -31,6 +30,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.net.URL;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.ResourceBundle;
 
 /**
@@ -208,7 +208,7 @@ order by ?pred
      * @param searchValue the search value
      */
     @SuppressWarnings("ThrowableNotThrown")
-    public void search(final TreeItem<DataNode<T>> root, final String searchValue) {
+    public void search(final DataNodeRoot<T> root, final String searchValue) {
         if (searchValue.isBlank()) {
             LOGGER.info("Search field is blank, not searching for anything.");
             final Alert alert = new Alert(Alert.AlertType.WARNING);
@@ -217,19 +217,22 @@ order by ?pred
             return;
         }
 
-        final Service<Void> query = requestHandler.query(searchValue, root);
+        final Service<Void> query = requestHandler.createBackgroundService(searchValue, root);
         query.setOnSucceeded(x -> ontologyTreeView.getSelectionModel()
                                                   .selectFirst());
         query.setOnFailed(x -> query.getException()
                                     .printStackTrace());
         query.restart();
+        bindService(query);
+    }
 
+    public void bindService(final Service<?> service) {
         this.rootPane.disableProperty()
-                     .bind(query.runningProperty());
+                     .bind(service.runningProperty());
         this.progressIndicator.visibleProperty()
-                              .bind(query.runningProperty());
+                              .bind(service.runningProperty());
         this.progressIndicator.progressProperty()
-                              .bind(query.progressProperty());
+                              .bind(service.progressProperty());
     }
 
     @Override
@@ -238,11 +241,41 @@ order by ?pred
     }
 
     @Override
-    public TreeItem<DataNode<T>> onCreateNewDataNode(final DataNode<T> dataNode, final TreeItem<DataNode<T>> treeRoot) {
-        final ObservableList<TreeItem<DataNode<T>>> treeChildren = treeRoot.getChildren();
-        final TreeItem<DataNode<T>> currTreeItem = new TreeItem<>(dataNode);
-        Platform.runLater(() -> treeChildren.add(currTreeItem));
-        return currTreeItem;
+    public void onAddNewDataNode(final DataNode<T> dataNode, final DataNodeRoot<T> dataNodeRoot) {
+        Platform.runLater(() -> {
+            final TreeItem<DataNode<T>> parent = findTreeItem(dataNodeRoot);
+            if (parent != null) {
+                final TreeItem<DataNode<T>> child = new TreeItem<>(dataNode);
+                parent.getChildren()
+                      .add(child);
+            }
+        });
+    }
+
+    private TreeItem<DataNode<T>> findTreeItem(DataNode<T> dataNode) {
+        final TreeItem<DataNode<T>> treeRoot = ontologyTreeView.getRoot();
+
+        // if no children are present then there are no data nodes
+        // the tree root itself has no data in it, so we don't have to check for it
+        if (treeRoot.getChildren()
+                    .isEmpty()) {
+            return null;
+        }
+        return findTreeItem(dataNode, treeRoot);
+    }
+
+    private TreeItem<DataNode<T>> findTreeItem(DataNode<T> dataNode, TreeItem<DataNode<T>> currTreeItem) {
+        for (final TreeItem<DataNode<T>> child : currTreeItem.getChildren()) {
+            if (child.getValue()
+                     .getId() == dataNode.getId()) {
+                return child;
+            }
+            if (!child.getChildren()
+                      .isEmpty()) {
+                return findTreeItem(dataNode, child);
+            }
+        }
+        throw new NoSuchElementException(String.format("Data node %s not found.", dataNode));
     }
 
     @Override

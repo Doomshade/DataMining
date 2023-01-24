@@ -9,6 +9,7 @@ import cz.zcu.jsmahy.datamining.util.DialogHelper;
 import cz.zcu.jsmahy.datamining.util.RDFNodeUtil;
 import javafx.beans.binding.Bindings;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Service;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
@@ -28,7 +29,6 @@ import java.util.ResourceBundle;
  */
 public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>> {
     private final TreeView<DataNode<T>> treeView;
-    private final List<MenuItem> menuItems = new ArrayList<>();
     private final MainController<T> mainController;
     private TextField textField;
 
@@ -45,7 +45,7 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
                 // TODO: context menu for "add/continue line"
                 final ContextMenu contextMenu = new ContextMenu();
 
-                final MenuItem searchItem = buildSearchItem(resources, dialogHelper);
+                final MenuItem searchItem = buildSearchItem(resources, dialogHelper, requestHandler);
                 final MenuItem addRestrictionItem = buildAddRestrictionItem(resources);
                 final MenuItem addItem = buildAddItem(resources);
                 final MenuItem editItem = buildEditItem(resources);
@@ -73,16 +73,18 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
             final DataNodeRoot<T> newDataNodeRoot = nodeFactory.newRoot(dataNodeRoot.getName() + " - copy");
             root.getChildren()
                 .add(new TreeItem<>(newDataNodeRoot));
-            requestHandler.query(getItem().getUri(), root);
+            requestHandler.createBackgroundService(getItem().getUri(), newDataNodeRoot);
         });
         return menuItem;
     }
 
-    private MenuItem buildSearchItem(final ResourceBundle resources, final DialogHelper dialogHelper) {
+    private MenuItem buildSearchItem(final ResourceBundle resources, final DialogHelper dialogHelper, final RequestHandler<T, ?> requestHandler) {
         final MenuItem menuItem = new MenuItem(resources.getString("search"));
         menuItem.setOnAction(event -> dialogHelper.textInputDialog(resources.getString("item-to-search"), searchValue -> {
             getTreeItem().setExpanded(true);
-            mainController.search(getTreeItem(), searchValue.replaceAll(" ", "_"));
+            final Service<?> service = requestHandler.createBackgroundService(searchValue.replaceAll(" ", "_"), (DataNodeRoot<T>) getItem());
+            mainController.bindService(service);
+            service.start();
         }, "Title"));
         menuItem.setAccelerator(KeyCombination.keyCombination("CTRL + H"));
         return menuItem;
@@ -176,7 +178,7 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
         menuItem.textProperty()
                 .bind(Bindings.format(resources.getString("ontology-prompt-add"), textProperty()));
         menuItem.setOnAction(event -> {
-            final DataNode<T> node = getItem();
+//            final DataNode<T> node = getItem();
             // code to edit item...
         });
         menuItem.setAccelerator(KeyCombination.keyCombination("A"));

@@ -5,7 +5,6 @@ import com.google.inject.name.Named;
 import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import cz.zcu.jsmahy.datamining.query.Restriction;
-import javafx.scene.control.TreeItem;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntModelSpec;
@@ -71,10 +70,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
     }
 
     @Override
-    protected synchronized R internalQuery(final String query, final TreeItem<DataNode<T>> treeRoot) throws InvalidQueryException {
-        Objects.requireNonNull(query);
-        Objects.requireNonNull(treeRoot);
-
+    protected synchronized R internalQuery() throws InvalidQueryException {
         final String requestPage = DBPEDIA_SITE.concat(query);
         final OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
         final QueryData inputMetadata = new QueryData();
@@ -98,11 +94,11 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
 
         if (initialSearch(inputMetadata)) {
             final Selector selector = new SimpleSelector(subject, inputMetadata.getOntologyPathPredicate(), (RDFNode) null);
-            search(inputMetadata, selector, nodeFactory, treeRoot);
+            search(inputMetadata, selector, nodeFactory, dataNodeRoot);
             LOGGER.info("Done searching");
             progressListener.onSearchDone();
         } else {
-            LOGGER.info("Invalid query '{}' - no results were found.", query);
+            LOGGER.info("Invalid createBackgroundService '{}' - no results were found.", query);
             progressListener.onInvalidQuery(query);
         }
         return null;
@@ -111,7 +107,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
     /**
      * TODO: make the return value an enum
      *
-     * @return {@code true} if a statement was found with the given subject (aka the query), {@code false} otherwise
+     * @return {@code true} if a statement was found with the given subject (aka the createBackgroundService), {@code false} otherwise
      */
     private boolean initialSearch(final QueryData inputMetadata) {
         final Selector selector = new SimpleSelector(inputMetadata.getInitialSubject(), null, null, "en") {
@@ -160,16 +156,17 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
     /**
      * Recursively searches based on the given model, selector, and a previous link. Adds the subject of the selector to the tree.
      *
-     * @param selector    the selector
-     * @param nodeFactory the data node factory
-     * @param treeRoot    the tree root
+     * @param selector     the selector
+     * @param nodeFactory  the data node factory
+     * @param dataNodeRoot the tree root
      */
     @SuppressWarnings("unchecked")
-    private void search(final QueryData inputMetadata, final Selector selector, final DataNodeFactory<T> nodeFactory, final TreeItem<DataNode<T>> treeRoot) {
+    private void search(final QueryData inputMetadata, final Selector selector, final DataNodeFactory<T> nodeFactory, final DataNodeRoot<T> dataNodeRoot) {
         final Model model = inputMetadata.getCurrentModel();
 
         final DataNode<T> curr = nodeFactory.newNode((T) selector.getSubject(), null);
-        final TreeItem<DataNode<T>> currTreeItem = progressListener.onCreateNewDataNode(curr, treeRoot);
+        dataNodeRoot.addChild(curr);
+        progressListener.onAddNewDataNode(curr, dataNodeRoot);
 
         final List<Statement> statements = model.listStatements(selector)
                                                 .toList();
@@ -206,7 +203,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         // we can continue searching
         if (foundData.size() == 1) {
             final DataNode<T> first = foundData.get(0);
-            searchFurther(inputMetadata, nodeFactory, first, treeRoot);
+            searchFurther(inputMetadata, nodeFactory, first, dataNodeRoot);
             return;
         }
 
@@ -237,11 +234,11 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         }
 
         // WARN: Deleted handling for multiple references as it might not even be in the final version.
-        progressListener.onAddMultipleDataNodes(currTreeItem, foundData, chosenDataNode);
-        searchFurther(inputMetadata, nodeFactory, chosenDataNode, treeRoot);
+        progressListener.onAddMultipleDataNodes(null, foundData, chosenDataNode);
+        searchFurther(inputMetadata, nodeFactory, chosenDataNode, dataNodeRoot);
     }
 
-    private void searchFurther(final QueryData inputMetadata, final DataNodeFactory<T> nodeFactory, final DataNode<T> next, final TreeItem<DataNode<T>> treeRoot) {
+    private void searchFurther(final QueryData inputMetadata, final DataNodeFactory<T> nodeFactory, final DataNode<T> next, final DataNodeRoot<T> dataNodeRoot) {
         // attempts to search further down the line if the given data is a URI resource
         // if it's not a URI resource the searching terminates
         // if it's a URI resource we first check if we've been here already - we don't want to be stuck in a cycle,
@@ -260,7 +257,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         final boolean hasBeenVisited = !usedURIs.add(resource.getURI());
         if (!hasBeenVisited) {
             final Selector sel = new SimpleSelector(resource, inputMetadata.getOntologyPathPredicate(), (RDFNode) null);
-            search(inputMetadata, sel, nodeFactory, treeRoot);
+            search(inputMetadata, sel, nodeFactory, dataNodeRoot);
         }
     }
 

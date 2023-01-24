@@ -25,11 +25,9 @@ public interface RequestProgressListener<T> {
      * Called when a new data node is created. This callback should create a new tree item under the tree root with the given data and return the tree new tree item.
      *
      * @param dataNode the new data node
-     * @param treeRoot the corresponding tree root for the data node
-     *
-     * @return A new tree item that was added to the tree root or {@code null} if none was added.
+     * @param parent   the corresponding tree root for the data node
      */
-    TreeItem<DataNode<T>> onCreateNewDataNode(DataNode<T> dataNode, TreeItem<DataNode<T>> treeRoot);
+    void onAddNewDataNode(DataNode<T> dataNode, DataNodeRoot<T> parent);
 
     /**
      * <p>Called when multiple {@link DataNode}s were found and they can be added under a tree item. The {@code treeItem} is not the tree root!</p>
