@@ -40,9 +40,7 @@ public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements Bl
                 dialog.showDialogueAndWait();
 
                 ref.finish();
-                if (requestHandler instanceof BlockingRequestHandler<T, Void> blockingRequestHandler) {
-                    blockingRequestHandler.unlockDialogPane();
-                }
+                requestHandler.unlockDialogPane();
             });
             return ref;
         }
@@ -55,10 +53,7 @@ public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements Bl
             // that we got a response from the user
             // the thread waits otherwise for another 5 seconds
             ref.finish();
-
-            if (requestHandler instanceof BlockingRequestHandler<T, Void> blockingRequestHandler) {
-                blockingRequestHandler.unlockDialogPane();
-            }
+            requestHandler.unlockDialogPane();
         });
         return ref;
     }

@@ -1,6 +1,6 @@
 package cz.zcu.jsmahy.datamining.api;
 
-import cz.zcu.jsmahy.datamining.query.RequestHandler;
+import javafx.application.Platform;
 import org.apache.jena.rdf.model.RDFNode;
 
 import java.util.List;
@@ -14,8 +14,8 @@ import java.util.List;
  */
 public interface AmbiguousInputResolver<T, R, DNRef extends DataNodeReferenceHolder<T>> {
     /**
-     * <p>WARNING: the program waits until {@link DataNodeReferenceHolder#isFinished()} returns true</p>
-     * <p>The reference can be set any time. Once the reference is set, you are obliged to resolveRequest {@link DataNodeReferenceHolder#finish()} to mark the reference as set followed by
+     * <p>WARNING: the program waits until {@link BlockingDataNodeReferenceHolder#isFinished()} returns true</p>
+     * <p>The reference can be set any time. Once the reference is set, you are obliged to resolveRequest {@link BlockingDataNodeReferenceHolder#finish()} to mark the reference as set followed by
      * {@link RequestHandler#unlockDialogPane()} if this method runs in a separate. If you do not resolveRequest these methods the program will get stuck because it {@code wait}s for the user input if
      * you decide to run this in a different thread (e.g. in a {@link Platform#runLater(Runnable)} resolveRequest).
      * </p>
@@ -62,10 +62,10 @@ public interface AmbiguousInputResolver<T, R, DNRef extends DataNodeReferenceHol
      * </pre>
      *
      * @param ambiguousInput The list of {@link RDFNode}s to choose the result from
-     * @param inputMetadata
-     * @param requestHandler
+     * @param inputMetadata  The query input metadata
+     * @param requestHandler The request handler
      *
-     * @return an atomic reference
+     * @return A list of {@link DataNode} references
      */
     DNRef resolveRequest(List<DataNode<T>> ambiguousInput, final QueryData inputMetadata, final RequestHandler<T, R> requestHandler);
 }

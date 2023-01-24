@@ -4,7 +4,6 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.Weigher;
 import cz.zcu.jsmahy.datamining.api.*;
-import cz.zcu.jsmahy.datamining.query.RequestHandler;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -31,7 +30,7 @@ public class OntologyPathPredicateInputResolver<T, R> implements BlockingAmbiguo
         final BlockingDataNodeReferenceHolder<T> ref = new BlockingDataNodeReferenceHolder<>();
 
         Platform.runLater(() -> {
-            final DialogWrapper dialog = new DialogWrapper(ref, inputMetadata.getCandidateOntologyPathPredicates());
+            final DialogWrapper dialog = new DialogWrapper(ref, inputMetadata.getCandidatesForOntologyPathPredicate());
             dialog.showDialogueAndWait(requestHandler);
         });
         return ref;

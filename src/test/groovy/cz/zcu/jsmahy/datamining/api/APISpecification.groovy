@@ -121,8 +121,8 @@ class APISpecification extends Specification {
         then: "Throw an IAE because that's not allowed"
         thrown(IllegalArgumentException)
 
-        where: "Node is any node type, aka root or a regular node"
-        node << [nodeFactory.newRoot(null), nodeFactory.newNode(_)]
+        where: "Node is any node type -- a root or regular node"
+        node << [nodeFactory.newRoot("Another root"), nodeFactory.newNode(_)]
     }
 
     def "Should iterate through children of root with correct order"() {

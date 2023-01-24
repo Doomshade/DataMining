@@ -1,8 +1,7 @@
-package cz.zcu.jsmahy.datamining.query;
+package cz.zcu.jsmahy.datamining.api;
 
-import cz.zcu.jsmahy.datamining.api.DataMiningModule;
-import cz.zcu.jsmahy.datamining.api.DataNode;
-import cz.zcu.jsmahy.datamining.api.RequestProgressListener;
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -13,6 +12,9 @@ import static java.util.Objects.requireNonNull;
 
 public abstract class AbstractRequestHandler<T, R> extends Service<R> implements RequestHandler<T, R> {
     protected final RequestProgressListener<T> progressListener;
+    protected final DataNodeFactory<T> nodeFactory;
+    protected final AmbiguousInputResolver<T, R, ?> ambiguousInputResolver;
+    protected final AmbiguousInputResolver<T, R, ?> ontologyPathPredicateInputResolver;
     private String query;
     private TreeItem<DataNode<T>> treeRoot;
 
@@ -21,9 +23,20 @@ public abstract class AbstractRequestHandler<T, R> extends Service<R> implements
      *
      * @param progressListener the progress listener
      */
+    @Inject
     @SuppressWarnings("unchecked, rawtypes")
-    protected AbstractRequestHandler(final RequestProgressListener progressListener) {
+    protected AbstractRequestHandler(final RequestProgressListener progressListener,
+                                     final DataNodeFactory nodeFactory,
+                                     final @Named("userAssisted") AmbiguousInputResolver ambiguousInputResolver,
+                                     final @Named("ontologyPathPredicate") AmbiguousInputResolver ontologyPathPredicateInputResolver) {
         this.progressListener = progressListener;
+        this.nodeFactory = nodeFactory;
+        this.ambiguousInputResolver = ambiguousInputResolver;
+        this.ontologyPathPredicateInputResolver = ontologyPathPredicateInputResolver;
+    }
+
+    public synchronized void unlockDialogPane() {
+        notify();
     }
 
     @Override

@@ -15,17 +15,25 @@ import java.util.List;
 
 /**
  * A {@link DataNode} reference with convenience methods to distinguish various outputs. The main reason being the output being {@code null} because the user chose nothing -- that doesn't necessarily
- * mean he hasn't chosen ANYTHING yet. The finished property helps distinguish that.
- * TODO: make it a reference to a collection of data nodes
+ * mean he hasn't chosen ANYTHING yet. The {@code finished} property helps distinguish that.
  *
  * @author Jakub Šmrha
  * @version 1.0
  */
 public class DataNodeReferenceHolder<V> {
+    /**
+     * The references.
+     */
     private final ObservableList<DataNode<V>> references = FXCollections.observableArrayList();
 
+    /**
+     * The ontology path predicate.
+     */
     private final ObjectProperty<Property> ontologyPathPredicate = new SimpleObjectProperty<>();
 
+    /**
+     * The restrictions.
+     */
     private final ListProperty<Restriction> restrictions = new SimpleListProperty<>();
 
     public ObservableList<Restriction> getRestrictions() {
@@ -52,30 +60,57 @@ public class DataNodeReferenceHolder<V> {
         return ontologyPathPredicate;
     }
 
+    /**
+     * @return {@code true} if the reference list size is &gt;1
+     */
     public boolean hasMultipleReferences() {
         return references.size() > 1;
     }
 
-
+    /**
+     * Sets the reference
+     *
+     * @param value the reference
+     */
     public void set(final DataNode<V> value) {
         this.references.clear();
         this.add(value);
     }
 
+    /**
+     * Sets the references
+     *
+     * @param value the references
+     */
     public void set(final Collection<DataNode<V>> value) {
         this.references.clear();
         this.add(value);
     }
 
+    /**
+     * Adds a reference
+     *
+     * @param value the reference
+     */
     public void add(final DataNode<V> value) {
         this.references.add(value);
     }
 
+    /**
+     * Adds references
+     *
+     * @param value the references
+     */
     public void add(final Collection<DataNode<V>> value) {
         this.references.addAll(value);
     }
 
-    public DataNode<V> get() {
+    /**
+     * @return the reference or {@code null} if no reference was set
+     *
+     * @throws IllegalStateException if this reference holder contains multiple references
+     */
+    public DataNode<V> get() throws IllegalStateException {
         if (references.size() == 0) {
             return null;
         }
@@ -85,6 +120,9 @@ public class DataNodeReferenceHolder<V> {
         throw new IllegalStateException("This reference holder contains multiple references.");
     }
 
+    /**
+     * @return the list of references
+     */
     public List<DataNode<V>> getList() {
         return Collections.unmodifiableList(references);
     }

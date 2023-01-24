@@ -34,8 +34,8 @@ public interface RequestProgressListener<T> {
     /**
      * <p>Called when multiple {@link DataNode}s were found and they can be added under a tree item. The {@code treeItem} is not the tree root!</p>
      * <p>An example scenario could be {@code Charles IV, Holy Roman Emperor} having multiple successors (successors from different dynasties) and one would like to see the options under a tree
-     * item -- what the user was able to choose from the list and what was chosen -- that can be used for highlighting for example. The chosen data node is either guaranteed to be in the data nodes
-     * list or {@code null} if nothing was chosen, and the data nodes list is guaranteed to have size &gt;= 2</p>
+     * item -- what the user was able to choose from the list and what was chosen -- that can be used for highlighting for example. The chosen data node is guaranteed to be in the data nodes list, and
+     * the data nodes list is guaranteed to have size &gt;= 2</p>
      * <p>NOTE: This is optional to handle, but it adds clarity to the building progress.</p>
      *
      * @param treeItem       the tree item the data nodes should be added under
@@ -51,5 +51,8 @@ public interface RequestProgressListener<T> {
      */
     void onInvalidQuery(String query);
 
+    /**
+     * Called when the search is finished.
+     */
     void onSearchDone();
 }
