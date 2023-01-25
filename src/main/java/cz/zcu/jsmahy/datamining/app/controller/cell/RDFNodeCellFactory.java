@@ -84,7 +84,7 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
             getTreeItem().setExpanded(true);
             final Service<?> service = requestHandler.createBackgroundService(searchValue.replaceAll(" ", "_"), (DataNodeRoot<T>) getItem());
             mainController.bindService(service);
-            service.start();
+            service.restart();
         }, "Title"));
         menuItem.setAccelerator(KeyCombination.keyCombination("CTRL + H"));
         return menuItem;
