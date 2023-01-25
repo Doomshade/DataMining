@@ -6,6 +6,7 @@
 ## Build
 
 ![build](https://github.com/Doomshade/DataMining/actions/workflows/gradle.yml/badge.svg)
+[![JDK-17+](https://upload.wikimedia.org/wikipedia/commons/b/bd/Blue_JDK_17%2B_Shield_Badge.svg)](https://adoptium.net)
 
 ## Tools used
 
