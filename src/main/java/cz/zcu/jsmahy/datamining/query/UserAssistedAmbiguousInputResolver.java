@@ -34,6 +34,7 @@ public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements Bl
         final BlockingDataNodeReferenceHolder<T> ref = new BlockingDataNodeReferenceHolder<>();
         final Property ontologyPathPredicate = inputMetadata.getOntologyPathPredicate();
 
+        // TODO: either make this a standalone class or delete this (I believe OntologyPathPredicateInputResolver already handles this)
         if (ontologyPathPredicate == null) {
             Platform.runLater(() -> {
                 final OntologyPathPredicateChoiceDialog dialog = new OntologyPathPredicateChoiceDialog(ref);
