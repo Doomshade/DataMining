@@ -234,7 +234,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         }
 
         // WARN: Deleted handling for multiple references as it might not even be in the final version.
-        progressListener.onAddMultipleDataNodes(null, foundData, chosenDataNode);
+        progressListener.onAddMultipleDataNodes(curr, foundData, chosenDataNode);
         searchFurther(inputMetadata, nodeFactory, chosenDataNode, dataNodeRoot);
     }
 
