@@ -20,7 +20,7 @@ repositories {
 
 
 javafx {
-    version = "19"
+    version = "17+"
     modules = ['javafx.controls', 'javafx.fxml', 'javafx.web']
 }
 
@@ -36,17 +36,17 @@ dependencies {
     annotationProcessor('org.projectlombok:lombok:1.18.24')
     compileOnly 'org.projectlombok:lombok:1.18.24'
 
-    implementation("com.google.guava:guava:31.1-jre")
+    implementation 'org.jsoup:jsoup:1.15.3'
+    implementation 'com.google.guava:guava:31.1-jre'
     implementation 'org.apache.logging.log4j:log4j-api:2.19.0'
     implementation 'org.apache.logging.log4j:log4j-core:2.19.0'
-    implementation 'org.jsoup:jsoup:1.15.3'
-    implementation 'org.openjfx:javafx-base:19'
-    implementation 'org.openjfx:javafx-controls:19'
-    implementation 'org.openjfx:javafx-graphics:19'
-    implementation 'org.openjfx:javafx-fxml:19'
-    implementation 'org.openjfx:javafx-web:19'
-    implementation 'org.openjfx:javafx-media:19'
-    implementation 'org.openjfx:javafx-swing:19'
+    implementation 'org.openjfx:javafx-base:17+'
+    implementation 'org.openjfx:javafx-controls:17+'
+    implementation 'org.openjfx:javafx-graphics:17+'
+    implementation 'org.openjfx:javafx-fxml:17+'
+    implementation 'org.openjfx:javafx-web:17+'
+    implementation 'org.openjfx:javafx-media:17+'
+    implementation 'org.openjfx:javafx-swing:17+'
     implementation 'org.controlsfx:controlsfx:11.1.2'
     implementation 'org.slf4j:slf4j-api:2.0.6'
     implementation 'org.slf4j:slf4j-simple:2.0.6'
@@ -58,8 +58,6 @@ dependencies {
     implementation 'org.apache.jena:jena-core:4.7.0'
     implementation 'org.apache.jena:jena-arq:4.7.0'
     implementation 'org.apache.jena:jena-iri:4.7.0'
-    implementation 'org.jgrapht:jgrapht-core:1.5.1'
-    implementation 'org.jgrapht:jgrapht-io:1.5.1'
     implementation 'org.apache.commons:commons-configuration2:2.8.0'
     implementation 'com.google.inject:guice:5.1.0'
 
@@ -78,14 +76,14 @@ java.sourceCompatibility = JavaVersion.VERSION_17
 publishing {
     publications {
         maven(MavenPublication) {
-            from(components.java)
+            from components.java
         }
     }
 }
 
 mainClassName = 'cz.zcu.jsmahy.Main'
 
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
