@@ -4,6 +4,7 @@ import cz.zcu.jsmahy.datamining.api.AmbiguousInputResolver
 import cz.zcu.jsmahy.datamining.api.DataNodeFactory
 import cz.zcu.jsmahy.datamining.api.DataNodeRoot
 import cz.zcu.jsmahy.datamining.api.RequestProgressListener
+import cz.zcu.jsmahy.datamining.config.DataMiningConfiguration
 import org.apache.jena.rdf.model.RDFNode
 import spock.lang.Shared
 import spock.lang.Specification
@@ -16,7 +17,8 @@ class DBPediaRequestHandlerTest extends Specification {
         requestHandler = new DBPediaRequestHandler<>(Mock(RequestProgressListener.class) as RequestProgressListener,
                 Mock(DataNodeFactory.class) as DataNodeFactory,
                 Mock(AmbiguousInputResolver.class),
-                Mock(AmbiguousInputResolver.class))
+                Mock(AmbiguousInputResolver.class),
+                Mock(DataMiningConfiguration.class))
     }
 
     def "Should throw IAE if either query (#query) and tree item (#treeItem) is null"() {
