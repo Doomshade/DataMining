@@ -247,13 +247,6 @@ order by ?pred
         Objects.requireNonNull(dataNode);
         Objects.requireNonNull(treeRoot);
 
-        // if no children are present then there are no data nodes
-        // the tree root itself has no data in it, so we don't have to check for it
-        if (treeRoot.getChildren()
-                    .isEmpty()) {
-            throw new NoSuchElementException(String.format("Data node %s not found.", dataNode));
-        }
-
         // first iterate over all of root's children, then recursively check for the children of each node
         // if we don't find anything after the last element of the root's children no such tree item was found
         // this might look duplicate in the helper method, but we need to ensure that the inner children don't throw an exception in the
@@ -289,9 +282,9 @@ order by ?pred
         for (final TreeItem<DataNode<T>> child : currTreeItem.getChildren()) {
             final long childId = child.getValue()
                                       .getId();
-            LOGGER.debug("Checking ID {}", childId);
+            LOGGER.trace("Checking ID {}", childId);
             if (childId == dataNode.getId()) {
-                LOGGER.debug("Found ID {}. Terminating.", childId);
+                LOGGER.trace("Found ID {}. Terminating.", childId);
                 ref.set(child);
                 return;
             }
