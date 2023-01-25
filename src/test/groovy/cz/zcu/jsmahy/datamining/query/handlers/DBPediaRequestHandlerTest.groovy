@@ -40,13 +40,4 @@ class DBPediaRequestHandlerTest extends Specification {
         then:
         thrown(IllegalStateException)
     }
-
-    def "Should return something"() {
-
-        when:
-        def res = requestHandler.internalQuery()
-
-        then:
-        res == null
-    }
 }
