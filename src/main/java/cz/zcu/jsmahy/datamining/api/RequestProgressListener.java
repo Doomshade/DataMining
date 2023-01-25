@@ -1,5 +1,6 @@
 package cz.zcu.jsmahy.datamining.api;
 
+import cz.zcu.jsmahy.datamining.query.handlers.DBPediaRequestHandler;
 import org.apache.jena.rdf.model.Property;
 
 import java.util.List;
@@ -42,9 +43,10 @@ public interface RequestProgressListener<T> {
     /**
      * Called when an invalid query is passed. The cause is usually the resource not existing.
      *
-     * @param query the query
+     * @param query  the query
+     * @param result the initial search result
      */
-    void onInvalidQuery(String query);
+    void onInvalidQuery(String query, final DBPediaRequestHandler.InitialSearchResult result);
 
     /**
      * Called when the search is finished.

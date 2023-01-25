@@ -6,6 +6,7 @@ import com.jfoenix.controls.JFXSpinner;
 import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
+import cz.zcu.jsmahy.datamining.query.handlers.DBPediaRequestHandler;
 import cz.zcu.jsmahy.datamining.util.DialogHelper;
 import cz.zcu.jsmahy.datamining.util.RDFNodeUtil;
 import javafx.application.Platform;
@@ -319,9 +320,11 @@ order by ?pred
     }
 
     @Override
-    public void onInvalidQuery(final String invalidQuery) {
+    public void onInvalidQuery(final String invalidQuery, final DBPediaRequestHandler.InitialSearchResult result) {
+        assert result != DBPediaRequestHandler.InitialSearchResult.OK;
         Platform.runLater(() -> {
             // TODO: resource bundle
+            // TODO: different alerts for different results
             final Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Invalid query");
             alert.setHeaderText("ERROR - Invalid query");

@@ -8,7 +8,6 @@ import cz.zcu.jsmahy.datamining.config.DataMiningConfiguration;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import cz.zcu.jsmahy.datamining.query.Restriction;
 import org.apache.jena.atlas.web.HttpException;
-import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntModelSpec;
 import org.apache.jena.rdf.model.*;
 import org.apache.logging.log4j.LogManager;
@@ -59,7 +58,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
     @Override
     protected synchronized R internalQuery() throws InvalidQueryException {
         final String requestPage = DBPEDIA_SITE.concat(query);
-        final OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
+        final Model model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
         final QueryData inputMetadata = new QueryData();
         try {
             LOGGER.info("Requesting {} for initial information.", requestPage);
@@ -72,21 +71,20 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         }
 
         final Resource subject = model.getResource(requestPage);
-
         inputMetadata.setInitialSubject(subject);
         inputMetadata.setRestrictions(new ArrayList<>());
         this.usedURIs.clear();
 
         LOGGER.info("Start searching");
-
-        if (initialSearch(inputMetadata)) {
+        final InitialSearchResult result = initialSearch(inputMetadata);
+        if (result == InitialSearchResult.OK) {
             final Selector selector = new SimpleSelector(subject, inputMetadata.getOntologyPathPredicate(), (RDFNode) null);
             search(inputMetadata, selector, nodeFactory, dataNodeRoot);
             LOGGER.info("Done searching");
             progressListener.onSearchDone();
         } else {
             LOGGER.info("Invalid createBackgroundService '{}' - no results were found.", query);
-            progressListener.onInvalidQuery(query);
+            progressListener.onInvalidQuery(query, result);
         }
         return null;
     }
@@ -96,7 +94,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
      *
      * @return {@code true} if a statement was found with the given subject (aka the createBackgroundService), {@code false} otherwise
      */
-    private boolean initialSearch(final QueryData inputMetadata) {
+    private InitialSearchResult initialSearch(final QueryData inputMetadata) {
         final Selector selector = new SimpleSelector(inputMetadata.getInitialSubject(), null, null, "en") {
             @Override
             public boolean selects(final Statement s) {
@@ -113,7 +111,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
 
         final StmtIterator stmtIterator = model.listStatements(selector);
         if (!stmtIterator.hasNext()) {
-            return false;
+            return InitialSearchResult.SUBJECT_NOT_FOUND;
         }
         inputMetadata.setCandidatesForOntologyPathPredicate(stmtIterator);
 
@@ -128,15 +126,22 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
             }
         }
         if (ref == null) {
-            return false;
+            return InitialSearchResult.UNKNOWN;
         }
         final Property ontologyPathPredicate = ref.getOntologyPathPredicate();
         if (ontologyPathPredicate == null) {
-            return false;
+            return InitialSearchResult.PATH_NOT_SELECTED;
         }
         inputMetadata.setOntologyPathPredicate(ontologyPathPredicate);
         progressListener.onSetOntologyPathPredicate(ontologyPathPredicate);
-        return true;
+        return InitialSearchResult.OK;
+    }
+
+    public enum InitialSearchResult {
+        OK,
+        SUBJECT_NOT_FOUND,
+        PATH_NOT_SELECTED,
+        UNKNOWN
     }
 
 
