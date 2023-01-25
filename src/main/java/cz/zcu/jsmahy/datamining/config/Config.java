@@ -26,8 +26,8 @@ public class Config {
     private final Properties defaultProperties = new Properties();
     private final Properties properties = new Properties();
     //<editor-fold desc="Config properties">
-    @Property(key = "max-depth",
-              defaultValue = "10")
+    @ConfigurationProperty(value = "max-depth",
+                           defaultValue = "10")
     @Getter
     private final int maxDepth = 0;
 
@@ -75,7 +75,7 @@ public class Config {
     }
 
     /**
-     * Maps property key/values to fields with {@link Property} annotation
+     * Maps property key/values to fields with {@link ConfigurationProperty} annotation
      */
     private void autowire() {
         logger.info("Autowiring fields...");
@@ -83,14 +83,14 @@ public class Config {
         // iterate through fields
         for (Field field : Config.class.getDeclaredFields()) {
             // check only the ones that are annotated with Property
-            if (!field.isAnnotationPresent(Property.class)) {
+            if (!field.isAnnotationPresent(ConfigurationProperty.class)) {
                 continue;
             }
 
-            final Property prop = field.getAnnotation(Property.class);
+            final ConfigurationProperty prop = field.getAnnotation(ConfigurationProperty.class);
             // get the property value and set the field value via reflection
             try {
-                final String value = properties.getProperty(prop.key(), prop.defaultValue());
+                final String value = properties.getProperty(prop.value(), prop.defaultValue());
                 logger.trace("Setting {} to {}", field.getName(), value);
                 setField(field, value);
             } catch (Exception e) {

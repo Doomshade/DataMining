@@ -1,7 +1,6 @@
 package cz.zcu.jsmahy.datamining.api;
 
-import com.google.inject.Inject;
-import com.google.inject.name.Named;
+import cz.zcu.jsmahy.datamining.config.DataMiningConfiguration;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -14,6 +13,7 @@ public abstract class AbstractRequestHandler<T, R> extends Service<R> implements
     protected final DataNodeFactory<T> nodeFactory;
     protected final AmbiguousInputResolver<T, R, ?> ambiguousInputResolver;
     protected final AmbiguousInputResolver<T, R, ?> ontologyPathPredicateInputResolver;
+    protected final DataMiningConfiguration configuration;
     protected String query;
     protected DataNodeRoot<T> dataNodeRoot;
 
@@ -22,16 +22,17 @@ public abstract class AbstractRequestHandler<T, R> extends Service<R> implements
      *
      * @param progressListener the progress listener
      */
-    @Inject
     @SuppressWarnings("unchecked, rawtypes")
     protected AbstractRequestHandler(final RequestProgressListener progressListener,
                                      final DataNodeFactory nodeFactory,
-                                     final @Named("userAssisted") AmbiguousInputResolver ambiguousInputResolver,
-                                     final @Named("ontologyPathPredicate") AmbiguousInputResolver ontologyPathPredicateInputResolver) {
+                                     final AmbiguousInputResolver ambiguousInputResolver,
+                                     final AmbiguousInputResolver ontologyPathPredicateInputResolver,
+                                     final DataMiningConfiguration configuration) {
         this.progressListener = progressListener;
         this.nodeFactory = nodeFactory;
         this.ambiguousInputResolver = ambiguousInputResolver;
         this.ontologyPathPredicateInputResolver = ontologyPathPredicateInputResolver;
+        this.configuration = configuration;
     }
 
     public synchronized void unlockDialogPane() {

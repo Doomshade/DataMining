@@ -6,6 +6,8 @@ import cz.zcu.jsmahy.datamining.api.DataMiningModule;
 import cz.zcu.jsmahy.datamining.api.RequestHandler;
 import cz.zcu.jsmahy.datamining.api.RequestProgressListener;
 import cz.zcu.jsmahy.datamining.app.controller.MainController;
+import cz.zcu.jsmahy.datamining.config.DBPediaConfiguration;
+import cz.zcu.jsmahy.datamining.config.DataMiningConfiguration;
 import cz.zcu.jsmahy.datamining.query.UserAssistedAmbiguousInputResolver;
 import cz.zcu.jsmahy.datamining.query.handlers.DBPediaRequestHandler;
 import cz.zcu.jsmahy.datamining.query.handlers.OntologyPathPredicateInputResolver;
@@ -33,5 +35,16 @@ public class DBPediaModule extends DataMiningModule {
                                           .to(OntologyPathPredicateInputResolver.class)
                                           .in(SINGLETON);
         bind(RequestHandler.class).to(DBPediaRequestHandler.class);
+        bind(DataMiningConfiguration.class).annotatedWith(Names.named("dbpediaConfig"))
+                                           .toProvider(() -> {
+                                               final DataMiningConfiguration config = new DBPediaConfiguration("dbpedia-config.yml");
+                                               try {
+                                                   config.reload();
+                                               } catch (ReflectiveOperationException e) {
+                                                   throw new RuntimeException(e);
+                                               }
+                                               return config;
+                                           })
+                                           .in(SINGLETON);
     }
 }

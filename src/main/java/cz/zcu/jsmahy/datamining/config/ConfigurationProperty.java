@@ -12,11 +12,11 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface Property {
+public @interface ConfigurationProperty {
     /**
      * @return The property key in properties
      */
-    String key();
+    String value();
 
-    String defaultValue();
+    String defaultValue() default "";
 }

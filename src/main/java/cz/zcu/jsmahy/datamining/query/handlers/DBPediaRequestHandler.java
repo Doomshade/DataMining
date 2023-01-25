@@ -3,6 +3,8 @@ package cz.zcu.jsmahy.datamining.query.handlers;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import cz.zcu.jsmahy.datamining.api.*;
+import cz.zcu.jsmahy.datamining.config.DBPediaConfiguration;
+import cz.zcu.jsmahy.datamining.config.DataMiningConfiguration;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import cz.zcu.jsmahy.datamining.query.Restriction;
 import org.apache.jena.atlas.web.HttpException;
@@ -34,27 +36,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
                                                                                                  .isURIResource());
 
 
-    private static final Collection<String> IGNORED_PREDICATES = new ArrayList<>() {
-        {
-            add("http://dbpedia.org/ontology/wikiPageWikiLink");
-            add("http://dbpedia.org/ontology/wikiPageExternalLink");
-            add("http://www.w3.org/2002/07/owl#sameAs");
-            add("http://dbpedia.org/property/wikiPageUsesTemplate");
-            add("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
-            add("http://dbpedia.org/ontology/abstract");
-            add("http://purl.org/dc/terms/subject");
-            add("http://www.w3.org/2000/01/rdf-schema#label");
-            add("http://dbpedia.org/ontology/wikiPageRevisionID");
-            add("http://xmlns.com/foaf/0.1/depiction");
-            add("http://dbpedia.org/ontology/deathPlace");
-            add("http://www.w3.org/2000/01/rdf-schema#comment");
-            add("http://dbpedia.org/property/wikt");
-            add("http://www.w3.org/2000/01/rdf-schema#comment");
-            add("http://dbpedia.org/ontology/wikiPageLength");
-            add("http://dbpedia.org/property/thesisTitle");
-            add("http://dbpedia.org/ontology/thumbnail");
-        }
-    };
+    private final Collection<String> ignoredPredicates = new ArrayList<>();
     //</editor-fold>
 
     private final Collection<String> usedURIs = new HashSet<>();
@@ -65,8 +47,13 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
     public DBPediaRequestHandler(final RequestProgressListener progressListener,
                                  final DataNodeFactory nodeFactory,
                                  final @Named("userAssisted") AmbiguousInputResolver ambiguousInputResolver,
-                                 final @Named("ontologyPathPredicate") AmbiguousInputResolver ontologyPathPredicateInputResolver) {
-        super(progressListener, nodeFactory, ambiguousInputResolver, ontologyPathPredicateInputResolver);
+                                 final @Named("ontologyPathPredicate") AmbiguousInputResolver ontologyPathPredicateInputResolver,
+                                 final @Named("dbpediaConfig") DataMiningConfiguration configuration) {
+        super(progressListener, nodeFactory, ambiguousInputResolver, ontologyPathPredicateInputResolver, configuration);
+        if (configuration instanceof DBPediaConfiguration dbPediaConfiguration) {
+            this.ignoredPredicates.addAll(dbPediaConfiguration.getIgnoredPredicates());
+            LOGGER.info("Ignored predicates: " + ignoredPredicates);
+        }
     }
 
     @Override
@@ -114,7 +101,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
             @Override
             public boolean selects(final Statement s) {
                 final Property predicate = s.getPredicate();
-                for (String ignoredPredicate : IGNORED_PREDICATES) {
+                for (String ignoredPredicate : ignoredPredicates) {
                     if (predicate.hasURI(ignoredPredicate)) {
                         return false;
                     }

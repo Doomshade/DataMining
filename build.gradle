@@ -60,6 +60,7 @@ dependencies {
     implementation 'org.apache.jena:jena-iri:4.7.0'
     implementation 'org.apache.commons:commons-configuration2:2.8.0'
     implementation 'com.google.inject:guice:5.1.0'
+    implementation 'org.yaml:snakeyaml:+'
 
     testImplementation 'net.synedra:validatorfx:0.4.0'
     testImplementation 'org.spockframework:spock-core:2.4-M1-groovy-4.0'
