@@ -1,14 +1,12 @@
 package cz.zcu.jsmahy.datamining.api;
 
-import javafx.application.Platform;
-import javafx.scene.control.TreeItem;
 import org.apache.jena.rdf.model.Property;
 
 import java.util.List;
 
 /**
  * <p>A listener for request callbacks. For example when a {@link DataNode} is created the front end would want to handle that fact and update the UI.</p>
- * <p>NOTE: The methods are not necessarily called on the FX UI thread! Make sure to update UI on the UI thread via {@link Platform#runLater(Runnable)}.</p>
+ * <p>NOTE: The methods are not necessarily called on the FX UI thread! Make sure to update UI on the UI thread via {@link javafx.application.Platform#runLater(Runnable)}.</p>
  *
  * @author Jakub Šmrha
  * @version 1.0
@@ -36,11 +34,10 @@ public interface RequestProgressListener<T> {
      * the data nodes list is guaranteed to have size &gt;= 2</p>
      * <p>NOTE: This is optional to handle, but it adds clarity to the building progress.</p>
      *
-     * @param treeItem       the tree item the data nodes should be added under
      * @param dataNodes      the data nodes
      * @param chosenDataNode the data node that the user chose to continue under
      */
-    void onAddMultipleDataNodes(TreeItem<DataNode<T>> treeItem, List<DataNode<T>> dataNodes, DataNode<T> chosenDataNode);
+    void onAddMultipleDataNodes(DataNode<T> parent, List<DataNode<T>> dataNodes, DataNode<T> chosenDataNode);
 
     /**
      * Called when an invalid query is passed. The cause is usually the resource not existing.

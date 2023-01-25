@@ -31,7 +31,9 @@ import org.apache.logging.log4j.Logger;
 import java.net.URL;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.ResourceBundle;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * The controller for main UI where user builds the ontology.
@@ -240,47 +242,81 @@ order by ?pred
         this.ontologyPathPredicate.setValue(ontologyPathPredicate);
     }
 
-    @Override
-    public void onAddNewDataNode(final DataNode<T> dataNode, final DataNodeRoot<T> dataNodeRoot) {
-        Platform.runLater(() -> {
-            final TreeItem<DataNode<T>> parent = findTreeItem(dataNodeRoot);
-            if (parent != null) {
-                final TreeItem<DataNode<T>> child = new TreeItem<>(dataNode);
-                parent.getChildren()
-                      .add(child);
-            }
-        });
-    }
-
-    private TreeItem<DataNode<T>> findTreeItem(DataNode<T> dataNode) {
-        final TreeItem<DataNode<T>> treeRoot = ontologyTreeView.getRoot();
+    // TODO: test this method!
+    public static <T> TreeItem<DataNode<T>> findTreeItem(final DataNode<T> dataNode, final TreeItem<DataNode<T>> treeRoot) {
+        Objects.requireNonNull(dataNode);
+        Objects.requireNonNull(treeRoot);
 
         // if no children are present then there are no data nodes
         // the tree root itself has no data in it, so we don't have to check for it
         if (treeRoot.getChildren()
                     .isEmpty()) {
-            return null;
+            throw new NoSuchElementException(String.format("Data node %s not found.", dataNode));
         }
-        return findTreeItem(dataNode, treeRoot);
-    }
 
-    private TreeItem<DataNode<T>> findTreeItem(DataNode<T> dataNode, TreeItem<DataNode<T>> currTreeItem) {
-        for (final TreeItem<DataNode<T>> child : currTreeItem.getChildren()) {
-            if (child.getValue()
-                     .getId() == dataNode.getId()) {
-                return child;
+        // first iterate over all of root's children, then recursively check for the children of each node
+        // if we don't find anything after the last element of the root's children no such tree item was found
+        // this might look duplicate in the helper method, but we need to ensure that the inner children don't throw an exception in the
+        // inner loops because they aren't required to have the tree item present, whereas the root is
+        // thus the check at the end of this loop and no check in the helper recursive method (i.e. if we threw the exception in the
+        // inner loop the search would terminate prematurely; we need to terminate after the last of root's children is checked)
+        final AtomicReference<TreeItem<DataNode<T>>> ref = new AtomicReference<>();
+        for (final TreeItem<DataNode<T>> child : treeRoot.getChildren()) {
+            if (ref.get() != null) {
+                break;
+            }
+            final long childId = child.getValue()
+                                      .getId();
+            LOGGER.debug("Checking ID {}", childId);
+            if (childId == dataNode.getId()) {
+                LOGGER.debug("Found ID {}. Terminating.", childId);
+                ref.set(child);
+                break;
             }
             if (!child.getChildren()
                       .isEmpty()) {
-                return findTreeItem(dataNode, child);
+                findTreeItem(dataNode, child, ref);
             }
         }
-        throw new NoSuchElementException(String.format("Data node %s not found.", dataNode));
+        final TreeItem<DataNode<T>> treeItem = ref.get();
+        if (treeItem == null) {
+            throw new NoSuchElementException(String.format("Data node %s not found.", dataNode));
+        }
+        return treeItem;
+    }
+
+    private static <T> void findTreeItem(DataNode<T> dataNode, TreeItem<DataNode<T>> currTreeItem, AtomicReference<TreeItem<DataNode<T>>> ref) {
+        for (final TreeItem<DataNode<T>> child : currTreeItem.getChildren()) {
+            final long childId = child.getValue()
+                                      .getId();
+            LOGGER.debug("Checking ID {}", childId);
+            if (childId == dataNode.getId()) {
+                LOGGER.debug("Found ID {}. Terminating.", childId);
+                ref.set(child);
+                return;
+            }
+            if (!child.getChildren()
+                      .isEmpty()) {
+                findTreeItem(dataNode, child, ref);
+            }
+        }
+
     }
 
     @Override
-    public void onAddMultipleDataNodes(final TreeItem<DataNode<T>> treeItem, final List<DataNode<T>> dataNodes, final DataNode<T> chosenDataNode) {
+    public void onAddNewDataNode(final DataNode<T> dataNode, final DataNodeRoot<T> dataNodeRoot) {
         Platform.runLater(() -> {
+            final TreeItem<DataNode<T>> parent = findTreeItem(dataNodeRoot, ontologyTreeView.getRoot());
+            final TreeItem<DataNode<T>> child = new TreeItem<>(dataNode);
+            parent.getChildren()
+                  .add(child);
+        });
+    }
+
+    @Override
+    public void onAddMultipleDataNodes(final DataNode<T> parent, final List<DataNode<T>> dataNodes, final DataNode<T> chosenDataNode) {
+        Platform.runLater(() -> {
+            final TreeItem<DataNode<T>> treeItem = findTreeItem(parent, ontologyTreeView.getRoot());
             treeItem.getChildren()
                     .addAll(dataNodes.stream()
                                      .map(TreeItem::new)
