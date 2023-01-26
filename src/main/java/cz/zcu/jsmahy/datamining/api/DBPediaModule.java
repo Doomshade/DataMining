@@ -1,10 +1,6 @@
-package cz.zcu.jsmahy.datamining.api.dbpedia;
+package cz.zcu.jsmahy.datamining.api;
 
 import com.google.inject.name.Names;
-import cz.zcu.jsmahy.datamining.api.AmbiguousInputResolver;
-import cz.zcu.jsmahy.datamining.api.DataMiningModule;
-import cz.zcu.jsmahy.datamining.api.RequestHandler;
-import cz.zcu.jsmahy.datamining.api.RequestProgressListener;
 import cz.zcu.jsmahy.datamining.app.controller.MainController;
 import cz.zcu.jsmahy.datamining.config.DBPediaConfiguration;
 import cz.zcu.jsmahy.datamining.config.DataMiningConfiguration;

@@ -4,7 +4,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.jfoenix.controls.JFXSpinner;
 import cz.zcu.jsmahy.datamining.api.*;
-import cz.zcu.jsmahy.datamining.api.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
 import cz.zcu.jsmahy.datamining.request.handlers.DBPediaRequestHandler;
 import cz.zcu.jsmahy.datamining.util.DialogHelper;
