@@ -18,6 +18,7 @@ class DBPediaRequestHandlerTest extends Specification {
                 Mock(DataNodeFactory.class) as DataNodeFactory,
                 Mock(AmbiguousInputResolver.class) as AmbiguousInputResolver,
                 Mock(AmbiguousInputResolver.class) as AmbiguousInputResolver,
+                Mock(AmbiguousInputResolver.class) as AmbiguousInputResolver,
                 Mock(DataMiningConfiguration.class) as DataMiningConfiguration)
     }
 

@@ -52,4 +52,12 @@ public interface RequestProgressListener<T> {
      * Called when the search is finished.
      */
     void onSearchDone();
+
+    /**
+     * Called once the start and end date properties are set. These predicates should be highlighted in the UI somewhere.
+     *
+     * @param startDateProperty the start date property
+     * @param endDateProperty   the end date property
+     */
+    void setStartAndDateProperty(Property startDateProperty, Property endDateProperty);
 }

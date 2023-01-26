@@ -328,25 +328,55 @@ order by ?pred
             // TODO: resource bundle
             // TODO: different alerts for different results
             final Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Invalid query");
-            alert.setHeaderText("ERROR - Invalid query");
-            final String wikiUrl = "https://en.wikipedia.org/wiki/";
-            final String queryWikiUrl = wikiUrl + invalidQuery;
-            final String exampleWikiUrl = wikiUrl + "Charles_IV,_Holy_Roman_Emperor";
-            final String exampleUri = "Charles IV, Holy Roman Emperor";
-            alert.setContentText(String.format(
-                    "No results were found querying '%s'. The query must correspond to the wikipedia URL:%n%n%s%n%nYour query corresponds to an unknown URL:%n%n%s%n%nIn this example '%s' is a " +
-                    "valid query. Spaces instead of underscores are allowed.",
-                    invalidQuery,
-                    exampleWikiUrl,
-                    queryWikiUrl,
-                    exampleUri));
+            switch (result) {
+                case SUBJECT_NOT_FOUND -> {
+                    alert.setTitle("Invalid query");
+                    alert.setHeaderText("ERROR - Invalid query");
+                    final String wikiUrl = "https://en.wikipedia.org/wiki/";
+                    final String queryWikiUrl = wikiUrl + invalidQuery;
+                    final String exampleWikiUrl = wikiUrl + "Charles_IV,_Holy_Roman_Emperor";
+                    final String exampleUri = "Charles IV, Holy Roman Emperor";
+                    alert.setContentText(String.format(
+                            "No results were found querying '%s'. The query must correspond to the wikipedia URL:%n%n%s%n%nYour query corresponds to an unknown URL:%n%n%s%n%nIn this example '%s' is" +
+                            " a valid query. Spaces instead of underscores are allowed.",
+                            invalidQuery,
+                            exampleWikiUrl,
+                            queryWikiUrl,
+                            exampleUri));
+                }
+                case START_DATE_NOT_SELECTED -> {
+                    alert.setTitle("Start date not chosen");
+                    alert.setHeaderText("ERROR - Invalid start date");
+                    alert.setContentText("Please choose a start date");
+                }
+                case END_DATE_NOT_SELECTED -> {
+                    alert.setTitle("End date not chosen");
+                    alert.setHeaderText("ERROR - Invalid end date");
+                    alert.setContentText("Please choose a end date");
+                }
+                case PATH_NOT_SELECTED -> {
+                    alert.setTitle("Path not chosen");
+                    alert.setHeaderText("ERROR - Invalid path");
+                    alert.setContentText("Please choose a path");
+                }
+                case UNKNOWN -> {
+                    alert.setTitle("Unknown error");
+                    alert.setHeaderText("ERROR - Unknown error occurred");
+                    alert.setContentText(String.format("An unknown error happened with the query '%s'", invalidQuery));
+                }
+                default -> throw new UnsupportedOperationException("Result type not handled: " + result);
+            }
             alert.show();
         });
     }
 
     @Override
     public void onSearchDone() {
+
+    }
+
+    @Override
+    public void setStartAndDateProperty(final Property startDateProperty, final Property endDateProperty) {
 
     }
 }

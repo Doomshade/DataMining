@@ -6,6 +6,7 @@ import cz.zcu.jsmahy.datamining.config.DBPediaConfiguration;
 import cz.zcu.jsmahy.datamining.config.DataMiningConfiguration;
 import cz.zcu.jsmahy.datamining.request.handlers.DBPediaRequestHandler;
 import cz.zcu.jsmahy.datamining.request.resolvers.OntologyPathPredicateInputResolver;
+import cz.zcu.jsmahy.datamining.request.resolvers.StartAndEndDateInputResolver;
 import cz.zcu.jsmahy.datamining.request.resolvers.UserAssistedAmbiguousInputResolver;
 import lombok.SneakyThrows;
 
@@ -23,24 +24,29 @@ public class DBPediaModule extends DataMiningModule {
     protected void configure() {
         super.configure();
 
+        // ambiguous input resolvers
         bind(AmbiguousInputResolver.class).annotatedWith(Names.named("userAssisted"))
                                           .to(UserAssistedAmbiguousInputResolver.class)
                                           .in(SINGLETON);
-        bind(RequestProgressListener.class).toInstance(MainController.getInstance());
         bind(AmbiguousInputResolver.class).annotatedWith(Names.named("ontologyPathPredicate"))
                                           .to(OntologyPathPredicateInputResolver.class)
                                           .in(SINGLETON);
+        bind(AmbiguousInputResolver.class).annotatedWith(Names.named("date"))
+                                          .to(StartAndEndDateInputResolver.class)
+                                          .in(SINGLETON);
+
+        // the main request handler with its progress listener
         bind(RequestHandler.class).to(DBPediaRequestHandler.class);
+        bind(RequestProgressListener.class).toInstance(MainController.getInstance());
+
+        // config
         bind(DataMiningConfiguration.class).annotatedWith(Names.named("dbpediaConfig"))
                                            .toProvider(() -> {
                                                final DataMiningConfiguration config = new DBPediaConfiguration("dbpedia-config.yml");
-                                               try {
-                                                   config.reload();
-                                               } catch (ReflectiveOperationException e) {
-                                                   throw new RuntimeException(e);
-                                               }
+                                               config.reload();
                                                return config;
                                            })
                                            .in(SINGLETON);
+
     }
 }

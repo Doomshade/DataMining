@@ -1,4 +1,4 @@
-ignored-predicates:
+ignored-path-predicates:
   - "http://dbpedia.org/ontology/wikiPageWikiLink"
   - "http://dbpedia.org/ontology/wikiPageExternalLink"
   - "http://www.w3.org/2002/07/owl#sameAs"
@@ -16,3 +16,19 @@ ignored-predicates:
   - "http://dbpedia.org/ontology/wikiPageLength"
   - "http://dbpedia.org/property/thesisTitle"
   - "http://dbpedia.org/ontology/thumbnail"
+# Valid values:
+# "any"
+# "date"
+# "time"
+# "dateTime"
+# "dateTimeStamp"
+# "duration"
+# "duration#dayTimeDuration"
+# "duration#yearMonthDuration"
+# "gDay"
+# "gMonth"
+# "gYear"
+# "gYearMonth"
+# "gMonthDay"
+valid-date-formats:
+  - "any"

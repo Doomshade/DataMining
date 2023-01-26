@@ -7,12 +7,15 @@ import cz.zcu.jsmahy.datamining.config.DBPediaConfiguration;
 import cz.zcu.jsmahy.datamining.config.DataMiningConfiguration;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import org.apache.jena.atlas.web.HttpException;
+import org.apache.jena.datatypes.RDFDatatype;
 import org.apache.jena.ontology.OntModelSpec;
 import org.apache.jena.rdf.model.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * The DBPedia {@link RequestHandler}.
@@ -34,7 +37,8 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
                                                                                                  .isURIResource());
 
 
-    private final Collection<String> ignoredPredicates = new ArrayList<>();
+    private final Collection<String> ignoredPathPredicates = new HashSet<>();
+    private final Collection<String> validDateFormats = new HashSet<>();
     //</editor-fold>
 
     private final Collection<String> usedURIs = new HashSet<>();
@@ -46,11 +50,20 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
                                  final DataNodeFactory nodeFactory,
                                  final @Named("userAssisted") AmbiguousInputResolver ambiguousInputResolver,
                                  final @Named("ontologyPathPredicate") AmbiguousInputResolver ontologyPathPredicateInputResolver,
+                                 final @Named("date") AmbiguousInputResolver dateInputResolver,
                                  final @Named("dbpediaConfig") DataMiningConfiguration configuration) {
-        super(progressListener, nodeFactory, ambiguousInputResolver, ontologyPathPredicateInputResolver, configuration);
+        super(progressListener, nodeFactory, ambiguousInputResolver, ontologyPathPredicateInputResolver, dateInputResolver, configuration);
         if (configuration instanceof DBPediaConfiguration dbPediaConfiguration) {
-            this.ignoredPredicates.addAll(dbPediaConfiguration.getIgnoredPredicates());
-            LOGGER.info("Ignored predicates: " + ignoredPredicates);
+            this.ignoredPathPredicates.addAll(dbPediaConfiguration.getIgnoredPathPredicates());
+            final Set<String> validDateFormats = dbPediaConfiguration.getValidDateFormats()
+                                                                     .stream()
+                                                                     .map(String::toLowerCase)
+                                                                     .collect(Collectors.toSet());
+            if (validDateFormats.contains("any")) {
+                this.validDateFormats.addAll(DBPediaConfiguration.ALL_VALID_DATE_FORMATS);
+            } else {
+                this.validDateFormats.addAll(validDateFormats);
+            }
         }
     }
 
@@ -82,37 +95,105 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
             LOGGER.info("Done searching");
             progressListener.onSearchDone();
         } else {
-            LOGGER.info("Invalid createBackgroundService '{}' - no results were found.", query);
+            LOGGER.info("Invalid createBackgroundService '{}' - no results were found. Initial search result: {}", query, result);
             progressListener.onInvalidQuery(query, result);
         }
         return null;
     }
 
     /**
-     * TODO: make the return value an enum
+     * @return the result of the initial search
      *
-     * @return {@code true} if a statement was found with the given subject (aka the createBackgroundService), {@code false} otherwise
+     * @see InitialSearchResult
      */
     private InitialSearchResult initialSearch(final QueryData inputMetadata) {
-        final Selector selector = new SimpleSelector(inputMetadata.getInitialSubject(), null, null, "en") {
-            @Override
-            public boolean selects(final Statement s) {
-                final Property predicate = s.getPredicate();
-                for (String ignoredPredicate : ignoredPredicates) {
-                    if (predicate.hasURI(ignoredPredicate)) {
-                        return false;
-                    }
-                }
-                return true;
+        final InitialSearchResult startAndEndDateResult = requestStartAndEndDatePredicate(inputMetadata);
+        if (startAndEndDateResult != InitialSearchResult.OK) {
+            return startAndEndDateResult;
+        }
+        LOGGER.debug("Found start and end date.");
+
+        final InitialSearchResult pathPredicateResult = requestOntologyPathPredicate(inputMetadata);
+        if (pathPredicateResult != InitialSearchResult.OK) {
+            return pathPredicateResult;
+        }
+        LOGGER.debug("Found onotology path predicate.");
+
+        return InitialSearchResult.OK;
+    }
+
+    private InitialSearchResult requestStartAndEndDatePredicate(final QueryData inputMetadata) {
+        final Selector selector = createSelector(inputMetadata, stmt -> {
+            final RDFNode object = stmt.getObject();
+            if (!object.isLiteral()) {
+                return false;
             }
-        };
+            final RDFDatatype dataType = object.asNode()
+                                               .getLiteralDatatype();
+            final String uri = dataType.getURI();
+            for (String s : validDateFormats) {
+                if (uri.contains(s)) {
+                    return true;
+                }
+            }
+            return validDateFormats.contains(uri.substring(uri.lastIndexOf('/')));
+        });
+        final Model model = inputMetadata.getCurrentModel();
+        final StmtIterator stmtIterator = model.listStatements(selector);
+        if (!stmtIterator.hasNext()) {
+            return InitialSearchResult.NO_DATE_FOUND;
+        }
+
+        final List<Statement> statements = stmtIterator.toList();
+        inputMetadata.setCandidatesForStartAndEndDates(statements);
+
+        final DataNodeReferenceHolder<T> ref = dateInputResolver.resolveRequest(null, inputMetadata, this);
+        if (ref instanceof BlockingDataNodeReferenceHolder<T> blockingRef) {
+            while (!blockingRef.isFinished()) {
+                try {
+                    wait(5000L);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+
+        if (ref == null) {
+            return InitialSearchResult.UNKNOWN;
+        }
+        final Property startDateProperty = ref.getStartDatePredicate();
+        final Property endDateProperty = ref.getEndDatePredicate();
+
+        if (startDateProperty == null) {
+            return InitialSearchResult.START_DATE_NOT_SELECTED;
+        }
+        if (endDateProperty == null) {
+            return InitialSearchResult.END_DATE_NOT_SELECTED;
+        }
+
+        inputMetadata.setStartDateProperty(startDateProperty);
+        inputMetadata.setEndDateProperty(endDateProperty);
+        progressListener.setStartAndDateProperty(startDateProperty, endDateProperty);
+        return InitialSearchResult.OK;
+    }
+
+    private InitialSearchResult requestOntologyPathPredicate(final QueryData inputMetadata) {
+        final Selector selector = createSelector(inputMetadata, stmt -> {
+            final Property predicate = stmt.getPredicate();
+            for (String ignoredPathPredicate : ignoredPathPredicates) {
+                if (predicate.hasURI(ignoredPathPredicate)) {
+                    return false;
+                }
+            }
+            return true;
+        });
         final Model model = inputMetadata.getCurrentModel();
 
         final StmtIterator stmtIterator = model.listStatements(selector);
         if (!stmtIterator.hasNext()) {
             return InitialSearchResult.SUBJECT_NOT_FOUND;
         }
-        inputMetadata.setCandidatesForOntologyPathPredicate(stmtIterator);
+        inputMetadata.setCandidatesForOntologyPathPredicate(Collections.unmodifiableList(stmtIterator.toList()));
 
         final DataNodeReferenceHolder<T> ref = ontologyPathPredicateInputResolver.resolveRequest(null, inputMetadata, this);
         if (ref instanceof BlockingDataNodeReferenceHolder<T> blockingRef) {
@@ -131,15 +212,28 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         if (ontologyPathPredicate == null) {
             return InitialSearchResult.PATH_NOT_SELECTED;
         }
+
         inputMetadata.setOntologyPathPredicate(ontologyPathPredicate);
         progressListener.onSetOntologyPathPredicate(ontologyPathPredicate);
         return InitialSearchResult.OK;
+    }
+
+    private Selector createSelector(final QueryData inputMetadata, final Predicate<Statement> selectorSelects) {
+        return new SimpleSelector(inputMetadata.getInitialSubject(), null, null, "en") {
+            @Override
+            public boolean selects(final Statement s) {
+                return selectorSelects.test(s);
+            }
+        };
     }
 
     public enum InitialSearchResult {
         OK,
         SUBJECT_NOT_FOUND,
         PATH_NOT_SELECTED,
+        NO_DATE_FOUND,
+        START_DATE_NOT_SELECTED,
+        END_DATE_NOT_SELECTED,
         UNKNOWN
     }
 

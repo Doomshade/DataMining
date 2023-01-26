@@ -31,6 +31,15 @@ public class DataNodeReferenceHolder<V> {
     private final ObjectProperty<Property> ontologyPathPredicate = new SimpleObjectProperty<>();
 
     /**
+     * The start date predicate.
+     */
+    private final ObjectProperty<Property> startDatePredicate = new SimpleObjectProperty<>();
+    /**
+     * The end date predicate.
+     */
+    private final ObjectProperty<Property> endDatePredicate = new SimpleObjectProperty<>();
+
+    /**
      * The restrictions.
      */
     private final ListProperty<Restriction> restrictions = new SimpleListProperty<>();
@@ -45,6 +54,30 @@ public class DataNodeReferenceHolder<V> {
 
     public ListProperty<Restriction> restrictionsProperty() {
         return restrictions;
+    }
+
+    public Property getStartDatePredicate() {
+        return startDatePredicate.get();
+    }
+
+    public void setStartDatePredicate(final Property startDatePredicate) {
+        this.startDatePredicate.set(startDatePredicate);
+    }
+
+    public ObjectProperty<Property> startDatePredicateProperty() {
+        return startDatePredicate;
+    }
+
+    public Property getEndDatePredicate() {
+        return endDatePredicate.get();
+    }
+
+    public void setEndDatePredicate(final Property endDatePredicate) {
+        this.endDatePredicate.set(endDatePredicate);
+    }
+
+    public ObjectProperty<Property> endDatePredicateProperty() {
+        return endDatePredicate;
     }
 
     public Property getOntologyPathPredicate() {

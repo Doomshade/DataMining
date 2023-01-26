@@ -13,6 +13,7 @@ public abstract class AbstractRequestHandler<T, R> extends Service<R> implements
     protected final DataNodeFactory<T> nodeFactory;
     protected final AmbiguousInputResolver<T, R, ?> ambiguousInputResolver;
     protected final AmbiguousInputResolver<T, R, ?> ontologyPathPredicateInputResolver;
+    protected final AmbiguousInputResolver<T, R, ?> dateInputResolver;
     protected final DataMiningConfiguration configuration;
     protected String query;
     protected DataNodeRoot<T> dataNodeRoot;
@@ -27,11 +28,13 @@ public abstract class AbstractRequestHandler<T, R> extends Service<R> implements
                                      final DataNodeFactory nodeFactory,
                                      final AmbiguousInputResolver ambiguousInputResolver,
                                      final AmbiguousInputResolver ontologyPathPredicateInputResolver,
+                                     final AmbiguousInputResolver dateInputResolver,
                                      final DataMiningConfiguration configuration) {
         this.progressListener = progressListener;
         this.nodeFactory = nodeFactory;
         this.ambiguousInputResolver = ambiguousInputResolver;
         this.ontologyPathPredicateInputResolver = ontologyPathPredicateInputResolver;
+        this.dateInputResolver = dateInputResolver;
         this.configuration = configuration;
     }
 
