@@ -16,9 +16,9 @@ class DBPediaRequestHandlerTest extends Specification {
     void setup() {
         requestHandler = new DBPediaRequestHandler<>(Mock(RequestProgressListener.class) as RequestProgressListener,
                 Mock(DataNodeFactory.class) as DataNodeFactory,
-                Mock(AmbiguousInputResolver.class),
-                Mock(AmbiguousInputResolver.class),
-                Mock(DataMiningConfiguration.class))
+                Mock(AmbiguousInputResolver.class) as AmbiguousInputResolver,
+                Mock(AmbiguousInputResolver.class) as AmbiguousInputResolver,
+                Mock(DataMiningConfiguration.class) as DataMiningConfiguration)
     }
 
     def "Should throw IAE if either query (#query) and tree item (#treeItem) is null"() {
