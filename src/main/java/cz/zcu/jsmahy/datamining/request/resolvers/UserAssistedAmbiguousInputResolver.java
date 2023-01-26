@@ -1,4 +1,4 @@
-package cz.zcu.jsmahy.datamining.request;
+package cz.zcu.jsmahy.datamining.request.resolvers;
 
 import cz.zcu.jsmahy.datamining.Main;
 import cz.zcu.jsmahy.datamining.api.*;

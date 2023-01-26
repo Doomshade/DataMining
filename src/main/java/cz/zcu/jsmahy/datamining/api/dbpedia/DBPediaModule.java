@@ -8,9 +8,9 @@ import cz.zcu.jsmahy.datamining.api.RequestProgressListener;
 import cz.zcu.jsmahy.datamining.app.controller.MainController;
 import cz.zcu.jsmahy.datamining.config.DBPediaConfiguration;
 import cz.zcu.jsmahy.datamining.config.DataMiningConfiguration;
-import cz.zcu.jsmahy.datamining.request.UserAssistedAmbiguousInputResolver;
 import cz.zcu.jsmahy.datamining.request.handlers.DBPediaRequestHandler;
-import cz.zcu.jsmahy.datamining.request.handlers.OntologyPathPredicateInputResolver;
+import cz.zcu.jsmahy.datamining.request.resolvers.OntologyPathPredicateInputResolver;
+import cz.zcu.jsmahy.datamining.request.resolvers.UserAssistedAmbiguousInputResolver;
 import lombok.SneakyThrows;
 
 import static com.google.inject.Scopes.SINGLETON;

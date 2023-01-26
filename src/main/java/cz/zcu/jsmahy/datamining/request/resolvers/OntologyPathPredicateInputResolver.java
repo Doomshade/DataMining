@@ -1,4 +1,4 @@
-package cz.zcu.jsmahy.datamining.request.handlers;
+package cz.zcu.jsmahy.datamining.request.resolvers;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
