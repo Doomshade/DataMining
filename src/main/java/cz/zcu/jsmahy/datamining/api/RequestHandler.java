@@ -1,7 +1,6 @@
 package cz.zcu.jsmahy.datamining.api;
 
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
-import cz.zcu.jsmahy.datamining.query.SparqlRequest;
 import javafx.concurrent.Service;
 
 /**
@@ -10,7 +9,7 @@ import javafx.concurrent.Service;
  * <p>The implementation </p>
  *
  * @param <R> The return type of {@link Service}'s {@link Service#getValue()} in {@link #createBackgroundService(String, DataNodeRoot)}. In other words, the return type of the request.
- * @param <T> The input type for the {@link SparqlRequest}. In other words, the input type of the request.
+ * @param <T> The input type for the {@link DataNode}s. In other words, the input type of the request.
  *
  * @author Jakub Šmrha
  * @version 1.0

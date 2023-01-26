@@ -2,7 +2,6 @@ package cz.zcu.jsmahy.datamining.api
 
 import com.google.inject.Guice
 import com.google.inject.Injector
-import cz.zcu.jsmahy.datamining.query.Restriction
 import javafx.collections.FXCollections
 import spock.lang.Shared
 import spock.lang.Specification

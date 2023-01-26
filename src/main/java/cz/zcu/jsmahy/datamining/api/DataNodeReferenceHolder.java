@@ -1,6 +1,5 @@
 package cz.zcu.jsmahy.datamining.api;
 
-import cz.zcu.jsmahy.datamining.query.Restriction;
 import javafx.beans.property.ListProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleListProperty;

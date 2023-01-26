@@ -28,7 +28,6 @@ public class Main extends Application {
         Main.stage = stage;
         // use resource bundle
         stage.setTitle("BP");
-        //InfoboxManager.downloadTemplates("default-infoboxes");
         final Scene scene = SceneManager.getScene(FXMLScene.MAIN);
         stage.setScene(scene);
         stage.setMaximized(true);

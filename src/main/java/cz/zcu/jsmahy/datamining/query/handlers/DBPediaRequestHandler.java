@@ -6,7 +6,6 @@ import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.config.DBPediaConfiguration;
 import cz.zcu.jsmahy.datamining.config.DataMiningConfiguration;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
-import cz.zcu.jsmahy.datamining.query.Restriction;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.ontology.OntModelSpec;
 import org.apache.jena.rdf.model.*;

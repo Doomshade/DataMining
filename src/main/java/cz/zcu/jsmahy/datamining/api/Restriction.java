@@ -1,4 +1,4 @@
-package cz.zcu.jsmahy.datamining.query;
+package cz.zcu.jsmahy.datamining.api;
 
 import lombok.Data;
 

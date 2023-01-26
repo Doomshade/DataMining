@@ -23,6 +23,7 @@ import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
@@ -180,28 +181,40 @@ order by ?pred
         return menuItem;
     }
 
-    /**
-     * Callback for {@link SelectionModel#selectedItemProperty()} in the ontology list view. Displays the selected item in Wikipedia. The selected item must not be a root of any kind ({@link TreeItem}
-     * root nor {@link DataNodeRoot}).
-     *
-     * @param observable the observable that was invalidated. not used, it's here just because of the signature of {@link InvalidationListener#invalidated(Observable)} method
-     */
-    private void onSelection(final Observable observable) {
-        final TreeItem<DataNode<T>> selectedItem = ontologyTreeView.getSelectionModel()
-                                                                   .getSelectedItem();
-        if (selectedItem == null) {
-            LOGGER.debug("Could not handle ontology click because selected item was null.");
-            return;
-        }
-        if (selectedItem == ontologyTreeView.getRoot() || selectedItem.getValue() instanceof DataNodeRoot<T>) {
-            return;
-        }
+    // TODO: test this method!
+    public static <T> TreeItem<DataNode<T>> findTreeItem(final DataNode<T> dataNode, final TreeItem<DataNode<T>> treeRoot) {
+        Objects.requireNonNull(dataNode);
+        Objects.requireNonNull(treeRoot);
 
-        final DataNode<T> dataNode = selectedItem.getValue();
-        final String formattedItem = RDFNodeUtil.formatRDFNode(dataNode.getData());
-        this.wikiPageWebView.getEngine()
-                            .load(String.format(WIKI_URL, formattedItem));
-
+        // first iterate over all of root's children, then recursively check for the children of each node
+        // if we don't find anything after the last element of the root's children no such tree item was found
+        // this might look duplicate in the helper method, but we need to ensure that the inner children don't throw an exception in the
+        // inner loops because they aren't required to have the tree item present, whereas the root is
+        // thus the check at the end of this loop and no check in the helper recursive method (i.e. if we threw the exception in the
+        // inner loop the search would terminate prematurely; we need to terminate after the last of root's children is checked)
+        final AtomicReference<TreeItem<DataNode<T>>> ref = new AtomicReference<>();
+        for (final TreeItem<DataNode<T>> child : treeRoot.getChildren()) {
+            if (ref.get() != null) {
+                break;
+            }
+            final long childId = child.getValue()
+                                      .getId();
+            LOGGER.trace("Checking ID {}", childId);
+            if (childId == dataNode.getId()) {
+                LOGGER.trace("Found ID {}. Terminating.", childId);
+                ref.set(child);
+                break;
+            }
+            if (!child.getChildren()
+                      .isEmpty()) {
+                findTreeItem(dataNode, child, ref);
+            }
+        }
+        final TreeItem<DataNode<T>> treeItem = ref.get();
+        if (treeItem == null) {
+            throw new NoSuchElementException(String.format("Data node %s not found.", dataNode));
+        }
+        return treeItem;
     }
 
     /**
@@ -243,40 +256,30 @@ order by ?pred
         this.ontologyPathPredicate.setValue(ontologyPathPredicate);
     }
 
-    // TODO: test this method!
-    public static <T> TreeItem<DataNode<T>> findTreeItem(final DataNode<T> dataNode, final TreeItem<DataNode<T>> treeRoot) {
-        Objects.requireNonNull(dataNode);
-        Objects.requireNonNull(treeRoot);
+    /**
+     * Callback for {@link SelectionModel#selectedItemProperty()} in the ontology list view. Displays the selected item in Wikipedia. The selected item must not be a root of any kind ({@link TreeItem}
+     * root nor {@link DataNodeRoot}).
+     *
+     * @param observable the observable that was invalidated. not used, it's here just because of the signature of {@link InvalidationListener#invalidated(Observable)} method
+     */
+    private void onSelection(final Observable observable) {
+        final TreeItem<DataNode<T>> selectedItem = ontologyTreeView.getSelectionModel()
+                                                                   .getSelectedItem();
+        final WebEngine engine = this.wikiPageWebView.getEngine();
+        if (selectedItem == null) {
+            LOGGER.debug("Could not handle ontology click because selected item was null.");
+            engine.load("");
+            return;
+        }
+        if (selectedItem == ontologyTreeView.getRoot() || selectedItem.getValue() instanceof DataNodeRoot<T>) {
+            engine.load("");
+            return;
+        }
 
-        // first iterate over all of root's children, then recursively check for the children of each node
-        // if we don't find anything after the last element of the root's children no such tree item was found
-        // this might look duplicate in the helper method, but we need to ensure that the inner children don't throw an exception in the
-        // inner loops because they aren't required to have the tree item present, whereas the root is
-        // thus the check at the end of this loop and no check in the helper recursive method (i.e. if we threw the exception in the
-        // inner loop the search would terminate prematurely; we need to terminate after the last of root's children is checked)
-        final AtomicReference<TreeItem<DataNode<T>>> ref = new AtomicReference<>();
-        for (final TreeItem<DataNode<T>> child : treeRoot.getChildren()) {
-            if (ref.get() != null) {
-                break;
-            }
-            final long childId = child.getValue()
-                                      .getId();
-            LOGGER.debug("Checking ID {}", childId);
-            if (childId == dataNode.getId()) {
-                LOGGER.debug("Found ID {}. Terminating.", childId);
-                ref.set(child);
-                break;
-            }
-            if (!child.getChildren()
-                      .isEmpty()) {
-                findTreeItem(dataNode, child, ref);
-            }
-        }
-        final TreeItem<DataNode<T>> treeItem = ref.get();
-        if (treeItem == null) {
-            throw new NoSuchElementException(String.format("Data node %s not found.", dataNode));
-        }
-        return treeItem;
+        final DataNode<T> dataNode = selectedItem.getValue();
+        final String formattedItem = RDFNodeUtil.formatRDFNode(dataNode.getData());
+        engine.load(String.format(WIKI_URL, formattedItem));
+
     }
 
     private static <T> void findTreeItem(DataNode<T> dataNode, TreeItem<DataNode<T>> currTreeItem, AtomicReference<TreeItem<DataNode<T>>> ref) {

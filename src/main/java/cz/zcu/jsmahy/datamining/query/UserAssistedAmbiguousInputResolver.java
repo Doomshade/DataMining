@@ -8,7 +8,6 @@ import javafx.collections.FXCollections;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.util.Callback;
-import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,19 +31,6 @@ public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements Bl
         // first off we check if we have an ontology path set
         // if not, pop up a dialogue
         final BlockingDataNodeReferenceHolder<T> ref = new BlockingDataNodeReferenceHolder<>();
-        final Property ontologyPathPredicate = inputMetadata.getOntologyPathPredicate();
-
-        // TODO: either make this a standalone class or delete this (I believe OntologyPathPredicateInputResolver already handles this)
-        if (ontologyPathPredicate == null) {
-            Platform.runLater(() -> {
-                final OntologyPathPredicateChoiceDialog dialog = new OntologyPathPredicateChoiceDialog(ref);
-                dialog.showDialogueAndWait();
-
-                ref.finish();
-                requestHandler.unlockDialogPane();
-            });
-            return ref;
-        }
 
         Platform.runLater(() -> {
             final MultipleItemChoiceDialog dialog = new MultipleItemChoiceDialog(ambiguousInput, ref, x -> new RDFNodeListCellFactory<>(), SelectionMode.SINGLE);
@@ -57,58 +43,6 @@ public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements Bl
             requestHandler.unlockDialogPane();
         });
         return ref;
-    }
-
-    private class OntologyPathPredicateChoiceDialog {
-        private final Dialog<List<DataNode<T>>> dialog = new Dialog<>();
-        private final TableView<RDFNodeModel> content = new TableView<>();
-        private final DataNodeReferenceHolder<T> ref;
-
-        private OntologyPathPredicateChoiceDialog(final DataNodeReferenceHolder<T> ref) {
-            final ResourceBundle resourceBundle = ResourceBundle.getBundle("lang");
-            this.ref = ref;
-
-            // setup dialog, such as buttons, title etc
-            final DialogPane dialogPane = dialog.getDialogPane();
-            dialogPane.getButtonTypes()
-                      .addAll(ButtonType.OK, ButtonType.CANCEL);
-            this.dialog.initOwner(Main.getPrimaryStage());
-            this.dialog.setResultConverter(buttonType -> {
-                if (buttonType == ButtonType.CANCEL) {
-                    return null;
-                }
-                if (buttonType == ButtonType.OK) {
-                    return content.getSelectionModel()
-                                  .getSelectedItems()
-                                  .stream()
-                                  .map(x -> x.node)
-                                  .toList();
-                }
-                LOGGER.error("Unrecognized button type: {}", buttonType);
-                return null;
-            });
-            this.dialog.setTitle(resourceBundle.getString("ambiguity-dialog-title"));
-            this.dialog.setOnShown(event -> Platform.runLater(() -> {
-                this.content.requestFocus();
-                this.content.getSelectionModel()
-                            .selectFirst();
-            }));
-        }
-
-        public void showDialogueAndWait() {
-            // show the dialogue and wait for response
-            final List<DataNode<T>> result = dialog.showAndWait()
-                                                   .orElse(null);
-            ref.set(result);
-        }
-
-        private class RDFNodeModel {
-            private final DataNode<T> node;
-
-            private RDFNodeModel(final DataNode<T> node) {
-                this.node = node;
-            }
-        }
     }
 
     private class MultipleItemChoiceDialog {

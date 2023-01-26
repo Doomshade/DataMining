@@ -1,6 +1,5 @@
 package cz.zcu.jsmahy.datamining.api;
 
-import cz.zcu.jsmahy.datamining.query.Restriction;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
