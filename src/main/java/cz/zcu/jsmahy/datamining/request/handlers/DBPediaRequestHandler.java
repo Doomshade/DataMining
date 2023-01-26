@@ -1,4 +1,4 @@
-package cz.zcu.jsmahy.datamining.query.handlers;
+package cz.zcu.jsmahy.datamining.request.handlers;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;

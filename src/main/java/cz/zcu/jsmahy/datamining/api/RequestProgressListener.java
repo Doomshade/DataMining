@@ -1,6 +1,6 @@
 package cz.zcu.jsmahy.datamining.api;
 
-import cz.zcu.jsmahy.datamining.query.handlers.DBPediaRequestHandler;
+import cz.zcu.jsmahy.datamining.request.handlers.DBPediaRequestHandler;
 import org.apache.jena.rdf.model.Property;
 
 import java.util.List;

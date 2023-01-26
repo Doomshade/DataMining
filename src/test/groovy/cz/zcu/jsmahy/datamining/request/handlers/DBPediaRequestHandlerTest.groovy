@@ -1,4 +1,4 @@
-package cz.zcu.jsmahy.datamining.query.handlers
+package cz.zcu.jsmahy.datamining.request.handlers
 
 import cz.zcu.jsmahy.datamining.api.AmbiguousInputResolver
 import cz.zcu.jsmahy.datamining.api.DataNodeFactory
