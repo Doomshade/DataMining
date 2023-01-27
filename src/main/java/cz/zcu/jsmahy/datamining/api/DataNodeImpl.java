@@ -5,7 +5,6 @@ import javafx.collections.ObservableList;
 import lombok.Data;
 import lombok.NonNull;
 
-import java.util.Collection;
 import java.util.Iterator;
 
 
@@ -33,32 +32,31 @@ class DataNodeImpl<T> implements DataNode<T> {
         this.parent = parent;
     }
 
-    @Override
+    /**
+     * Adds a child to this node.
+     *
+     * @param child the child to add to this node
+     *
+     * @throws IllegalArgumentException if the child is an instance of {@link DataNodeRoot}
+     * @throws NullPointerException     if the child is {@code null}
+     */
     public void addChild(@NonNull DataNode<T> child) throws IllegalArgumentException, NullPointerException {
-        if (child instanceof DataNodeRootImpl) {
-            throw new IllegalArgumentException("Child cannot be root.");
-        }
+        assert !(child instanceof DataNodeRoot<T>);
         this.children.add(child);
     }
 
     @Override
-    public void addChildren(@NonNull Iterable<DataNode<T>> children) {
-        children.forEach(this::addChild);
-    }
-
-    @Override
-    public void addChildren(@NonNull Collection<DataNode<T>> children) {
-        this.children.addAll(children);
-    }
-
-    @Override
     public ObservableList<DataNode<T>> getChildren() {
-        return children;
+        return FXCollections.unmodifiableObservableList(children);
     }
 
     @Override
-    public boolean hasChildren() {
-        return !children.isEmpty();
+    public DataNodeRoot<T> findRoot() {
+        DataNode<T> prev = parent;
+        while (prev != null && prev.getParent() != null) {
+            prev = prev.getParent();
+        }
+        return prev instanceof DataNodeRoot<T> ? (DataNodeRoot<T>) prev : null;
     }
 
     @Override
@@ -66,12 +64,10 @@ class DataNodeImpl<T> implements DataNode<T> {
         return children.iterator();
     }
 
-    @Override
-    public DataNodeRoot<T> findRoot() {
-        DataNode<T> prev = parent;
-        while (prev != null && !(prev instanceof DataNodeRoot<T>)) {
-            prev = parent.getParent();
-        }
-        return prev == null ? null : (DataNodeRoot<T>) prev;
+    /**
+     * @return Whether this node has children (aka is a parent)
+     */
+    public boolean hasChildren() {
+        return !children.isEmpty();
     }
 }

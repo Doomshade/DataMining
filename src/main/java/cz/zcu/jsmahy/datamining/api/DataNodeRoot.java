@@ -38,7 +38,7 @@ public interface DataNodeRoot<T> extends DataNode<T> {
      * </ul>
      * <p>Next items always have a depth of {@code >= 0}.</p>
      *
-     * @param biConsumer the bi-consumer
+     * @param biConsumer the first parameter is the data node, the second one is the depth
      */
     void iterate(BiConsumer<DataNode<T>, Integer> biConsumer);
 
@@ -52,4 +52,8 @@ public interface DataNodeRoot<T> extends DataNode<T> {
     @Override
     T getData() throws UnsupportedOperationException;
 
+    /**
+     * @return Whether this node has children (aka is a parent)
+     */
+    boolean hasChildren();
 }

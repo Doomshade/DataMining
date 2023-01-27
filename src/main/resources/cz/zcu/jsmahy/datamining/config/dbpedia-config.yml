@@ -18,6 +18,7 @@ ignored-path-predicates:
   - "http://dbpedia.org/ontology/thumbnail"
 # Valid values:
 # "any"
+# "integer"
 # "date"
 # "time"
 # "dateTime"

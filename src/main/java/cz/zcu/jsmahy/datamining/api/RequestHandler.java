@@ -2,6 +2,7 @@ package cz.zcu.jsmahy.datamining.api;
 
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import javafx.concurrent.Service;
+import javafx.concurrent.Worker;
 
 /**
  * <p>The implementations are then responsible for building the whole tree of descendents. It should start off by asking for the initial query, for example "Albert Einstein", and then the path it
@@ -14,10 +15,10 @@ import javafx.concurrent.Service;
  * @author Jakub Šmrha
  * @version 1.0
  */
-public interface RequestHandler<T, R> {
+public interface RequestHandler<T, R> extends Worker<R> {
 
     /**
-     * Queries a SPARQL endpoint based on the handler implementation.
+     * Creates a service for the given query and the base data node root. Blocking until this service is executed and <b>finished</b>.
      *
      * @param query        the query
      * @param dataNodeRoot the tree root
@@ -32,4 +33,9 @@ public interface RequestHandler<T, R> {
      * Attempts to continue the search if the monitor is in wait queue. This is a helper method to notify the monitor.
      */
     void unlockDialogPane();
+
+    /**
+     * @return The current query.
+     */
+    String getQuery();
 }

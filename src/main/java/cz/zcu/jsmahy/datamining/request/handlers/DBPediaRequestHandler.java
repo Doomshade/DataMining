@@ -25,8 +25,8 @@ import java.util.stream.Collectors;
  */
 public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends AbstractRequestHandler<T, R> {
     //<editor-fold desc="Constants">
+    private static final String DBPEDIA_BASE_URL = "http://dbpedia.org/resource/";
     private static final Logger LOGGER = LogManager.getLogger(DBPediaRequestHandler.class);
-    private static final String DBPEDIA_SITE = "http://dbpedia.org/resource/";
     /**
      * <p>This comparator ensures the URI resources are placed first over literal resources.</p>
      * <p>The reasoning behind is simple: if the user wishes to fast forward when searching down the line we need to iterate through URI resources first.</p>
@@ -52,7 +52,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
                                  final @Named("ontologyPathPredicate") AmbiguousInputResolver ontologyPathPredicateInputResolver,
                                  final @Named("date") AmbiguousInputResolver dateInputResolver,
                                  final @Named("dbpediaConfig") DataMiningConfiguration configuration) {
-        super(progressListener, nodeFactory, ambiguousInputResolver, ontologyPathPredicateInputResolver, dateInputResolver, configuration);
+        super(progressListener, nodeFactory, ambiguousInputResolver, ontologyPathPredicateInputResolver, dateInputResolver, configuration, DBPEDIA_BASE_URL);
         if (configuration instanceof DBPediaConfiguration dbPediaConfiguration) {
             this.ignoredPathPredicates.addAll(dbPediaConfiguration.getIgnoredPathPredicates());
             final Set<String> validDateFormats = dbPediaConfiguration.getValidDateFormats()
@@ -69,12 +69,11 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
 
     @Override
     protected synchronized R internalQuery() throws InvalidQueryException {
-        final String requestPage = DBPEDIA_SITE.concat(query);
         final Model model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
         final QueryData inputMetadata = new QueryData();
         try {
-            LOGGER.info("Requesting {} for initial information.", requestPage);
-            model.read(requestPage);
+            LOGGER.info("Requesting {} for initial information.", query);
+            model.read(query);
             inputMetadata.setCurrentModel(model);
         } catch (HttpException e) {
             throw LOGGER.throwing(e);
@@ -82,7 +81,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
             throw new InvalidQueryException(e);
         }
 
-        final Resource subject = model.getResource(requestPage);
+        final Resource subject = model.getResource(query);
         inputMetadata.setInitialSubject(subject);
         inputMetadata.setRestrictions(new ArrayList<>());
         this.usedURIs.clear();
@@ -93,10 +92,11 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
             final Selector selector = new SimpleSelector(subject, inputMetadata.getOntologyPathPredicate(), (RDFNode) null);
             search(inputMetadata, selector, nodeFactory, dataNodeRoot);
             LOGGER.info("Done searching");
+            dataNodeRoot.iterate(((dataNode, integer) -> System.out.println(dataNode)));
             progressListener.onSearchDone();
         } else {
-            LOGGER.info("Invalid createBackgroundService '{}' - no results were found. Initial search result: {}", query, result);
-            progressListener.onInvalidQuery(query, result);
+            LOGGER.info("Invalid createBackgroundService '{}' - no results were found. Initial search result: {}", this.query, result);
+            progressListener.onInvalidQuery(this.query, result);
         }
         return null;
     }
@@ -107,6 +107,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
      * @see InitialSearchResult
      */
     private InitialSearchResult initialSearch(final QueryData inputMetadata) {
+        LOGGER.debug("Initiating search on subject {}", inputMetadata.getInitialSubject());
         final InitialSearchResult startAndEndDateResult = requestStartAndEndDatePredicate(inputMetadata);
         if (startAndEndDateResult != InitialSearchResult.OK) {
             return startAndEndDateResult;
@@ -141,6 +142,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         final Model model = inputMetadata.getCurrentModel();
         final StmtIterator stmtIterator = model.listStatements(selector);
         if (!stmtIterator.hasNext()) {
+            LOGGER.info("No date found for input {}", inputMetadata);
             return InitialSearchResult.NO_DATE_FOUND;
         }
 
@@ -159,6 +161,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         }
 
         if (ref == null) {
+            LOGGER.error("Internal error occurred when resolving request for date input. Selector: {}", selector);
             return InitialSearchResult.UNKNOWN;
         }
         final Property startDateProperty = ref.getStartDatePredicate();
@@ -249,15 +252,14 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
     private void search(final QueryData inputMetadata, final Selector selector, final DataNodeFactory<T> nodeFactory, final DataNodeRoot<T> dataNodeRoot) {
         final Model model = inputMetadata.getCurrentModel();
 
-        final DataNode<T> curr = nodeFactory.newNode((T) selector.getSubject(), null);
-        dataNodeRoot.addChild(curr);
+        final DataNode<T> curr = nodeFactory.newNode((T) selector.getSubject(), dataNodeRoot);
         progressListener.onAddNewDataNode(curr, dataNodeRoot);
 
         final List<Statement> statements = model.listStatements(selector)
                                                 .toList();
         statements.sort(STATEMENT_COMPARATOR);
 
-        final List<DataNode<T>> foundData = new ArrayList<>();
+        final List<DataNode<T>> foundDataList = new ArrayList<>();
         T previous = null;
         for (final Statement stmt : statements) {
             final T next = (T) stmt.getObject();
@@ -274,20 +276,20 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
                 return;
             }
 
-            final DataNode<T> nextNode = nodeFactory.newNode(next, null);
+            final DataNode<T> nextNode = nodeFactory.newNode(next, dataNodeRoot);
             LOGGER.debug("Found {}", next);
-            foundData.add(nextNode);
+            foundDataList.add(nextNode);
         }
 
         // no nodes found, stop searching
-        if (foundData.isEmpty()) {
+        if (foundDataList.isEmpty()) {
             return;
         }
 
         // only one found, that means it's going linearly
         // we can continue searching
-        if (foundData.size() == 1) {
-            final DataNode<T> first = foundData.get(0);
+        if (foundDataList.size() == 1) {
+            final DataNode<T> first = foundDataList.get(0);
             searchFurther(inputMetadata, nodeFactory, first, dataNodeRoot);
             return;
         }
@@ -303,7 +305,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         // --------------
         // the reference can either be non-blocking or blocking, depending on the implementation
         // usually when user input is required it's blocking
-        final DataNodeReferenceHolder<T> ref = ambiguousInputResolver.resolveRequest(foundData, inputMetadata, this);
+        final DataNodeReferenceHolder<T> ref = ambiguousInputResolver.resolveRequest(foundDataList, inputMetadata, this);
         if (ref instanceof BlockingDataNodeReferenceHolder<T> blockingRef) {
             while (!blockingRef.isFinished()) {
                 try {
@@ -318,8 +320,12 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
             return;
         }
 
+        final List<DataNode<T>> currDataNodeChildren = new ArrayList<>();
         // WARN: Deleted handling for multiple references as it might not even be in the final version.
-        progressListener.onAddMultipleDataNodes(curr, foundData, chosenDataNode);
+        for (final DataNode<T> foundData : foundDataList) {
+            currDataNodeChildren.add(nodeFactory.newNode(foundData.getData(), curr));
+        }
+        progressListener.onAddMultipleDataNodes(curr, currDataNodeChildren, chosenDataNode);
         searchFurther(inputMetadata, nodeFactory, chosenDataNode, dataNodeRoot);
     }
 

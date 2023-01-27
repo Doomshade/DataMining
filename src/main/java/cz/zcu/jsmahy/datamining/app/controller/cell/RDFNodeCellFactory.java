@@ -28,8 +28,6 @@ import java.util.ResourceBundle;
  * @since 1.0
  */
 public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>> {
-    private final TreeView<DataNode<T>> treeView;
-    private final MainController<T> mainController;
     private TextField textField;
 
     public RDFNodeCellFactory(final TreeView<DataNode<T>> treeView,
@@ -38,33 +36,45 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
                               final DialogHelper dialogHelper,
                               final DataNodeFactory<T> nodeFactory,
                               final RequestHandler<T, ?> requestHandler) {
-        this.treeView = treeView;
-        this.mainController = mainController;
         emptyProperty().addListener((obs, wasEmpty, isNowEmpty) -> {
-            if (!isNowEmpty) {
-                // TODO: context menu for "add/continue line"
-                final ContextMenu contextMenu = new ContextMenu();
-
-                final MenuItem searchItem = buildSearchItem(resources, dialogHelper, requestHandler);
-                final MenuItem addRestrictionItem = buildAddRestrictionItem(resources);
-                final MenuItem addItem = buildAddItem(resources);
-                final MenuItem editItem = buildEditItem(resources);
-                final MenuItem deleteItem = buildDeleteItem(resources);
-                final MenuItem newLineItem = buildNewLineItem(resources, nodeFactory, requestHandler);
-                final ObservableList<MenuItem> items = contextMenu.getItems();
-                if (getItem() instanceof DataNodeRoot<T>) {
-                    items.addAll(searchItem, addRestrictionItem, addItem, editItem, deleteItem);
-                } else {
-                    items.addAll(newLineItem, addItem, deleteItem);
-                }
-                setContextMenu(contextMenu);
-            } else {
+            if (isNowEmpty) {
                 setContextMenu(null);
+                return;
             }
+
+            // TODO: context menu for "add/continue line"
+            final ContextMenu contextMenu = new ContextMenu();
+
+            final MenuItem searchItem = buildSearchItem(resources, dialogHelper, requestHandler, mainController);
+            final MenuItem addRestrictionItem = buildAddRestrictionItem(resources);
+            final MenuItem addItem = buildAddItem(resources);
+            final MenuItem editItem = buildEditItem(resources);
+            final MenuItem deleteItem = buildDeleteItem(resources, treeView);
+            final MenuItem newLineItem = buildNewLineItem(resources, nodeFactory, requestHandler, treeView, mainController);
+            final MenuItem continueLineItem = buildContinueLineItem(resources);
+            final ObservableList<MenuItem> items = contextMenu.getItems();
+            if (getItem() instanceof DataNodeRoot<T>) {
+                items.addAll(searchItem, addRestrictionItem, addItem, editItem, deleteItem);
+            } else {
+                items.addAll(newLineItem, continueLineItem, addItem, deleteItem);
+            }
+            setContextMenu(contextMenu);
         });
     }
 
-    private MenuItem buildNewLineItem(final ResourceBundle resources, final DataNodeFactory<T> nodeFactory, final RequestHandler<T, ?> requestHandler) {
+    private MenuItem buildContinueLineItem(final ResourceBundle resources) {
+        final MenuItem menuItem = new MenuItem();
+        menuItem.textProperty()
+                .bind(Bindings.format(resources.getString("continue-line"), textProperty()));
+        menuItem.setOnAction(event -> {
+
+        });
+        menuItem.setAccelerator(KeyCombination.keyCombination("CTRL + T"));
+        return menuItem;
+    }
+
+    private MenuItem buildNewLineItem(final ResourceBundle resources, final DataNodeFactory<T> nodeFactory, final RequestHandler<T, ?> requestHandler, final TreeView<DataNode<T>> treeView,
+                                      final MainController<T> mainController) {
         final MenuItem menuItem = new MenuItem(resources.getString("create-new-line"));
         menuItem.setOnAction(event -> {
             final TreeItem<DataNode<T>> root = treeView.getRoot();
@@ -73,12 +83,14 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
             final DataNodeRoot<T> newDataNodeRoot = nodeFactory.newRoot(dataNodeRoot.getName() + " - copy");
             root.getChildren()
                 .add(new TreeItem<>(newDataNodeRoot));
-            requestHandler.createBackgroundService(getItem().getUri(), newDataNodeRoot);
+            final Service<?> service = requestHandler.createBackgroundService(getItem().getUri(), newDataNodeRoot);
+            mainController.bindService(service);
+            service.restart();
         });
         return menuItem;
     }
 
-    private MenuItem buildSearchItem(final ResourceBundle resources, final DialogHelper dialogHelper, final RequestHandler<T, ?> requestHandler) {
+    private MenuItem buildSearchItem(final ResourceBundle resources, final DialogHelper dialogHelper, final RequestHandler<T, ?> requestHandler, final MainController<T> mainController) {
         final MenuItem menuItem = new MenuItem(resources.getString("search"));
         menuItem.setOnAction(event -> dialogHelper.textInputDialog(resources.getString("item-to-search"), searchValue -> {
             getTreeItem().setExpanded(true);
@@ -153,7 +165,7 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
         setContentDisplay(ContentDisplay.TEXT_ONLY);
     }
 
-    private MenuItem buildDeleteItem(final ResourceBundle resources) {
+    private MenuItem buildDeleteItem(final ResourceBundle resources, final TreeView<DataNode<T>> treeView) {
         final MenuItem menuItem = new MenuItem();
         menuItem.textProperty()
                 .bind(Bindings.format(resources.getString("ontology-prompt-delete"), textProperty()));

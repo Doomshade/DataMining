@@ -18,15 +18,15 @@ public interface DataNodeFactory<T> {
      *
      * @return a data node root
      */
-    DataNodeRoot<T> newRoot(final String rootName);
+    DataNodeRoot<T> newRoot(@NonNull String rootName);
 
     /**
      * Creates a new data node with the given data.
      *
      * @param data   the data
-     * @param parent
+     * @param parent the data node's parent
      *
      * @return a new data node
      */
-    DataNode<T> newNode(@NonNull T data, final DataNode<T> parent);
+    DataNode<T> newNode(@NonNull T data, @NonNull DataNode<T> parent);
 }

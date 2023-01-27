@@ -13,6 +13,7 @@ import java.util.*;
 public final class DBPediaConfiguration implements DataMiningConfiguration {
     public static final Collection<String> ALL_VALID_DATE_FORMATS = new HashSet<>() {
         {
+            add("integer");
             add("date");
             add("time");
             add("dateTime");

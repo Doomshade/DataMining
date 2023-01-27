@@ -15,6 +15,7 @@ public abstract class AbstractRequestHandler<T, R> extends Service<R> implements
     protected final AmbiguousInputResolver<T, R, ?> ontologyPathPredicateInputResolver;
     protected final AmbiguousInputResolver<T, R, ?> dateInputResolver;
     protected final DataMiningConfiguration configuration;
+    protected final String baseUrl;
     protected String query;
     protected DataNodeRoot<T> dataNodeRoot;
 
@@ -29,24 +30,33 @@ public abstract class AbstractRequestHandler<T, R> extends Service<R> implements
                                      final AmbiguousInputResolver ambiguousInputResolver,
                                      final AmbiguousInputResolver ontologyPathPredicateInputResolver,
                                      final AmbiguousInputResolver dateInputResolver,
-                                     final DataMiningConfiguration configuration) {
+                                     final DataMiningConfiguration configuration,
+                                     final String baseUrl) {
         this.progressListener = progressListener;
         this.nodeFactory = nodeFactory;
         this.ambiguousInputResolver = ambiguousInputResolver;
         this.ontologyPathPredicateInputResolver = ontologyPathPredicateInputResolver;
         this.dateInputResolver = dateInputResolver;
         this.configuration = configuration;
+        this.baseUrl = baseUrl;
+    }
+
+    @Override
+    public final Service<R> createBackgroundService(final String query, final DataNodeRoot<T> dataNodeRoot) throws InvalidQueryException {
+        this.query = requireNonNull(query);
+        if (!this.query.startsWith(baseUrl)) {
+            this.query = baseUrl.concat(this.query);
+        }
+        this.dataNodeRoot = requireNonNull(dataNodeRoot);
+        return this;
     }
 
     public synchronized void unlockDialogPane() {
         notify();
     }
 
-    @Override
-    public final Service<R> createBackgroundService(final String query, final DataNodeRoot<T> dataNodeRoot) throws InvalidQueryException {
-        this.query = requireNonNull(query);
-        this.dataNodeRoot = requireNonNull(dataNodeRoot);
-        return this;
+    public final String getQuery() {
+        return query;
     }
 
     @Override

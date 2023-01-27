@@ -20,9 +20,12 @@ class DataNodeReferenceHolderTest extends Specification {
 
     @Shared
     DataNodeReferenceHolder<?> ref
+    @Shared
+    DataNodeRoot<?> root
 
     void setup() {
         ref = new DataNodeReferenceHolder<>()
+        root = nodeFactory.newRoot("Root")
     }
 
     def "GetRestrictions"() {
@@ -61,7 +64,7 @@ class DataNodeReferenceHolderTest extends Specification {
         !ref.hasMultipleReferences()
 
         where:
-        node << [nodeFactory.newNode(_, null) as DataNode<?>, Arrays.asList(nodeFactory.newNode(_, null)) as Collection<DataNode<?>>]
+        node << [nodeFactory.newNode(_, root) as DataNode<?>, Arrays.asList(nodeFactory.newNode(_, root)) as Collection<DataNode<?>>]
     }
 
     def "Should return a null reference when none is set and have a single reference"() {
@@ -72,8 +75,8 @@ class DataNodeReferenceHolderTest extends Specification {
 
     def "Should throw ISE if multiple references are set"() {
         given:
-        ref.add(nodeFactory.newNode(_, null))
-        ref.add(nodeFactory.newNode(_, null))
+        ref.add(nodeFactory.newNode(_, root))
+        ref.add(nodeFactory.newNode(_, root))
 
         when:
         ref.get()
@@ -90,8 +93,8 @@ class DataNodeReferenceHolderTest extends Specification {
 
     def "Should return list of references and have multiple references"() {
         when:
-        ref.add(nodeFactory.newNode(_, null))
-        ref.add(nodeFactory.newNode(_, null))
+        ref.add(nodeFactory.newNode(_, root))
+        ref.add(nodeFactory.newNode(_, root))
 
         then:
         ref.getList().size() == 2
