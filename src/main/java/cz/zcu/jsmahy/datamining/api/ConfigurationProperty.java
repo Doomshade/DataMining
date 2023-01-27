@@ -1,4 +1,4 @@
-package cz.zcu.jsmahy.datamining.config;
+package cz.zcu.jsmahy.datamining.api;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

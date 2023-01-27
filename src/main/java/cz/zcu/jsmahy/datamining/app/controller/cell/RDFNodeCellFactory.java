@@ -3,7 +3,7 @@ package cz.zcu.jsmahy.datamining.app.controller.cell;
 import cz.zcu.jsmahy.datamining.api.DataNode;
 import cz.zcu.jsmahy.datamining.api.DataNodeFactory;
 import cz.zcu.jsmahy.datamining.api.DataNodeRoot;
-import cz.zcu.jsmahy.datamining.api.RequestHandler;
+import cz.zcu.jsmahy.datamining.api.SparqlEndpointAgent;
 import cz.zcu.jsmahy.datamining.app.controller.MainController;
 import cz.zcu.jsmahy.datamining.util.DialogHelper;
 import cz.zcu.jsmahy.datamining.util.RDFNodeUtil;
@@ -35,7 +35,7 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
                               final MainController<T> mainController,
                               final DialogHelper dialogHelper,
                               final DataNodeFactory<T> nodeFactory,
-                              final RequestHandler<T, ?> requestHandler) {
+                              final SparqlEndpointAgent<T, ?> requestHandler) {
         emptyProperty().addListener((obs, wasEmpty, isNowEmpty) -> {
             if (isNowEmpty) {
                 setContextMenu(null);
@@ -73,7 +73,7 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
         return menuItem;
     }
 
-    private MenuItem buildNewLineItem(final ResourceBundle resources, final DataNodeFactory<T> nodeFactory, final RequestHandler<T, ?> requestHandler, final TreeView<DataNode<T>> treeView,
+    private MenuItem buildNewLineItem(final ResourceBundle resources, final DataNodeFactory<T> nodeFactory, final SparqlEndpointAgent<T, ?> requestHandler, final TreeView<DataNode<T>> treeView,
                                       final MainController<T> mainController) {
         final MenuItem menuItem = new MenuItem(resources.getString("create-new-line"));
         menuItem.setOnAction(event -> {
@@ -90,11 +90,11 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
         return menuItem;
     }
 
-    private MenuItem buildSearchItem(final ResourceBundle resources, final DialogHelper dialogHelper, final RequestHandler<T, ?> requestHandler, final MainController<T> mainController) {
+    private MenuItem buildSearchItem(final ResourceBundle resources, final DialogHelper dialogHelper, final SparqlEndpointAgent<T, ?> sparqlEndpointAgent, final MainController<T> mainController) {
         final MenuItem menuItem = new MenuItem(resources.getString("search"));
         menuItem.setOnAction(event -> dialogHelper.textInputDialog(resources.getString("item-to-search"), searchValue -> {
             getTreeItem().setExpanded(true);
-            final Service<?> service = requestHandler.createBackgroundService(searchValue.replaceAll(" ", "_"), (DataNodeRoot<T>) getItem());
+            final Service<?> service = sparqlEndpointAgent.createBackgroundService(searchValue.replaceAll(" ", "_"), (DataNodeRoot<T>) getItem());
             mainController.bindService(service);
             service.restart();
         }, "Title"));

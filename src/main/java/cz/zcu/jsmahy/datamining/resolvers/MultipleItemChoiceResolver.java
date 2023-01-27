@@ -1,4 +1,4 @@
-package cz.zcu.jsmahy.datamining.request.resolvers;
+package cz.zcu.jsmahy.datamining.resolvers;
 
 import cz.zcu.jsmahy.datamining.Main;
 import cz.zcu.jsmahy.datamining.api.*;
@@ -22,12 +22,14 @@ import java.util.ResourceBundle;
  * @author Jakub Šmrha
  * @version 1.0
  */
-public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements BlockingAmbiguousInputResolver<T, Void> {
+public class MultipleItemChoiceResolver<T extends RDFNode, R> implements BlockingResponseResolver<T, R> {
 
-    private static final Logger LOGGER = LogManager.getLogger(UserAssistedAmbiguousInputResolver.class);
+    private static final Logger LOGGER = LogManager.getLogger(MultipleItemChoiceResolver.class);
 
     @Override
-    public BlockingDataNodeReferenceHolder<T> resolveRequest(final List<DataNode<T>> ambiguousInput, final QueryData inputMetadata, final RequestHandler<T, Void> requestHandler) {
+    public BlockingDataNodeReferenceHolder<T> resolveRequest(final List<DataNode<T>> ambiguousInput,
+                                                             final QueryData inputMetadata,
+                                                             final SparqlEndpointTask<T, R, ? extends ApplicationConfiguration<T, R>> requestHandler) {
         // first off we check if we have an ontology path set
         // if not, pop up a dialogue
         final BlockingDataNodeReferenceHolder<T> ref = new BlockingDataNodeReferenceHolder<>();
@@ -51,7 +53,9 @@ public class UserAssistedAmbiguousInputResolver<T extends RDFNode> implements Bl
         private final ListView<DataNode<T>> content = new ListView<>();
         private final DataNodeReferenceHolder<T> ref;
 
-        public MultipleItemChoiceDialog(final List<DataNode<T>> list, final DataNodeReferenceHolder<T> ref, final Callback<ListView<DataNode<T>>, ListCell<DataNode<T>>> cellFactory,
+        public MultipleItemChoiceDialog(final List<DataNode<T>> list,
+                                        final DataNodeReferenceHolder<T> ref,
+                                        final Callback<ListView<DataNode<T>>, ListCell<DataNode<T>>> cellFactory,
                                         final SelectionMode selectionMode) {
             final ResourceBundle resourceBundle = ResourceBundle.getBundle("lang");
             this.ref = ref;

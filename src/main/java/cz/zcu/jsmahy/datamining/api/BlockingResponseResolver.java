@@ -6,5 +6,5 @@ package cz.zcu.jsmahy.datamining.api;
  * @author Jakub Šmrha
  * @since 1.0
  */
-public interface BlockingAmbiguousInputResolver<T, R> extends AmbiguousInputResolver<T, R, BlockingDataNodeReferenceHolder<T>> {
+public interface BlockingResponseResolver<T, R> extends ResponseResolver<T, R, BlockingDataNodeReferenceHolder<T>> {
 }

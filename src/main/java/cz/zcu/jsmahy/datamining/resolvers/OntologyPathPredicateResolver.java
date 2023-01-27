@@ -1,13 +1,15 @@
-package cz.zcu.jsmahy.datamining.request.resolvers;
+package cz.zcu.jsmahy.datamining.resolvers;
 
 import cz.zcu.jsmahy.datamining.api.*;
 import javafx.application.Platform;
 
 import java.util.List;
 
-public class OntologyPathPredicateInputResolver<T, R> implements BlockingAmbiguousInputResolver<T, R> {
+public class OntologyPathPredicateResolver<T, R> implements BlockingResponseResolver<T, R> {
     @Override
-    public BlockingDataNodeReferenceHolder<T> resolveRequest(final List<DataNode<T>> ambiguousInput, final QueryData inputMetadata, final RequestHandler<T, R> requestHandler) {
+    public BlockingDataNodeReferenceHolder<T> resolveRequest(final List<DataNode<T>> ambiguousInput,
+                                                             final QueryData inputMetadata,
+                                                             final SparqlEndpointTask<T, R, ? extends ApplicationConfiguration<T, R>> requestHandler) {
         final BlockingDataNodeReferenceHolder<T> ref = new BlockingDataNodeReferenceHolder<>();
 
         Platform.runLater(() -> {

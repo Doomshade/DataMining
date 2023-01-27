@@ -12,7 +12,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Bean for the query progression. Used in {@link AmbiguousInputResolver}s to help them distinguish what the problem is.
+ * Bean for the query progression. Used in {@link ResponseResolver}s to help them distinguish what the problem is.
  */
 @Data
 @AllArgsConstructor

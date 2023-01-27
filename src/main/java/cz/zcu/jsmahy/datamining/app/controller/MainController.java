@@ -5,7 +5,8 @@ import com.google.inject.Injector;
 import com.jfoenix.controls.JFXSpinner;
 import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
-import cz.zcu.jsmahy.datamining.request.handlers.DBPediaRequestHandler;
+import cz.zcu.jsmahy.datamining.dbpedia.DBPediaEndpointTask;
+import cz.zcu.jsmahy.datamining.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.util.DialogHelper;
 import cz.zcu.jsmahy.datamining.util.RDFNodeUtil;
 import javafx.application.Platform;
@@ -83,7 +84,7 @@ order by ?pred
         }, "Title");
 
     };
-    private RequestHandler<T, Void> requestHandler;
+    private SparqlEndpointAgent<T, Void> requestHandler;
 
     public static MainController<?> getInstance() {
         return instance;
@@ -95,7 +96,7 @@ order by ?pred
         instance = this;
         final Injector injector = Guice.createInjector(new DBPediaModule());
         this.nodeFactory = injector.getInstance(DataNodeFactory.class);
-        this.requestHandler = injector.getInstance(RequestHandler.class);
+        this.requestHandler = injector.getInstance(SparqlEndpointAgent.class);
         this.dialogHelper = injector.getInstance(DialogHelper.class);
 
         final MenuBar menuBar = createMenuBar(resources);
@@ -322,8 +323,8 @@ order by ?pred
     }
 
     @Override
-    public void onInvalidQuery(final String invalidQuery, final DBPediaRequestHandler.InitialSearchResult result) {
-        assert result != DBPediaRequestHandler.InitialSearchResult.OK;
+    public void onInvalidQuery(final String invalidQuery, final DBPediaEndpointTask.InitialSearchResult result) {
+        assert result != DBPediaEndpointTask.InitialSearchResult.OK;
         Platform.runLater(() -> {
             // TODO: resource bundle
             // TODO: different alerts for different results

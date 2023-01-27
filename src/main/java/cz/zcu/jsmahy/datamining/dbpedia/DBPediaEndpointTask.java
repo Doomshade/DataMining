@@ -1,10 +1,6 @@
-package cz.zcu.jsmahy.datamining.request.handlers;
+package cz.zcu.jsmahy.datamining.dbpedia;
 
-import com.google.inject.Inject;
-import com.google.inject.name.Named;
 import cz.zcu.jsmahy.datamining.api.*;
-import cz.zcu.jsmahy.datamining.config.DBPediaConfiguration;
-import cz.zcu.jsmahy.datamining.config.DataMiningConfiguration;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.datatypes.RDFDatatype;
@@ -18,15 +14,13 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
- * The DBPedia {@link RequestHandler}.
+ * The DBPedia {@link SparqlEndpointTask}.
  *
  * @author Jakub Šmrha
  * @version 1.0
  */
-public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends AbstractRequestHandler<T, R> {
-    //<editor-fold desc="Constants">
-    private static final String DBPEDIA_BASE_URL = "http://dbpedia.org/resource/";
-    private static final Logger LOGGER = LogManager.getLogger(DBPediaRequestHandler.class);
+public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends SparqlEndpointTask<T, R, DBPediaApplicationConfiguration<T, R>> {
+    private static final Logger LOGGER = LogManager.getLogger(DBPediaEndpointTask.class);
     /**
      * <p>This comparator ensures the URI resources are placed first over literal resources.</p>
      * <p>The reasoning behind is simple: if the user wishes to fast forward when searching down the line we need to iterate through URI resources first.</p>
@@ -44,31 +38,26 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
     private final Collection<String> usedURIs = new HashSet<>();
 
 
-    @Inject
-    @SuppressWarnings("rawtypes")
-    public DBPediaRequestHandler(final RequestProgressListener progressListener,
-                                 final DataNodeFactory nodeFactory,
-                                 final @Named("userAssisted") AmbiguousInputResolver ambiguousInputResolver,
-                                 final @Named("ontologyPathPredicate") AmbiguousInputResolver ontologyPathPredicateInputResolver,
-                                 final @Named("date") AmbiguousInputResolver dateInputResolver,
-                                 final @Named("dbpediaConfig") DataMiningConfiguration configuration) {
-        super(progressListener, nodeFactory, ambiguousInputResolver, ontologyPathPredicateInputResolver, dateInputResolver, configuration, DBPEDIA_BASE_URL);
-        if (configuration instanceof DBPediaConfiguration dbPediaConfiguration) {
-            this.ignoredPathPredicates.addAll(dbPediaConfiguration.getIgnoredPathPredicates());
-            final Set<String> validDateFormats = dbPediaConfiguration.getValidDateFormats()
-                                                                     .stream()
-                                                                     .map(String::toLowerCase)
-                                                                     .collect(Collectors.toSet());
-            if (validDateFormats.contains("any")) {
-                this.validDateFormats.addAll(DBPediaConfiguration.ALL_VALID_DATE_FORMATS);
-            } else {
-                this.validDateFormats.addAll(validDateFormats);
-            }
+    public DBPediaEndpointTask(final DBPediaApplicationConfiguration<T, R> config, final DataNodeFactory<T> nodeFactory, final String query,
+                               final DataNodeRoot<T> dataNodeRoot) {
+        // DBPEDIA_BASE_URL
+        super(config, nodeFactory, query, dataNodeRoot);
+        final List<String> ignoredPathPredicates = config.getIgnoredPathPredicates();
+        this.ignoredPathPredicates.addAll(ignoredPathPredicates);
+        final Set<String> validDateFormats = config.getValidDateFormats()
+                                                   .stream()
+                                                   .map(String::toLowerCase)
+                                                   .collect(Collectors.toSet());
+        if (validDateFormats.contains("any")) {
+            this.validDateFormats.addAll(DBPediaApplicationConfiguration.ALL_VALID_DATE_FORMATS);
+        } else {
+            this.validDateFormats.addAll(validDateFormats);
         }
     }
 
     @Override
-    protected synchronized R internalQuery() throws InvalidQueryException {
+    protected synchronized R call() throws InvalidQueryException {
+        final RequestProgressListener<T> progressListener = config.getProgressListener();
         final Model model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
         final QueryData inputMetadata = new QueryData();
         try {
@@ -90,12 +79,12 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         final InitialSearchResult result = initialSearch(inputMetadata);
         if (result == InitialSearchResult.OK) {
             final Selector selector = new SimpleSelector(subject, inputMetadata.getOntologyPathPredicate(), (RDFNode) null);
-            search(inputMetadata, selector, nodeFactory, dataNodeRoot);
+            search(inputMetadata, selector);
             LOGGER.info("Done searching");
             dataNodeRoot.iterate(((dataNode, integer) -> System.out.println(dataNode)));
             progressListener.onSearchDone();
         } else {
-            LOGGER.info("Invalid createBackgroundService '{}' - no results were found. Initial search result: {}", this.query, result);
+            LOGGER.info("Invalid createBackgroundSparqlRequest '{}' - no results were found. Initial search result: {}", this.query, result);
             progressListener.onInvalidQuery(this.query, result);
         }
         return null;
@@ -149,7 +138,8 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         final List<Statement> statements = stmtIterator.toList();
         inputMetadata.setCandidatesForStartAndEndDates(statements);
 
-        final DataNodeReferenceHolder<T> ref = dateInputResolver.resolveRequest(null, inputMetadata, this);
+        final DataNodeReferenceHolder<T> ref = config.getStartAndEndDateResolver()
+                                                     .resolveRequest(null, inputMetadata, this);
         if (ref instanceof BlockingDataNodeReferenceHolder<T> blockingRef) {
             while (!blockingRef.isFinished()) {
                 try {
@@ -176,7 +166,8 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
 
         inputMetadata.setStartDateProperty(startDateProperty);
         inputMetadata.setEndDateProperty(endDateProperty);
-        progressListener.setStartAndDateProperty(startDateProperty, endDateProperty);
+        config.getProgressListener()
+              .setStartAndDateProperty(startDateProperty, endDateProperty);
         return InitialSearchResult.OK;
     }
 
@@ -198,7 +189,8 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         }
         inputMetadata.setCandidatesForOntologyPathPredicate(Collections.unmodifiableList(stmtIterator.toList()));
 
-        final DataNodeReferenceHolder<T> ref = ontologyPathPredicateInputResolver.resolveRequest(null, inputMetadata, this);
+        final DataNodeReferenceHolder<T> ref = config.getOntologyPathPredicateResolver()
+                                                     .resolveRequest(null, inputMetadata, this);
         if (ref instanceof BlockingDataNodeReferenceHolder<T> blockingRef) {
             while (!blockingRef.isFinished()) {
                 try {
@@ -217,7 +209,8 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         }
 
         inputMetadata.setOntologyPathPredicate(ontologyPathPredicate);
-        progressListener.onSetOntologyPathPredicate(ontologyPathPredicate);
+        config.getProgressListener()
+              .onSetOntologyPathPredicate(ontologyPathPredicate);
         return InitialSearchResult.OK;
     }
 
@@ -244,15 +237,15 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
     /**
      * Recursively searches based on the given model, selector, and a previous link. Adds the subject of the selector to the tree.
      *
-     * @param selector     the selector
-     * @param nodeFactory  the data node factory
-     * @param dataNodeRoot the tree root
+     * @param selector the selector
      */
     @SuppressWarnings("unchecked")
-    private void search(final QueryData inputMetadata, final Selector selector, final DataNodeFactory<T> nodeFactory, final DataNodeRoot<T> dataNodeRoot) {
+    private void search(final QueryData inputMetadata, final Selector selector) {
         final Model model = inputMetadata.getCurrentModel();
 
+        final DataNodeFactory<T> nodeFactory = config.getNodeFactory();
         final DataNode<T> curr = nodeFactory.newNode((T) selector.getSubject(), dataNodeRoot);
+        final RequestProgressListener<T> progressListener = config.getProgressListener();
         progressListener.onAddNewDataNode(curr, dataNodeRoot);
 
         final List<Statement> statements = model.listStatements(selector)
@@ -290,7 +283,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         // we can continue searching
         if (foundDataList.size() == 1) {
             final DataNode<T> first = foundDataList.get(0);
-            searchFurther(inputMetadata, nodeFactory, first, dataNodeRoot);
+            searchFurther(inputMetadata, first);
             return;
         }
 
@@ -305,7 +298,8 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         // --------------
         // the reference can either be non-blocking or blocking, depending on the implementation
         // usually when user input is required it's blocking
-        final DataNodeReferenceHolder<T> ref = ambiguousInputResolver.resolveRequest(foundDataList, inputMetadata, this);
+        final DataNodeReferenceHolder<T> ref = config.getAmbiguousResultResolver()
+                                                     .resolveRequest(foundDataList, inputMetadata, this);
         if (ref instanceof BlockingDataNodeReferenceHolder<T> blockingRef) {
             while (!blockingRef.isFinished()) {
                 try {
@@ -326,10 +320,10 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
             currDataNodeChildren.add(nodeFactory.newNode(foundData.getData(), curr));
         }
         progressListener.onAddMultipleDataNodes(curr, currDataNodeChildren, chosenDataNode);
-        searchFurther(inputMetadata, nodeFactory, chosenDataNode, dataNodeRoot);
+        searchFurther(inputMetadata, chosenDataNode);
     }
 
-    private void searchFurther(final QueryData inputMetadata, final DataNodeFactory<T> nodeFactory, final DataNode<T> next, final DataNodeRoot<T> dataNodeRoot) {
+    private void searchFurther(final QueryData inputMetadata, final DataNode<T> next) {
         // attempts to search further down the line if the given data is a URI resource
         // if it's not a URI resource the searching terminates
         // if it's a URI resource we first check if we've been here already - we don't want to be stuck in a cycle,
@@ -348,7 +342,7 @@ public class DBPediaRequestHandler<T extends RDFNode, R extends Void> extends Ab
         final boolean hasBeenVisited = !usedURIs.add(resource.getURI());
         if (!hasBeenVisited) {
             final Selector sel = new SimpleSelector(resource, inputMetadata.getOntologyPathPredicate(), (RDFNode) null);
-            search(inputMetadata, sel, nodeFactory, dataNodeRoot);
+            search(inputMetadata, sel);
         }
     }
 

@@ -1,6 +1,6 @@
 package cz.zcu.jsmahy.datamining.api;
 
-import cz.zcu.jsmahy.datamining.request.handlers.DBPediaRequestHandler;
+import cz.zcu.jsmahy.datamining.dbpedia.DBPediaEndpointTask;
 import org.apache.jena.rdf.model.Property;
 
 import java.util.List;
@@ -46,7 +46,7 @@ public interface RequestProgressListener<T> {
      * @param query  the query
      * @param result the initial search result
      */
-    void onInvalidQuery(String query, final DBPediaRequestHandler.InitialSearchResult result);
+    void onInvalidQuery(String query, final DBPediaEndpointTask.InitialSearchResult result);
 
     /**
      * Called when the search is finished.
