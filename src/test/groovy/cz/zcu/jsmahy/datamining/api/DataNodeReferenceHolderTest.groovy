@@ -1,19 +1,17 @@
 package cz.zcu.jsmahy.datamining.api
 
 import com.google.inject.Guice
-import com.google.inject.Injector
 import javafx.collections.FXCollections
 import spock.lang.Shared
 import spock.lang.Specification
 
 class DataNodeReferenceHolderTest extends Specification {
     @Shared
-    static Injector injector
-    @Shared
     static DataNodeFactory<?> nodeFactory
 
     void setupSpec() {
-        injector = Guice.createInjector(new DataMiningModule() {})
+        def mocks = new Mocks()
+        def injector = Guice.createInjector(mocks.module())
         nodeFactory = injector.getInstance(DataNodeFactory)
     }
 

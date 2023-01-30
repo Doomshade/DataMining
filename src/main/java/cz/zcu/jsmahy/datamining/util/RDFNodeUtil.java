@@ -36,7 +36,7 @@ public class RDFNodeUtil {
             LOGGER.trace(marker, "Literal \"{}\"", str);
             return str;
         }
-        if (node.isResource()) {
+        if (node.isURIResource()) {
             final Resource resource = node.asResource();
             final String uri = resource.getURI();
             final int lastPartIndex = uri.lastIndexOf('/') + 1;

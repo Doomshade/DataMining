@@ -12,7 +12,7 @@ import static cz.zcu.jsmahy.datamining.util.RDFNodeUtil.formatRDFNode;
  * @author Jakub Šmrha
  * @since 1.0
  */
-final class DataNodeFactoryImpl<T> implements DataNodeFactory<T> {
+class DataNodeFactoryImpl<T> implements DataNodeFactory<T> {
 
     @Override
     public DataNodeRoot<T> newRoot(final @NonNull String rootName) {

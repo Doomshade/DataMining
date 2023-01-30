@@ -7,7 +7,8 @@ import lombok.EqualsAndHashCode;
 import java.util.function.BiConsumer;
 
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = true,
+                   doNotUseGetters = true)
 class DataNodeRootImpl<T> extends DataNodeImpl<T> implements DataNodeRoot<T> {
 
     @Override

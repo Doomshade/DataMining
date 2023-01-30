@@ -1,9 +1,13 @@
 package cz.zcu.jsmahy.datamining.api;
 
 import javafx.concurrent.Task;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import static java.util.Objects.requireNonNull;
 
+@EqualsAndHashCode(callSuper = true)
+@Data
 public abstract class SparqlEndpointTask<T, R, CFG extends ApplicationConfiguration<T, R>> extends Task<R> {
     protected final CFG config;
     protected final DataNodeFactory<T> nodeFactory;

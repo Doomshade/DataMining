@@ -9,6 +9,7 @@ import static java.util.Objects.requireNonNull;
 
 
 class SparqlEndpointAgentImpl<T, R> implements SparqlEndpointAgent<T, R> {
+    private final Object lock = new Object();
     private final SparqlEndpointTaskProvider<T, R, ApplicationConfiguration<T, R>> sparqlEndpointTaskProvider;
     private final ApplicationConfiguration<T, R> config;
     private final DataNodeFactory<T> nodeFactory;
@@ -27,17 +28,21 @@ class SparqlEndpointAgentImpl<T, R> implements SparqlEndpointAgent<T, R> {
 
     @Override
     public Service<R> createBackgroundService(final String query, final DataNodeRoot<T> dataNodeRoot) throws InvalidQueryException {
-        return service = new Service<>() {
-            @Override
-            protected Task<R> createTask() {
-                return sparqlEndpointTaskProvider.createTask(config, nodeFactory, query, dataNodeRoot);
-            }
-        };
+        synchronized (lock) {
+            return service = new Service<>() {
+                @Override
+                protected Task<R> createTask() {
+                    return sparqlEndpointTaskProvider.createTask(config, nodeFactory, query, dataNodeRoot);
+                }
+            };
+        }
     }
 
     @Override
     public boolean isRequesting() {
-        return service != null && service.isRunning();
+        synchronized (lock) {
+            return service != null && service.isRunning();
+        }
     }
 
 

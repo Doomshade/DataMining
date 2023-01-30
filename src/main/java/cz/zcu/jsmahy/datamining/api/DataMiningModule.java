@@ -10,20 +10,45 @@ import cz.zcu.jsmahy.datamining.util.DialogHelper;
 import static com.google.inject.Scopes.SINGLETON;
 
 /**
- * The base module for this project.
+ * <p>The base module for this project.</p>
+ * <p>NOTE: <b>DO NOT</b> require generic parameters because Guice is a blooooody safe DI framework that hates generics.</p>
+ * <p>To clarify <i><s>my frustration</s></i>: Guice requires a typed implementation. The type MUST correspond to the required type. Once you use something like
+ * <pre>{@code
+ * public class MyClass<T extends String> { (...) }
+ * }</pre>
+ * you are basically doomed and sentenced to using non-typed parameters because you can't do something like
+ * <pre>{@code
+ * bind(new TypeLiteral<MyClass<String>>(){}.to(new TypeLiteral<MyClassImpl<String>() {};
+ * }</pre>
+ * <p>
+ * Wildcard arguments are invalid, not even something like
+ * <pre>{@code
+ * MyClass<? extends String>
+ * }</pre>
+ * So the only way is to type it at runtime and tell Guice to skedaddle.</p>
+ *
+ * <p>An example of the <s>right</s> way of doing it:
+ * <pre>{@code
+ *   private final SparqlEndpointTaskProvider<T, R, ApplicationConfiguration<T, R>> sparqlEndpointTaskProvider;
+ *   private final ApplicationConfiguration<T, R> config;
+ *   private final DataNodeFactory<T> nodeFactory;
+ *
+ *   @Inject
+ *   @SuppressWarnings("unchecked, rawtypes")
+ *   public SparqlEndpointAgentImpl(final ApplicationConfiguration config, final DataNodeFactory nodeFactory, final SparqlEndpointTaskProvider sparqlEndpointTaskProvider) {
+ *     this.config = requireNonNull(config);
+ *     this.nodeFactory = requireNonNull(nodeFactory);
+ *     this.sparqlEndpointTaskProvider = requireNonNull(sparqlEndpointTaskProvider);
+ *   }
+ * }</pre>
+ * <p>
+ * Worst that could happen is some {@link RuntimeException} being thrown because of the wrong type arguments.</p>
  *
  * @author Jakub Šmrha
  * @since 1.0
  */
 public abstract class DataMiningModule extends AbstractModule {
 
-    /**
-     * <p>NOTE: <b>DO NOT</b> require generic parameters because Guice is a blooooody safe DI framework that hates generics.</p>
-     * <p>To clarify my frustration: Guice requires a typed implementation. The type MUST correspond to the required type. Once you use something like
-     * {@code (...) class MyClass<T extends String> (...)} you are basically doomed and sentenced to using non-typed parameters because you can't do something like
-     * {@code bind(new TypeLiteral<MyClass<String>>(){}.to(new TypeLiteral<MyClassImpl<String>() {};}. Not even wildcard arguments are valid, not even {@code MyClass<? extends String>}. So the only
-     * way is to type it at runtime and tell Guice to skedaddle.</p>
-     */
     @Override
     protected void configure() {
         bind(DataNodeFactory.class).to(DataNodeFactoryImpl.class)

@@ -3,6 +3,7 @@ package cz.zcu.jsmahy.datamining.api;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 
 import java.util.Iterator;
@@ -11,6 +12,8 @@ import java.util.Iterator;
 @Data
 class DataNodeImpl<T> implements DataNode<T> {
     private static long ID_SEQ = 0;
+
+    @EqualsAndHashCode.Exclude
     private final T data;
     private final DataNode<T> parent;
     private final long id;
