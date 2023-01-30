@@ -242,7 +242,7 @@ order by ?pred
         bindService(query);
     }
 
-    public void bindService(final Service<?> service) {
+    public synchronized void bindService(final Service<?> service) {
         this.rootPane.disableProperty()
                      .bind(service.runningProperty());
         this.progressIndicator.visibleProperty()
@@ -252,34 +252,19 @@ order by ?pred
     }
 
     @Override
-    public void onSetOntologyPathPredicate(final Property ontologyPathPredicate) {
+    public synchronized void onSetOntologyPathPredicate(final Property ontologyPathPredicate) {
         this.ontologyPathPredicate.setValue(ontologyPathPredicate);
     }
 
-    /**
-     * Callback for {@link SelectionModel#selectedItemProperty()} in the ontology list view. Displays the selected item in Wikipedia. The selected item must not be a root of any kind ({@link TreeItem}
-     * root nor {@link DataNodeRoot}).
-     *
-     * @param observable the observable that was invalidated. not used, it's here just because of the signature of {@link InvalidationListener#invalidated(Observable)} method
-     */
-    private void onSelection(final Observable observable) {
-        final TreeItem<DataNode<T>> selectedItem = ontologyTreeView.getSelectionModel()
-                                                                   .getSelectedItem();
-        final WebEngine engine = this.wikiPageWebView.getEngine();
-        if (selectedItem == null) {
-            LOGGER.debug("Could not handle ontology click because selected item was null.");
-            engine.load("");
-            return;
-        }
-        if (selectedItem == ontologyTreeView.getRoot() || selectedItem.getValue() instanceof DataNodeRoot<T>) {
-            engine.load("");
-            return;
-        }
-
-        final DataNode<T> dataNode = selectedItem.getValue();
-        final String formattedItem = RDFNodeUtil.formatRDFNode(dataNode.getData());
-        engine.load(String.format(WIKI_URL, formattedItem));
-
+    @Override
+    public void onAddNewDataNode(final DataNode<T> dataNode, final DataNodeRoot<T> dataNodeRoot) {
+        LOGGER.debug("Adding new data node '{}' to root '{}'", dataNode.getName(), dataNodeRoot.getName());
+        Platform.runLater(() -> {
+            final TreeItem<DataNode<T>> parent = findTreeItem(dataNodeRoot, ontologyTreeView.getRoot());
+            final TreeItem<DataNode<T>> child = new TreeItem<>(dataNode);
+            parent.getChildren()
+                  .add(child);
+        });
     }
 
     private static <T> void findTreeItem(DataNode<T> dataNode, TreeItem<DataNode<T>> currTreeItem, AtomicReference<TreeItem<DataNode<T>>> ref) {
@@ -301,19 +286,10 @@ order by ?pred
     }
 
     @Override
-    public void onAddNewDataNode(final DataNode<T> dataNode, final DataNodeRoot<T> dataNodeRoot) {
+    public void onAddMultipleDataNodes(final DataNode<T> dataNodesParent, final List<DataNode<T>> dataNodes, final DataNode<T> chosenDataNode) {
+        LOGGER.debug("Adding multiple data nodes '{}' under '{}'", dataNodes, dataNodesParent);
         Platform.runLater(() -> {
-            final TreeItem<DataNode<T>> parent = findTreeItem(dataNodeRoot, ontologyTreeView.getRoot());
-            final TreeItem<DataNode<T>> child = new TreeItem<>(dataNode);
-            parent.getChildren()
-                  .add(child);
-        });
-    }
-
-    @Override
-    public void onAddMultipleDataNodes(final DataNode<T> parent, final List<DataNode<T>> dataNodes, final DataNode<T> chosenDataNode) {
-        Platform.runLater(() -> {
-            final TreeItem<DataNode<T>> treeItem = findTreeItem(parent, ontologyTreeView.getRoot());
+            final TreeItem<DataNode<T>> treeItem = findTreeItem(dataNodesParent, ontologyTreeView.getRoot());
             treeItem.getChildren()
                     .addAll(dataNodes.stream()
                                      .map(TreeItem::new)
@@ -324,10 +300,10 @@ order by ?pred
 
     @Override
     public void onInvalidQuery(final String invalidQuery, final DBPediaEndpointTask.InitialSearchResult result) {
-        assert result != DBPediaEndpointTask.InitialSearchResult.OK;
         Platform.runLater(() -> {
             // TODO: resource bundle
             // TODO: different alerts for different results
+            assert result != DBPediaEndpointTask.InitialSearchResult.OK;
             final Alert alert = new Alert(Alert.AlertType.ERROR);
             switch (result) {
                 case SUBJECT_NOT_FOUND -> {
@@ -369,6 +345,29 @@ order by ?pred
             }
             alert.show();
         });
+    }
+
+    /**
+     * Callback for {@link SelectionModel#selectedItemProperty()} in the ontology list view. Displays the selected item in Wikipedia. The selected item must not be a root of any kind ({@link TreeItem}
+     * root nor {@link DataNodeRoot}).
+     *
+     * @param observable the observable that was invalidated. not used, it's here just because of the signature of {@link InvalidationListener#invalidated(Observable)} method
+     */
+    private void onSelection(final Observable observable) {
+        final TreeItem<DataNode<T>> selectedItem = ontologyTreeView.getSelectionModel()
+                                                                   .getSelectedItem();
+        final WebEngine engine = this.wikiPageWebView.getEngine();
+
+        // a valid item is a non-root item that's not null
+        final boolean hasSelectedValidItem = selectedItem != null && selectedItem != ontologyTreeView.getRoot() && !(selectedItem.getValue() instanceof DataNodeRoot<T>);
+        if (!hasSelectedValidItem) {
+            engine.load("");
+            return;
+        }
+
+        final DataNode<T> dataNode = selectedItem.getValue();
+        final String formattedItem = RDFNodeUtil.formatRDFNode(dataNode.getData());
+        engine.load(String.format(WIKI_URL, formattedItem));
     }
 
     @Override

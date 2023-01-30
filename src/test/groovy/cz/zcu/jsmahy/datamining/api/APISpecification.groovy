@@ -1,7 +1,6 @@
 package cz.zcu.jsmahy.datamining.api
 
 import com.google.inject.Guice
-import com.google.inject.Injector
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -14,7 +13,8 @@ class APISpecification extends Specification {
     private DataNodeRoot<?> root
 
     void setupSpec() {
-        Injector injector = Guice.createInjector(new DataMiningModule() {})
+        def mocks = new Mocks()
+        def injector = Guice.createInjector(mocks.module())
         nodeFactory = injector.getInstance(DataNodeFactory)
     }
 

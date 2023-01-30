@@ -35,10 +35,11 @@ public interface RequestProgressListener<T> {
      * the data nodes list is guaranteed to have size &gt;= 2</p>
      * <p>NOTE: This is optional to handle, but it adds clarity to the building progress.</p>
      *
-     * @param dataNodes      the data nodes
-     * @param chosenDataNode the data node that the user chose to continue under
+     * @param dataNodesParent the parent node of the data nodes
+     * @param dataNodes       the data nodes
+     * @param chosenDataNode  the data node that the user chose to continue under
      */
-    void onAddMultipleDataNodes(DataNode<T> parent, List<DataNode<T>> dataNodes, DataNode<T> chosenDataNode);
+    void onAddMultipleDataNodes(DataNode<T> dataNodesParent, List<DataNode<T>> dataNodes, DataNode<T> chosenDataNode);
 
     /**
      * Called when an invalid query is passed. The cause is usually the resource not existing.

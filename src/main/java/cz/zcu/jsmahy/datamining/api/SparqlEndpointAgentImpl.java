@@ -12,7 +12,7 @@ class SparqlEndpointAgentImpl<T, R> implements SparqlEndpointAgent<T, R> {
     private final SparqlEndpointTaskProvider<T, R, ApplicationConfiguration<T, R>> sparqlEndpointTaskProvider;
     private final ApplicationConfiguration<T, R> config;
     private final DataNodeFactory<T> nodeFactory;
-
+    private Service<R> service = null;
 
     /**
      * Reason for this parameter not having a generic parameter: {@link DataMiningModule}
@@ -27,12 +27,17 @@ class SparqlEndpointAgentImpl<T, R> implements SparqlEndpointAgent<T, R> {
 
     @Override
     public Service<R> createBackgroundService(final String query, final DataNodeRoot<T> dataNodeRoot) throws InvalidQueryException {
-        return new Service<>() {
+        return service = new Service<>() {
             @Override
             protected Task<R> createTask() {
                 return sparqlEndpointTaskProvider.createTask(config, nodeFactory, query, dataNodeRoot);
             }
         };
+    }
+
+    @Override
+    public boolean isRequesting() {
+        return service != null && service.isRunning();
     }
 
 
