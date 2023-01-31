@@ -1,6 +1,10 @@
 package cz.zcu.jsmahy.datamining.api;
 
 import lombok.NonNull;
+import org.apache.jena.rdf.model.RDFNode;
+
+import static cz.zcu.jsmahy.datamining.util.RDFNodeUtil.SPECIAL_CHARACTERS;
+import static cz.zcu.jsmahy.datamining.util.RDFNodeUtil.formatRDFNode;
 
 /**
  * A factory for {@link DataNode}s.
@@ -10,7 +14,8 @@ import lombok.NonNull;
  * @see DataNodeRoot
  * @since 1.0
  */
-public interface DataNodeFactory<T> {
+public class DataNodeFactory<T> {
+
     /**
      * Creates a new root.
      *
@@ -18,7 +23,11 @@ public interface DataNodeFactory<T> {
      *
      * @return a data node root
      */
-    DataNodeRoot<T> newRoot(@NonNull String rootName);
+    public DataNodeRoot<T> newRoot(final @NonNull String rootName) {
+        final DataNodeRoot<T> root = new DataNodeRootImpl<>();
+        root.setName(rootName);
+        return root;
+    }
 
     /**
      * Creates a new data node with the given data.
@@ -28,5 +37,17 @@ public interface DataNodeFactory<T> {
      *
      * @return a new data node
      */
-    DataNode<T> newNode(@NonNull T data, @NonNull DataNode<T> parent);
+    public DataNode<T> newNode(final @NonNull T data, final @NonNull DataNode<T> parent) {
+        final DataNode<T> dataNode = new DataNodeImpl<>(data, parent);
+        // implicitly set the name of the data node to its formatted state if it's an RDFNode implementation
+        if (data instanceof RDFNode rdfNode) {
+            dataNode.setName(formatRDFNode(rdfNode).replaceAll(SPECIAL_CHARACTERS, " "));
+            if (rdfNode.isURIResource()) {
+                dataNode.setUri(rdfNode.asResource()
+                                       .getURI());
+            }
+        }
+        ((DataNodeImpl<T>) parent).addChild(dataNode);
+        return dataNode;
+    }
 }

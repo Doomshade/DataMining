@@ -10,7 +10,7 @@ import java.util.Iterator;
 
 
 @Data
-class DataNodeImpl<T> implements DataNode<T> {
+public class DataNodeImpl<T> implements DataNode<T> {
     private static long ID_SEQ = 0;
 
     @EqualsAndHashCode.Exclude

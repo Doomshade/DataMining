@@ -11,9 +11,9 @@ import static com.google.inject.Scopes.SINGLETON;
 
 /**
  * <p>Module for <a href="https://www.dbpedia.org/">DBPedia</a> SPARQL queries</p>
- * TODO: move this somewhere else
  *
  * @author Jakub Šmrha
+ * @see DataMiningModule
  * @since 1.0
  */
 public class DBPediaModule extends DataMiningModule {

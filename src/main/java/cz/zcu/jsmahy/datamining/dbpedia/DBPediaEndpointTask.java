@@ -38,8 +38,7 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Spar
     private final Collection<String> usedURIs = new HashSet<>();
 
 
-    public DBPediaEndpointTask(final DBPediaApplicationConfiguration<T, R> config, final DataNodeFactory<T> nodeFactory, final String query,
-                               final DataNodeRoot<T> dataNodeRoot) {
+    public DBPediaEndpointTask(final DBPediaApplicationConfiguration<T, R> config, final DataNodeFactory<T> nodeFactory, final String query, final DataNodeRoot<T> dataNodeRoot) {
         // DBPEDIA_BASE_URL
         super(config, nodeFactory, query, dataNodeRoot);
         final List<String> ignoredPathPredicates = config.getIgnoredPathPredicates();

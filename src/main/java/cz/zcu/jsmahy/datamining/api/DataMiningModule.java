@@ -35,7 +35,7 @@ import static com.google.inject.Scopes.SINGLETON;
  *
  *   @Inject
  *   @SuppressWarnings("unchecked, rawtypes")
- *   public SparqlEndpointAgentImpl(final ApplicationConfiguration config, final DataNodeFactory nodeFactory, final SparqlEndpointTaskProvider sparqlEndpointTaskProvider) {
+ *   public SparqlEndpointAgent(final ApplicationConfiguration config, final DataNodeFactory nodeFactory, final SparqlEndpointTaskProvider sparqlEndpointTaskProvider) {
  *     this.config = requireNonNull(config);
  *     this.nodeFactory = requireNonNull(nodeFactory);
  *     this.sparqlEndpointTaskProvider = requireNonNull(sparqlEndpointTaskProvider);
@@ -51,10 +51,7 @@ public abstract class DataMiningModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        bind(DataNodeFactory.class).to(DataNodeFactoryImpl.class)
-                                   .in(SINGLETON);
         bind(DialogHelper.class).in(SINGLETON);
-        bind(SparqlEndpointAgent.class).to(SparqlEndpointAgentImpl.class);
 
         // ambiguous input resolvers
         bind(ResponseResolver.class).annotatedWith(Names.named("userAssisted"))

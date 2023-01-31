@@ -20,7 +20,7 @@ public abstract class SparqlEndpointTask<T, R, CFG extends ApplicationConfigurat
         this.dataNodeRoot = requireNonNull(dataNodeRoot);
 
         query = requireNonNull(query);
-        final String baseUrl = config.getBaseUrl();
+        final String baseUrl = requireNonNull(config.getBaseUrl());
         final boolean hasBaseUrl = query.startsWith(baseUrl);
         if (hasBaseUrl) {
             this.query = query;
