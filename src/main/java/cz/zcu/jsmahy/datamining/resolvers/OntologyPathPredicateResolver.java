@@ -9,7 +9,7 @@ public class OntologyPathPredicateResolver<T, R> implements BlockingResponseReso
     @Override
     public BlockingDataNodeReferenceHolder<T> resolveRequest(final List<DataNode<T>> ambiguousInput,
                                                              final QueryData inputMetadata,
-                                                             final SparqlEndpointTask<T, R, ? extends ApplicationConfiguration<T, R>> requestHandler) {
+                                                             final SparqlEndpointTask<T, R> requestHandler) {
         final BlockingDataNodeReferenceHolder<T> ref = new BlockingDataNodeReferenceHolder<>();
 
         Platform.runLater(() -> {

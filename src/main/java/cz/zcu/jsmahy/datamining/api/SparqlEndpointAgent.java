@@ -9,7 +9,7 @@ import static java.util.Objects.requireNonNull;
 
 public class SparqlEndpointAgent<T, R> {
     @Getter
-    private final SparqlEndpointTaskProvider<T, R, ApplicationConfiguration<T, R>> sparqlEndpointTaskProvider;
+    private final SparqlEndpointTaskProvider<T, R> sparqlEndpointTaskProvider;
     @Getter
     private final ApplicationConfiguration<T, R> config;
     @Getter

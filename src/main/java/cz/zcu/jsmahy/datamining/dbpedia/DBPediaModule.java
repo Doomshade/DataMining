@@ -1,6 +1,5 @@
 package cz.zcu.jsmahy.datamining.dbpedia;
 
-import cz.zcu.jsmahy.datamining.api.ApplicationConfiguration;
 import cz.zcu.jsmahy.datamining.api.DataMiningModule;
 import cz.zcu.jsmahy.datamining.api.RequestProgressListener;
 import cz.zcu.jsmahy.datamining.api.SparqlEndpointTaskProvider;
@@ -23,8 +22,6 @@ public class DBPediaModule extends DataMiningModule {
         // the main request handler with its progress listener
         bind(SparqlEndpointTaskProvider.class).to(DBPediaEndpointTaskProvider.class)
                                               .in(SINGLETON);
-        bind(ApplicationConfiguration.class).to(DBPediaApplicationConfiguration.class)
-                                            .in(SINGLETON);
         bind(RequestProgressListener.class).toInstance(MainController.getInstance());
     }
 }

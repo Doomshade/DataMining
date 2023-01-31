@@ -6,12 +6,12 @@ import org.apache.jena.rdf.model.RDFNode;
 
 import java.util.List;
 
-public class StartAndEndDateResolver<T extends RDFNode> implements BlockingResponseResolver<T, Void> {
+public class StartAndEndDateResolver<T extends RDFNode, R extends Void> implements BlockingResponseResolver<T, R> {
 
     @Override
     public BlockingDataNodeReferenceHolder<T> resolveRequest(final List<DataNode<T>> ambiguousInput,
                                                              final QueryData inputMetadata,
-                                                             final SparqlEndpointTask<T, Void, ? extends ApplicationConfiguration<T, Void>> requestHandler) {
+                                                             final SparqlEndpointTask<T, R> requestHandler) {
         final BlockingDataNodeReferenceHolder<T> ref = new BlockingDataNodeReferenceHolder<>();
         Platform.runLater(() -> {
             final RDFNodeChooserDialog startDateDialog = new RDFNodeChooserDialog(inputMetadata.getCandidatesForStartAndEndDates(), RDFNodeChooserDialog.IS_DBPEDIA_SITE);

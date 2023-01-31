@@ -33,3 +33,5 @@ ignored-path-predicates:
 # "gMonthDay"
 valid-date-formats:
   - "any"
+base-url:
+  - "http://dbpedia.org/resource/"

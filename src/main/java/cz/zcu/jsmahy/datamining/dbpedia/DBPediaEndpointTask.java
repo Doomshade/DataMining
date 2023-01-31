@@ -11,7 +11,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * The DBPedia {@link SparqlEndpointTask}.
@@ -19,7 +18,7 @@ import java.util.stream.Collectors;
  * @author Jakub Šmrha
  * @version 1.0
  */
-public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends SparqlEndpointTask<T, R, DBPediaApplicationConfiguration<T, R>> {
+public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends DefaultSparqlEndpointTask<T, R> {
     private static final Logger LOGGER = LogManager.getLogger(DBPediaEndpointTask.class);
     /**
      * <p>This comparator ensures the URI resources are placed first over literal resources.</p>
@@ -31,31 +30,18 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Spar
                                                                                                  .isURIResource());
 
 
-    private final Collection<String> ignoredPathPredicates = new HashSet<>();
-    private final Collection<String> validDateFormats = new HashSet<>();
     //</editor-fold>
 
     private final Collection<String> usedURIs = new HashSet<>();
 
 
-    public DBPediaEndpointTask(final DBPediaApplicationConfiguration<T, R> config, final DataNodeFactory<T> nodeFactory, final String query, final DataNodeRoot<T> dataNodeRoot) {
+    public DBPediaEndpointTask(final ApplicationConfiguration<T, R> config, final DataNodeFactory<T> nodeFactory, final String query, final DataNodeRoot<T> dataNodeRoot) {
         // DBPEDIA_BASE_URL
         super(config, nodeFactory, query, dataNodeRoot);
-        final List<String> ignoredPathPredicates = config.getIgnoredPathPredicates();
-        this.ignoredPathPredicates.addAll(ignoredPathPredicates);
-        final Set<String> validDateFormats = config.getValidDateFormats()
-                                                   .stream()
-                                                   .map(String::toLowerCase)
-                                                   .collect(Collectors.toSet());
-        if (validDateFormats.contains("any")) {
-            this.validDateFormats.addAll(DBPediaApplicationConfiguration.ALL_VALID_DATE_FORMATS);
-        } else {
-            this.validDateFormats.addAll(validDateFormats);
-        }
     }
 
     @Override
-    protected synchronized R call() throws InvalidQueryException {
+    public synchronized R call() throws InvalidQueryException {
         final RequestProgressListener<T> progressListener = config.getProgressListener();
         final Model model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
         final QueryData inputMetadata = new QueryData();
@@ -83,8 +69,8 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Spar
             dataNodeRoot.iterate(((dataNode, integer) -> System.out.println(dataNode)));
             progressListener.onSearchDone();
         } else {
-            LOGGER.info("Invalid createBackgroundSparqlRequest '{}' - no results were found. Initial search result: {}", this.query, result);
-            progressListener.onInvalidQuery(this.query, result);
+            LOGGER.info("Invalid createBackgroundSparqlRequest '{}' - no results were found. Initial search result: {}", query, result);
+            progressListener.onInvalidQuery(query, result);
         }
         return null;
     }
@@ -242,7 +228,7 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Spar
     private void search(final QueryData inputMetadata, final Selector selector) {
         final Model model = inputMetadata.getCurrentModel();
 
-        final DataNodeFactory<T> nodeFactory = config.getNodeFactory();
+        final DataNodeFactory<T> nodeFactory = config.getDataNodeFactory();
         final DataNode<T> curr = nodeFactory.newNode((T) selector.getSubject(), dataNodeRoot);
         final RequestProgressListener<T> progressListener = config.getProgressListener();
         progressListener.onAddNewDataNode(curr, dataNodeRoot);

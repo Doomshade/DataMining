@@ -29,7 +29,7 @@ public class MultipleItemChoiceResolver<T extends RDFNode, R> implements Blockin
     @Override
     public BlockingDataNodeReferenceHolder<T> resolveRequest(final List<DataNode<T>> ambiguousInput,
                                                              final QueryData inputMetadata,
-                                                             final SparqlEndpointTask<T, R, ? extends ApplicationConfiguration<T, R>> requestHandler) {
+                                                             final SparqlEndpointTask<T, R> requestHandler) {
         // first off we check if we have an ontology path set
         // if not, pop up a dialogue
         final BlockingDataNodeReferenceHolder<T> ref = new BlockingDataNodeReferenceHolder<>();

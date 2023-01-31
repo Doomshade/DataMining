@@ -1,35 +1,29 @@
 package cz.zcu.jsmahy.datamining.api;
 
 import javafx.concurrent.Task;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 
-import static java.util.Objects.requireNonNull;
+/**
+ * <p>A SPARQL endpoint background task.</p>
+ * <p>This abstraction exists mainly for testing purposes (it's easy to mock this class)</p>
+ *
+ * @param <T> The data type of {@link DataNode}
+ * @param <R> The generic type of {@link Task}
+ *
+ * @see Task
+ */
+public abstract class SparqlEndpointTask<T, R> extends Task<R> {
 
-@EqualsAndHashCode(callSuper = true)
-@Data
-public abstract class SparqlEndpointTask<T, R, CFG extends ApplicationConfiguration<T, R>> extends Task<R> {
-    protected final CFG config;
-    protected final DataNodeFactory<T> nodeFactory;
-    protected final String query;
-    protected final DataNodeRoot<T> dataNodeRoot;
+    public abstract void unlockDialogPane();
 
-    public SparqlEndpointTask(final CFG config, final DataNodeFactory<T> nodeFactory, String query, final DataNodeRoot<T> dataNodeRoot) {
-        this.config = requireNonNull(config);
-        this.nodeFactory = requireNonNull(nodeFactory);
-        this.dataNodeRoot = requireNonNull(dataNodeRoot);
+    public abstract ApplicationConfiguration<T, R> getConfig();
 
-        query = requireNonNull(query);
-        final String baseUrl = requireNonNull(config.getBaseUrl());
-        final boolean hasBaseUrl = query.startsWith(baseUrl);
-        if (hasBaseUrl) {
-            this.query = query;
-        } else {
-            this.query = baseUrl.concat(query);
-        }
-    }
+    public abstract DataNodeFactory<T> getDataNodeFactory();
 
-    public synchronized void unlockDialogPane() {
-        notify();
-    }
+    public abstract String getQuery();
+
+    public abstract DataNodeRoot<T> getDataNodeRoot();
+
+    // public for testing purposes
+    @Override
+    public abstract R call() throws Exception;
 }

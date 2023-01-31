@@ -52,6 +52,8 @@ public abstract class DataMiningModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(DialogHelper.class).in(SINGLETON);
+        bind(DataNodeFactory.class).in(SINGLETON);
+        bind(ApplicationConfiguration.class).to(DefaultApplicationConfiguration.class);
 
         // ambiguous input resolvers
         bind(ResponseResolver.class).annotatedWith(Names.named("userAssisted"))

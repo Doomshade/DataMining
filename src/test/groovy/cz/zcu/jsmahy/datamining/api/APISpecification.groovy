@@ -1,6 +1,7 @@
 package cz.zcu.jsmahy.datamining.api
 
 import com.google.inject.Guice
+import com.google.inject.Injector
 import org.apache.jena.rdf.model.Literal
 import org.apache.jena.rdf.model.RDFNode
 import org.apache.jena.rdf.model.Resource
@@ -9,38 +10,46 @@ import spock.lang.Specification
 
 import java.util.function.BiConsumer
 
+import static cz.zcu.jsmahy.datamining.api.ApplicationConfiguration.*
+
 class APISpecification extends Specification {
     @Shared
     static DataNodeFactory<?> nodeFactory
 
     @Shared
-    private DataNodeRoot<?> root
-    @Shared
-    private SparqlEndpointAgent<?, ?> endpointAgent
+    static Injector injector
 
     @Shared
-    private static ApplicationConfiguration<?, ?> config
+    private DataNodeRoot<?> root
+
+    @Shared
+    private ApplicationConfiguration<?, ?> config
+
+    @Shared
+    private DefaultSparqlEndpointTask<?, ?> defaultTask
 
     void setupSpec() {
-        config = Mock(ApplicationConfiguration)
-        config.getBaseUrl() >> "https://baseurltest.com/"
+        def config = Mock(ApplicationConfiguration)
+        config.get(BASE_URL) >> "https://baseurltest.com/"
+        config.getList(IGNORE_PATH_PREDICATES) >> new ArrayList()
+        config.getList(VALID_DATE_FORMATS) >> new ArrayList<>()
         def mocks = new Mocks()
         def taskProvider = Mock(SparqlEndpointTaskProvider.class)
-        taskProvider.createTask(_, _, _, _) >> new StubSparqlEndpointTask<Object, Void, ApplicationConfiguration<Object, Void>>(config, Mock(DataNodeFactory), "Query", Mock(DataNodeRoot)) {
-            @Override
-            protected Void call() throws Exception {
-                Thread.sleep(30_000)
-                return null
-            }
+        def task = Mock(SparqlEndpointTask)
+        task.call() >> {
+            Thread.sleep(30_000)
+            null
         }
+        taskProvider.createTask(_, _, _, _) >> task
 
-        def injector = Guice.createInjector(mocks.module(config, taskProvider))
+        injector = Guice.createInjector(mocks.module(config, taskProvider))
         nodeFactory = Spy(injector.getInstance(DataNodeFactory))
-        endpointAgent = injector.getInstance(SparqlEndpointAgent)
     }
 
     void setup() {
         this.root = nodeFactory.newRoot("Root")
+        this.config = injector.getInstance(ApplicationConfiguration)
+        this.defaultTask = new DefaultSparqlEndpointTask(config, nodeFactory, "queryTest", root)
     }
 
     def "Should throw NPE when passing null reference when trying to create a new data node"() {
@@ -106,7 +115,7 @@ class APISpecification extends Specification {
 
     def "Should throw NPE when passing null parameters to SparqlEndpointTask ctor"() {
         when:
-        new StubSparqlEndpointTask(appConfig, dataNodeFactory, query, dataNodeRoot)
+        new DefaultSparqlEndpointTask(appConfig, dataNodeFactory, query, dataNodeRoot)
         then:
         thrown(NullPointerException)
 
@@ -120,13 +129,33 @@ class APISpecification extends Specification {
 
     def "Should return correct query given any URL"() {
         when:
-        def task = new StubSparqlEndpointTask(config, nodeFactory, query, this.root)
+        def task = new DefaultSparqlEndpointTask(config, nodeFactory, query, root)
 
         then:
         task.query == "https://baseurltest.com/queryTest"
 
         where:
         query << ["https://baseurltest.com/queryTest", "queryTest"]
+    }
+
+    def "Should throw UOE when using call method"() {
+        when:
+        defaultTask.call()
+
+        then:
+        thrown(UnsupportedOperationException)
+    }
+
+    def "Should return all valid date types if the type in the collection is \"any\""() {
+        given:
+        config.getList(VALID_DATE_FORMATS).add("any")
+
+        when:
+        // create a new task because we are testing the constructor
+        def task = new DefaultSparqlEndpointTask(config, nodeFactory, "queryTest", root)
+
+        then:
+        task.validDateFormats.containsAll(ALL_VALID_DATE_FORMATS)
     }
 
     def "Should automatically set name if the node is a Resource"() {
