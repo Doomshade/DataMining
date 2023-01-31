@@ -28,9 +28,9 @@ class APISpecification extends Specification {
 
     void setupSpec() {
         def config = Mock(ApplicationConfiguration)
-        config.get(BASE_URL) >> "https://baseurltest.com/"
-        config.getList(IGNORE_PATH_PREDICATES) >> new ArrayList()
-        config.getList(VALID_DATE_FORMATS) >> new ArrayList<>()
+        config.getUnsafe(BASE_URL) >> "https://baseurltest.com/"
+        config.getListUnsafe(IGNORE_PATH_PREDICATES) >> new ArrayList()
+        config.getListUnsafe(VALID_DATE_FORMATS) >> new ArrayList<>()
         def mocks = new Mocks()
         def taskProvider = Mock(SparqlEndpointTaskProvider.class)
         def task = Mock(SparqlEndpointTask)
@@ -70,7 +70,6 @@ class APISpecification extends Specification {
 
     def "Data node root should return false because we did not add a child to it"() {
         expect:
-        !this.root.hasChildren()
         this.root.getChildren().isEmpty()
     }
 // TODO: test throws UnsupportedOperationException
@@ -147,7 +146,7 @@ class APISpecification extends Specification {
 
     def "Should return all valid date types if the type in the collection is \"any\""() {
         given:
-        config.getList(VALID_DATE_FORMATS).add("any")
+        config.getListUnsafe(VALID_DATE_FORMATS).add("any")
 
         when:
         // create a new task because we are testing the constructor

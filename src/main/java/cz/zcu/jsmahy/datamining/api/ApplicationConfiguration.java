@@ -27,10 +27,9 @@ public interface ApplicationConfiguration<T, R> {
      *
      * @return The variable inside the config file.
      *
-     * @throws NoSuchElementException if no such key is mapped to a variable
-     * @throws ClassCastException     if the variable could not be cast
+     * @throws ClassCastException if the variable could not be cast
      */
-    @NonNull <V> V get(String key) throws NoSuchElementException, ClassCastException;
+    @NonNull <V> Optional<V> get(String key) throws ClassCastException;
 
     /**
      * @param key the key the variable is stored under
@@ -38,11 +37,40 @@ public interface ApplicationConfiguration<T, R> {
      *
      * @return A {@link List} of variables. Calls {@link ApplicationConfiguration#get(String)} and types it to {@code List<V>}.
      *
-     * @throws NoSuchElementException if no such key is mapped to a variable
-     * @throws ClassCastException     if the variable could not be cast
+     * @throws ClassCastException if the variable could not be cast
      * @see ApplicationConfiguration#get(String)
      */
-    <V> List<V> getList(String key) throws NoSuchElementException, ClassCastException;
+    <V> Optional<List<V>> getList(String key) throws ClassCastException;
+
+    /**
+     * @param key the key
+     *
+     * @return {@code true} if a value is stored under the key
+     */
+    boolean has(String key);
+
+    /**
+     * @param key the key the variable is stored under
+     * @param <V> the variable type
+     *
+     * @return The variable inside the config file.
+     *
+     * @throws NoSuchElementException if no such key is mapped to a variable
+     * @throws ClassCastException     if the variable could not be cast
+     */
+    @NonNull <V> V getUnsafe(String key) throws NoSuchElementException, ClassCastException;
+
+    /**
+     * @param key the key the variable is stored under
+     * @param <V> the variable type
+     *
+     * @return A {@link List} of variables. Calls {@link ApplicationConfiguration#getUnsafe(String)} and types it to {@code List<V>}.
+     *
+     * @throws NoSuchElementException if no such key is mapped to a variable
+     * @throws ClassCastException     if the variable could not be cast
+     * @see ApplicationConfiguration#getUnsafe(String)
+     */
+    @NonNull <V> List<V> getListUnsafe(String key) throws NoSuchElementException, ClassCastException;
 
     /**
      * @return The progress listener for this endpoint.

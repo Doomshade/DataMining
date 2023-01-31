@@ -231,7 +231,7 @@ order by ?pred
         fileMenu.setMnemonicParsing(true);
 
         final MenuItem exportToFile = new MenuItem(resources.getString("export"));
-        exportToFile.setAccelerator(KeyCombination.keyCombination("ALT + E"));
+        exportToFile.setAccelerator(KeyCombination.keyCombination("CTRL + E"));
         fileMenu.getItems()
                 .addAll(exportToFile);
         return fileMenu;
@@ -260,22 +260,18 @@ order by ?pred
             return;
         }
 
-        LOGGER.trace("Creating a background service for {} with root {}", searchValue, root);
         final Service<Void> query = createSearchService(root, searchValue);
         query.restart();
         bindService(query);
     }
 
+    @SuppressWarnings("ThrowableNotThrown")
     private Service<Void> createSearchService(final DataNodeRoot<T> root, final String searchValue) {
         final Service<Void> query = requestHandler.createBackgroundService(searchValue, root);
         query.setOnSucceeded(x -> ontologyTreeView.getSelectionModel()
                                                   .selectFirst());
-        query.exceptionProperty()
-             .addListener((observable, oldValue, newValue) -> {
-                 if (newValue != null) {
-                     newValue.printStackTrace();
-                 }
-             });
+        query.setOnFailed(x -> query.getException()
+                                    .printStackTrace());
         return query;
     }
 

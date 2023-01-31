@@ -11,10 +11,7 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 @Getter
 public class DefaultApplicationConfiguration<T, R> implements ApplicationConfiguration<T, R> {
@@ -82,15 +79,28 @@ public class DefaultApplicationConfiguration<T, R> implements ApplicationConfigu
     @Override
     @NonNull
     @SuppressWarnings("unchecked")
-    public <V> V get(final String key) throws NoSuchElementException, ClassCastException {
-        if (!configVariables.containsKey(key)) {
-            throw new NoSuchElementException(key);
-        }
-        return (V) configVariables.get(key);
+    public <V> Optional<V> get(final String key) throws NoSuchElementException, ClassCastException {
+        return (Optional<V>) Optional.ofNullable(configVariables.get(key));
     }
 
     @Override
-    public <V> List<V> getList(final String key) throws NoSuchElementException, ClassCastException {
+    public <V> Optional<List<V>> getList(final String key) throws NoSuchElementException, ClassCastException {
         return get(key);
+    }
+
+    @Override
+    public boolean has(final String key) {
+        return configVariables.containsKey(key);
+    }
+
+    @Override
+    public <V> @NonNull V getUnsafe(final String key) throws NoSuchElementException, ClassCastException {
+        final Optional<V> opt = get(key);
+        return opt.orElseThrow(() -> new NoSuchElementException(key));
+    }
+
+    @Override
+    public @NonNull <V> List<V> getListUnsafe(final String key) throws NoSuchElementException, ClassCastException {
+        return getUnsafe(key);
     }
 }

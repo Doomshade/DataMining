@@ -51,9 +51,4 @@ public interface DataNodeRoot<T> extends DataNode<T> {
      */
     @Override
     T getData() throws UnsupportedOperationException;
-
-    /**
-     * @return Whether this node has children (aka is a parent)
-     */
-    boolean hasChildren();
 }

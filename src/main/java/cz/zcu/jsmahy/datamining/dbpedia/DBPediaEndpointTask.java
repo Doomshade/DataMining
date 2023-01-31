@@ -4,6 +4,9 @@ import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.datatypes.RDFDatatype;
+import org.apache.jena.datatypes.xsd.AbstractDateTime;
+import org.apache.jena.datatypes.xsd.XSDDateTime;
+import org.apache.jena.datatypes.xsd.XSDDuration;
 import org.apache.jena.ontology.OntModelSpec;
 import org.apache.jena.rdf.model.*;
 import org.apache.logging.log4j.LogManager;
@@ -30,14 +33,51 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
                                                                                                  .isURIResource());
 
 
-    //</editor-fold>
-
     private final Collection<String> usedURIs = new HashSet<>();
 
 
     public DBPediaEndpointTask(final ApplicationConfiguration<T, R> config, final DataNodeFactory<T> nodeFactory, final String query, final DataNodeRoot<T> dataNodeRoot) {
         // DBPEDIA_BASE_URL
         super(config, nodeFactory, query, dataNodeRoot);
+    }
+
+    private void addDatesToNode(final Model model, final DataNode<T> curr, final Property dateProperty, final Resource subject, final boolean startDate) {
+        final Selector startDateSelector = new SimpleSelector(subject, dateProperty, (Object) null);
+        final StmtIterator startDates = model.listStatements(startDateSelector);
+        if (startDates.hasNext()) {
+            // TODO: account for multiple values
+            final AbstractDateTime innerDateType = (AbstractDateTime) startDates.next()
+                                                                                .getObject()
+                                                                                .asLiteral()
+                                                                                .getValue();
+
+            final Date date;
+            if (innerDateType instanceof XSDDateTime dateTime) {
+                date = dateTime.asCalendar()
+                               .getTime();
+            } else if (innerDateType instanceof XSDDuration duration) {
+                final long millis = duration.getFullSeconds() * 1000L;
+                date = new Date(millis);
+            } else {
+                throw new ClassCastException("Inner date type is of unknown value: " + innerDateType);
+            }
+            LOGGER.debug("Setting {} date (inner type: {}, actual date: {}) to {}", startDate ? "start" : "end", innerDateType, date, curr.getName());
+            if (startDate) {
+                curr.setStartDate(date);
+            } else {
+                curr.setEndDate(date);
+            }
+        } else {
+            // TODO: solve this
+            LOGGER.warn("No {} date found for {}!", startDate ? "start" : "end", subject);
+            if (!startDate) {
+                final Date currStartDate = curr.getStartDate();
+                if (currStartDate != null) {
+                    LOGGER.info("Setting end date to start date {} because no end date was found.", currStartDate);
+                    curr.setEndDate(currStartDate);
+                }
+            }
+        }
     }
 
     @Override
@@ -92,7 +132,7 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
         if (pathPredicateResult != InitialSearchResult.OK) {
             return pathPredicateResult;
         }
-        LOGGER.debug("Found onotology path predicate.");
+        LOGGER.debug("Found ontology path predicate.");
 
         return InitialSearchResult.OK;
     }
@@ -208,17 +248,6 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
         };
     }
 
-    public enum InitialSearchResult {
-        OK,
-        SUBJECT_NOT_FOUND,
-        PATH_NOT_SELECTED,
-        NO_DATE_FOUND,
-        START_DATE_NOT_SELECTED,
-        END_DATE_NOT_SELECTED,
-        UNKNOWN
-    }
-
-
     /**
      * Recursively searches based on the given model, selector, and a previous link. Adds the subject of the selector to the tree.
      *
@@ -226,10 +255,14 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
      */
     @SuppressWarnings("unchecked")
     private void search(final QueryData inputMetadata, final Selector selector) {
+        LOGGER.debug("Search");
         final Model model = inputMetadata.getCurrentModel();
 
         final DataNodeFactory<T> nodeFactory = config.getDataNodeFactory();
         final DataNode<T> curr = nodeFactory.newNode((T) selector.getSubject(), dataNodeRoot);
+        addDatesToNode(model, curr, inputMetadata.getStartDateProperty(), selector.getSubject(), true);
+        addDatesToNode(model, curr, inputMetadata.getEndDateProperty(), selector.getSubject(), false);
+
         final RequestProgressListener<T> progressListener = config.getProgressListener();
         progressListener.onAddNewDataNode(curr, dataNodeRoot);
 
@@ -376,6 +409,16 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
     private void readResource(final Model model, final Resource resource) {
         String uri = resource.getURI();
         model.read(uri);
+    }
+
+    public enum InitialSearchResult {
+        OK,
+        SUBJECT_NOT_FOUND,
+        PATH_NOT_SELECTED,
+        NO_DATE_FOUND,
+        START_DATE_NOT_SELECTED,
+        END_DATE_NOT_SELECTED,
+        UNKNOWN
     }
 
 }

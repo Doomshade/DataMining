@@ -17,6 +17,7 @@ import org.apache.jena.rdf.model.RDFNode;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 /**
@@ -73,14 +74,18 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
         return menuItem;
     }
 
-    private MenuItem buildNewLineItem(final ResourceBundle resources, final DataNodeFactory<T> nodeFactory, final SparqlEndpointAgent<T, ?> requestHandler, final TreeView<DataNode<T>> treeView,
+    private MenuItem buildNewLineItem(final ResourceBundle resources,
+                                      final DataNodeFactory<T> nodeFactory,
+                                      final SparqlEndpointAgent<T, ?> requestHandler,
+                                      final TreeView<DataNode<T>> treeView,
                                       final MainController<T> mainController) {
         final MenuItem menuItem = new MenuItem(resources.getString("create-new-line"));
         menuItem.setOnAction(event -> {
             final TreeItem<DataNode<T>> root = treeView.getRoot();
-            System.out.println(root.getValue());
-            final DataNodeRoot<T> dataNodeRoot = getItem().findRoot();
-            final DataNodeRoot<T> newDataNodeRoot = nodeFactory.newRoot(dataNodeRoot.getName() + " - copy");
+            final Optional<DataNodeRoot<T>> dataNodeRootOpt = getItem().findRoot();
+            assert dataNodeRootOpt.isPresent(); // the item should not be a root, thus the item's root should be present
+            final DataNodeRoot<T> newDataNodeRoot = nodeFactory.newRoot(dataNodeRootOpt.get()
+                                                                                       .getName() + " - copy");
             root.getChildren()
                 .add(new TreeItem<>(newDataNodeRoot));
             final Service<?> service = requestHandler.createBackgroundService(getItem().getUri(), newDataNodeRoot);

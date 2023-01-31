@@ -5,10 +5,13 @@ import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import lombok.Getter;
 import lombok.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import static java.util.Objects.requireNonNull;
 
 public class SparqlEndpointAgent<T, R> {
+    private static final Logger LOGGER = LogManager.getLogger(SparqlEndpointAgent.class);
     @Getter
     private final SparqlEndpointTaskProvider<T, R> sparqlEndpointTaskProvider;
     @Getter
@@ -31,6 +34,7 @@ public class SparqlEndpointAgent<T, R> {
         if (query.isBlank()) {
             throw new IllegalArgumentException("Query cannot be blank.");
         }
+        LOGGER.debug("Creating a background service for {} with root {}", query, dataNodeRoot);
         return new Service<>() {
             @Override
             protected Task<R> createTask() {

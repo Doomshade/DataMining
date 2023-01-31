@@ -36,7 +36,7 @@ public class DefaultSparqlEndpointTask<T, R> extends SparqlEndpointTask<T, R> {
         this.dataNodeRoot = requireNonNull(dataNodeRoot);
 
         query = requireNonNull(query);
-        final String baseUrl = config.get(BASE_URL);
+        final String baseUrl = config.getUnsafe(BASE_URL);
         final boolean hasBaseUrl = query.startsWith(baseUrl);
         if (hasBaseUrl) {
             this.query = query;
@@ -44,9 +44,9 @@ public class DefaultSparqlEndpointTask<T, R> extends SparqlEndpointTask<T, R> {
             this.query = baseUrl.concat(query);
         }
 
-        final List<String> ignoredPathPredicates = config.getList(IGNORE_PATH_PREDICATES);
+        final List<String> ignoredPathPredicates = config.getListUnsafe(IGNORE_PATH_PREDICATES);
         this.ignoredPathPredicates.addAll(ignoredPathPredicates);
-        final List<String> validDateFormats = config.getList(VALID_DATE_FORMATS);
+        final List<String> validDateFormats = config.getListUnsafe(VALID_DATE_FORMATS);
 
         final Set<String> validDateFormatsSet = validDateFormats.stream()
                                                                 .map(String::toLowerCase)
