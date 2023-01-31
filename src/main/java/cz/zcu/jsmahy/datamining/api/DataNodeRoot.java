@@ -10,7 +10,7 @@ import java.util.function.BiConsumer;
  * @author Jakub Šmrha
  * @since 1.0
  */
-public interface DataNodeRoot<T> extends DataNode<T> {
+public interface DataNodeRoot extends DataNode {
     /**
      * <p>Iterates over the children of this root.</p>
      * <p>The first argument of the {@link BiConsumer} is the data node, the second argument is the breadth of the node in respect to the
@@ -40,15 +40,5 @@ public interface DataNodeRoot<T> extends DataNode<T> {
      *
      * @param biConsumer the first parameter is the data node, the second one is the depth
      */
-    void iterate(BiConsumer<DataNode<T>, Integer> biConsumer);
-
-    /**
-     * Root has no data by default.
-     *
-     * @return nothing
-     *
-     * @throws UnsupportedOperationException if this method is called
-     */
-    @Override
-    T getData() throws UnsupportedOperationException;
+    void iterate(BiConsumer<DataNode, Integer> biConsumer);
 }

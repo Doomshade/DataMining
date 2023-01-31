@@ -15,7 +15,7 @@ import static cz.zcu.jsmahy.datamining.util.RDFNodeUtil.formatRDFNode;
  * @author Jakub Šmrha
  * @since 1.0
  */
-public class RDFNodeListCellFactory<T extends RDFNode> extends ListCell<DataNode<T>> {
+public class RDFNodeListCellFactory<T extends RDFNode> extends ListCell<DataNode> {
 
     /**
      * <p>Formats the {@link RDFNode} for pretty output in the {@link ListView}.</p>
@@ -25,12 +25,12 @@ public class RDFNodeListCellFactory<T extends RDFNode> extends ListCell<DataNode
      *
      * @see RDFNodeUtil#formatRDFNode(RDFNode)
      */
-    private String prettyFormat(DataNode<T> node) {
-        return formatRDFNode(node.getData()).replaceAll(SPECIAL_CHARACTERS, " ");
+    private String prettyFormat(DataNode node) {
+        return formatRDFNode(node.getMetadataValueUnsafe("rdfNode")).replaceAll(SPECIAL_CHARACTERS, " ");
     }
 
     @Override
-    protected void updateItem(final DataNode<T> item, final boolean empty) {
+    protected void updateItem(final DataNode item, final boolean empty) {
         super.updateItem(item, empty);
         setText(item == null ? null : prettyFormat(item));
     }

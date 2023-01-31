@@ -1,5 +1,6 @@
 package cz.zcu.jsmahy.datamining.util;
 
+import cz.zcu.jsmahy.datamining.api.DataNode;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
@@ -21,7 +22,7 @@ public class RDFNodeUtil {
      *
      * @return {@link RDFNode} in a simple {@link String} representation
      */
-    public static <T extends RDFNode> String formatRDFNode(T node) {
+    public static String formatRDFNode(RDFNode node) {
         if (node == null) {
             return "null";
         }
@@ -48,5 +49,17 @@ public class RDFNodeUtil {
 
         LOGGER.debug(marker, "RDFNode \"{}\" was neither literal or resource, using default toString method.", node);
         return node.toString();
+    }
+
+    public static void setDataNodeNameFromRDFNode(DataNode dataNode, RDFNode rdfNode) {
+        if (dataNode == null || rdfNode == null) {
+            return;
+        }
+        dataNode.addMetadata("name", formatRDFNode(rdfNode).replaceAll(SPECIAL_CHARACTERS, " "));
+        if (rdfNode.isURIResource()) {
+            final String uri = rdfNode.asResource()
+                                      .getURI();
+            dataNode.addMetadata("uri", uri);
+        }
     }
 }

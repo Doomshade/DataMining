@@ -26,7 +26,7 @@ public interface RequestProgressListener<T> {
      * @param dataNode the new data node
      * @param parent   the corresponding tree root for the data node
      */
-    void onAddNewDataNode(DataNode<T> dataNode, DataNodeRoot<T> parent);
+    void onAddNewDataNode(DataNode dataNode, DataNodeRoot parent);
 
     /**
      * <p>Called when multiple {@link DataNode}s were found and they can be added under a tree item. The {@code treeItem} is not the tree root!</p>
@@ -39,7 +39,7 @@ public interface RequestProgressListener<T> {
      * @param dataNodes       the data nodes
      * @param chosenDataNode  the data node that the user chose to continue under
      */
-    void onAddMultipleDataNodes(DataNode<T> dataNodesParent, List<DataNode<T>> dataNodes, DataNode<T> chosenDataNode);
+    void onAddMultipleDataNodes(DataNode dataNodesParent, List<DataNode> dataNodes, DataNode chosenDataNode);
 
     /**
      * Called when an invalid query is passed. The cause is usually the resource not existing.

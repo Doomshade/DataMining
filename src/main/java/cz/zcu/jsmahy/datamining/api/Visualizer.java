@@ -9,5 +9,5 @@ import javafx.scene.layout.Pane;
  * @since 1.0
  */
 public interface Visualizer {
-    <T> void render(Pane pane, DataNode<T> root);
+    <T> void render(Pane pane, DataNode root);
 }

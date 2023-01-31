@@ -23,7 +23,7 @@ public class DataNodeReferenceHolder<V> {
     /**
      * The references.
      */
-    private final ObservableList<DataNode<V>> references = FXCollections.observableArrayList();
+    private final ObservableList<DataNode> references = FXCollections.observableArrayList();
 
     /**
      * The ontology path predicate.
@@ -104,7 +104,7 @@ public class DataNodeReferenceHolder<V> {
      *
      * @param value the reference
      */
-    public void set(final DataNode<V> value) {
+    public void set(final DataNode value) {
         this.references.clear();
         this.add(value);
     }
@@ -114,7 +114,7 @@ public class DataNodeReferenceHolder<V> {
      *
      * @param value the references
      */
-    public void set(final Collection<DataNode<V>> value) {
+    public void set(final Collection<DataNode> value) {
         this.references.clear();
         this.add(value);
     }
@@ -124,7 +124,7 @@ public class DataNodeReferenceHolder<V> {
      *
      * @param value the reference
      */
-    public void add(final DataNode<V> value) {
+    public void add(final DataNode value) {
         this.references.add(value);
     }
 
@@ -133,7 +133,7 @@ public class DataNodeReferenceHolder<V> {
      *
      * @param value the references
      */
-    public void add(final Collection<DataNode<V>> value) {
+    public void add(final Collection<DataNode> value) {
         this.references.addAll(value);
     }
 
@@ -142,7 +142,7 @@ public class DataNodeReferenceHolder<V> {
      *
      * @throws IllegalStateException if this reference holder contains multiple references
      */
-    public DataNode<V> get() throws IllegalStateException {
+    public DataNode get() throws IllegalStateException {
         if (references.size() == 0) {
             return null;
         }
@@ -155,7 +155,7 @@ public class DataNodeReferenceHolder<V> {
     /**
      * @return the list of references
      */
-    public List<DataNode<V>> getList() {
+    public List<DataNode> getList() {
         return Collections.unmodifiableList(references);
     }
 }

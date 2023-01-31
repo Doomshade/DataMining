@@ -80,7 +80,7 @@ public interface ApplicationConfiguration<T, R> {
     /**
      * @return The data node factory.
      */
-    DataNodeFactory<T> getDataNodeFactory();
+    DataNodeFactory getDataNodeFactory();
 
     /**
      * @return The resolver that should be called when the program does not know which path to choose.

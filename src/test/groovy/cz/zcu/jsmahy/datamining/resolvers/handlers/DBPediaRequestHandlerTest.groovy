@@ -32,7 +32,7 @@ class DBPediaRequestHandlerTest extends Specification {
 
         where:
         query       | treeItem
-        null | _ as DataNodeRoot<?>
+        null        | _ as DataNodeRoot
         _ as String | null
     }
 }

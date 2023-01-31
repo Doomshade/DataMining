@@ -17,11 +17,11 @@ public abstract class SparqlEndpointTask<T, R> extends Task<R> {
 
     public abstract ApplicationConfiguration<T, R> getConfig();
 
-    public abstract DataNodeFactory<T> getDataNodeFactory();
+    public abstract DataNodeFactory getDataNodeFactory();
 
     public abstract String getQuery();
 
-    public abstract DataNodeRoot<T> getDataNodeRoot();
+    public abstract DataNodeRoot getDataNodeRoot();
 
     // public for testing purposes
     @Override

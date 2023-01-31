@@ -27,7 +27,7 @@ public class MultipleItemChoiceResolver<T extends RDFNode, R> implements Blockin
     private static final Logger LOGGER = LogManager.getLogger(MultipleItemChoiceResolver.class);
 
     @Override
-    public BlockingDataNodeReferenceHolder<T> resolveRequest(final List<DataNode<T>> ambiguousInput, final QueryData inputMetadata, final SparqlEndpointTask<T, R> requestHandler) {
+    public BlockingDataNodeReferenceHolder<T> resolveRequest(final List<DataNode> ambiguousInput, final QueryData inputMetadata, final SparqlEndpointTask<T, R> requestHandler) {
         // first off we check if we have an ontology path set
         // if not, pop up a dialogue
         final BlockingDataNodeReferenceHolder<T> ref = new BlockingDataNodeReferenceHolder<>();
@@ -46,14 +46,14 @@ public class MultipleItemChoiceResolver<T extends RDFNode, R> implements Blockin
     }
 
     private class MultipleItemChoiceDialog {
-        private final Dialog<List<DataNode<T>>> dialog = new Dialog<>();
+        private final Dialog<List<DataNode>> dialog = new Dialog<>();
         private final DialogPane dialogPane = dialog.getDialogPane();
-        private final ListView<DataNode<T>> content = new ListView<>();
+        private final ListView<DataNode> content = new ListView<>();
         private final DataNodeReferenceHolder<T> ref;
 
-        public MultipleItemChoiceDialog(final List<DataNode<T>> list,
+        public MultipleItemChoiceDialog(final List<DataNode> list,
                                         final DataNodeReferenceHolder<T> ref,
-                                        final Callback<ListView<DataNode<T>>, ListCell<DataNode<T>>> cellFactory,
+                                        final Callback<ListView<DataNode>, ListCell<DataNode>> cellFactory,
                                         final SelectionMode selectionMode) {
             final ResourceBundle resourceBundle = ResourceBundle.getBundle("lang");
             this.ref = ref;
@@ -83,7 +83,7 @@ public class MultipleItemChoiceResolver<T extends RDFNode, R> implements Blockin
             // dialog content
             this.content.setCellFactory(cellFactory);
             this.content.setItems(FXCollections.observableArrayList(list));
-            final MultipleSelectionModel<DataNode<T>> selectionModel = this.content.getSelectionModel();
+            final MultipleSelectionModel<DataNode> selectionModel = this.content.getSelectionModel();
             selectionModel.setSelectionMode(selectionMode);
             this.content.setOnKeyPressed(event -> {
                 if (event.getCode() == KeyCode.ENTER) {
@@ -100,7 +100,7 @@ public class MultipleItemChoiceResolver<T extends RDFNode, R> implements Blockin
 
         public void showDialogueAndWait() {
             // show the dialogue and wait for response
-            final Optional<List<DataNode<T>>> result = dialog.showAndWait();
+            final Optional<List<DataNode>> result = dialog.showAndWait();
             result.ifPresent(ref::set);
         }
     }

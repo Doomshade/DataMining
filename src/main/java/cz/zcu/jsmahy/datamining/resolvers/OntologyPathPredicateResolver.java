@@ -7,7 +7,7 @@ import java.util.List;
 
 public class OntologyPathPredicateResolver<T, R> implements BlockingResponseResolver<T, R, BlockingDataNodeReferenceHolder<T>> {
     @Override
-    public BlockingDataNodeReferenceHolder<T> resolveRequest(final List<DataNode<T>> ambiguousInput,
+    public BlockingDataNodeReferenceHolder<T> resolveRequest(final List<DataNode> ambiguousInput,
                                                              final QueryData inputMetadata,
                                                              final SparqlEndpointTask<T, R> requestHandler) {
         final BlockingDataNodeReferenceHolder<T> ref = new BlockingDataNodeReferenceHolder<>();

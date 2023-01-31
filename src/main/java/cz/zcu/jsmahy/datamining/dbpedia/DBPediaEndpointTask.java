@@ -15,6 +15,8 @@ import org.apache.logging.log4j.Logger;
 import java.util.*;
 import java.util.function.Predicate;
 
+import static cz.zcu.jsmahy.datamining.util.RDFNodeUtil.setDataNodeNameFromRDFNode;
+
 /**
  * The DBPedia {@link SparqlEndpointTask}.
  *
@@ -36,12 +38,12 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
     private final Collection<String> usedURIs = new HashSet<>();
 
 
-    public DBPediaEndpointTask(final ApplicationConfiguration<T, R> config, final DataNodeFactory<T> nodeFactory, final String query, final DataNodeRoot<T> dataNodeRoot) {
+    public DBPediaEndpointTask(final ApplicationConfiguration<T, R> config, final DataNodeFactory nodeFactory, final String query, final DataNodeRoot dataNodeRoot) {
         // DBPEDIA_BASE_URL
         super(config, nodeFactory, query, dataNodeRoot);
     }
 
-    private void addDatesToNode(final Model model, final DataNode<T> curr, final Property dateProperty, final Resource subject, final boolean startDate) {
+    private void addDatesToNode(final Model model, final DataNode curr, final Property dateProperty, final Resource subject, final boolean isStartDate) {
         final Selector startDateSelector = new SimpleSelector(subject, dateProperty, (Object) null);
         final StmtIterator startDates = model.listStatements(startDateSelector);
         if (startDates.hasNext()) {
@@ -61,21 +63,22 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
             } else {
                 throw new ClassCastException("Inner date type is of unknown value: " + innerDateType);
             }
-            LOGGER.debug("Setting {} date (inner type: {}, actual date: {}) to {}", startDate ? "start" : "end", innerDateType, date, curr.getName());
-            if (startDate) {
-                curr.setStartDate(date);
+            LOGGER.debug("Setting {} date (inner type: {}, actual date: {}) to {}", isStartDate ? "start" : "end", innerDateType, date, curr.getMetadataValue("name", "<no name>"));
+            if (isStartDate) {
+                curr.addMetadata("startDate", date);
             } else {
-                curr.setEndDate(date);
+                curr.addMetadata("endDate", date);
             }
         } else {
             // TODO: solve this
-            LOGGER.warn("No {} date found for {}!", startDate ? "start" : "end", subject);
-            if (!startDate) {
-                final Date currStartDate = curr.getStartDate();
-                if (currStartDate != null) {
-                    LOGGER.info("Setting end date to start date {} because no end date was found.", currStartDate);
-                    curr.setEndDate(currStartDate);
-                }
+            LOGGER.warn("No {} date found for {}!", isStartDate ? "start" : "end", subject);
+            // if the end date was not found, default it to the start date
+            if (!isStartDate) {
+                curr.getMetadataValue("startDate")
+                    .ifPresent(startDate -> {
+                        LOGGER.info("Setting end date to start date {} because no end date was found.", startDate);
+                        curr.addMetadata("endDate", startDate);
+                    });
             }
         }
     }
@@ -258,8 +261,10 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
         LOGGER.debug("Search");
         final Model model = inputMetadata.getCurrentModel();
 
-        final DataNodeFactory<T> nodeFactory = config.getDataNodeFactory();
-        final DataNode<T> curr = nodeFactory.newNode((T) selector.getSubject(), dataNodeRoot);
+        final DataNodeFactory nodeFactory = config.getDataNodeFactory();
+        final DataNode curr = nodeFactory.newNode(dataNodeRoot);
+        curr.addMetadata("rdfNode", selector.getSubject());
+        setDataNodeNameFromRDFNode(curr, selector.getSubject());
         addDatesToNode(model, curr, inputMetadata.getStartDateProperty(), selector.getSubject(), true);
         addDatesToNode(model, curr, inputMetadata.getEndDateProperty(), selector.getSubject(), false);
 
@@ -270,7 +275,7 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
                                                 .toList();
         statements.sort(STATEMENT_COMPARATOR);
 
-        final List<DataNode<T>> foundDataList = new ArrayList<>();
+        final List<DataNode> foundDataList = new ArrayList<>();
         T previous = null;
         for (final Statement stmt : statements) {
             final T next = (T) stmt.getObject();
@@ -287,7 +292,9 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
                 return;
             }
 
-            final DataNode<T> nextNode = nodeFactory.newNode(next, dataNodeRoot);
+            final DataNode nextNode = nodeFactory.newNode(dataNodeRoot);
+            nextNode.addMetadata("rdfNode", next);
+            setDataNodeNameFromRDFNode(nextNode, next);
             LOGGER.debug("Found {}", next);
             foundDataList.add(nextNode);
         }
@@ -300,7 +307,7 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
         // only one found, that means it's going linearly
         // we can continue searching
         if (foundDataList.size() == 1) {
-            final DataNode<T> first = foundDataList.get(0);
+            final DataNode first = foundDataList.get(0);
             searchFurther(inputMetadata, first);
             return;
         }
@@ -327,21 +334,25 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
                 }
             }
         }
-        final DataNode<T> chosenDataNode = ref.get();
+        final DataNode chosenDataNode = ref.get();
         if (chosenDataNode == null) {
             return;
         }
 
-        final List<DataNode<T>> currDataNodeChildren = new ArrayList<>();
+        final List<DataNode> currDataNodeChildren = new ArrayList<>();
         // WARN: Deleted handling for multiple references as it might not even be in the final version.
-        for (final DataNode<T> foundData : foundDataList) {
-            currDataNodeChildren.add(nodeFactory.newNode(foundData.getData(), curr));
+        for (final DataNode foundData : foundDataList) {
+            final DataNode newNode = nodeFactory.newNode(curr);
+            final RDFNode rdfNode = foundData.getMetadataValueUnsafe("rdfNode");
+            newNode.addMetadata("rdfNode", rdfNode);
+            setDataNodeNameFromRDFNode(newNode, rdfNode);
+            currDataNodeChildren.add(newNode);
         }
         progressListener.onAddMultipleDataNodes(curr, currDataNodeChildren, chosenDataNode);
         searchFurther(inputMetadata, chosenDataNode);
     }
 
-    private void searchFurther(final QueryData inputMetadata, final DataNode<T> next) {
+    private void searchFurther(final QueryData inputMetadata, final DataNode next) {
         // attempts to search further down the line if the given data is a URI resource
         // if it's not a URI resource the searching terminates
         // if it's a URI resource we first check if we've been here already - we don't want to be stuck in a cycle,
@@ -350,7 +361,7 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
         if (next == null) {
             return;
         }
-        final T data = next.getData();
+        final T data = next.getMetadataValueUnsafe("rdfNode");
         if (!data.isURIResource()) {
             return;
         }

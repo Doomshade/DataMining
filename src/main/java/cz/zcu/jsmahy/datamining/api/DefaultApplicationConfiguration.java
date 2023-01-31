@@ -34,7 +34,7 @@ public class DefaultApplicationConfiguration<T, R> implements ApplicationConfigu
 
     private final RequestProgressListener<T> progressListener;
 
-    private final DataNodeFactory<T> dataNodeFactory;
+    private final DataNodeFactory dataNodeFactory;
 
     private final ResponseResolver<T, R, ?> ambiguousResultResolver;
 

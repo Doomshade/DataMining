@@ -7,7 +7,7 @@ import spock.lang.Specification
 
 class DataNodeReferenceHolderTest extends Specification {
     @Shared
-    static DataNodeFactory<?> nodeFactory
+    static DataNodeFactory nodeFactory
 
     void setupSpec() {
         def mocks = new Mocks()
@@ -19,18 +19,11 @@ class DataNodeReferenceHolderTest extends Specification {
     @Shared
     DataNodeReferenceHolder<?> ref
     @Shared
-    DataNodeRoot<?> root
+    DataNodeRoot root
 
     void setup() {
         ref = new DataNodeReferenceHolder<>()
         root = nodeFactory.newRoot("Root")
-    }
-
-    def "GetRestrictions"() {
-
-    }
-
-    def "RestrictionsProperty"() {
     }
 
     def "Should set restrictions"() {
@@ -41,28 +34,23 @@ class DataNodeReferenceHolderTest extends Specification {
         ref.getRestrictions().size() == 1
     }
 
-    def "GetOntologyPathPredicate"() {
-    }
+    // TODO: rename
+    def "Should return a valid reference when one is set and have a single reference"() {
+        when:
+        ref.set(nodeFactory.newNode(root))
 
-    def "OntologyPathPredicateProperty"() {
-    }
-
-    def "SetOntologyPathPredicate"() {
-    }
-
-    def "HasMultipleReferences"() {
+        then:
+        ref.get() != null
+        !ref.hasMultipleReferences()
     }
 
     def "Should return a valid reference when one is set and have a single reference"() {
         when:
-        ref.set(node)
+        ref.set(Arrays.asList(nodeFactory.newNode(root)))
 
         then:
-        ref.get().getData() == _
+        ref.get() != null
         !ref.hasMultipleReferences()
-
-        where:
-        node << [nodeFactory.newNode(_, root) as DataNode<?>, Arrays.asList(nodeFactory.newNode(_, root)) as Collection<DataNode<?>>]
     }
 
     def "Should return a null reference when none is set and have a single reference"() {
@@ -73,8 +61,8 @@ class DataNodeReferenceHolderTest extends Specification {
 
     def "Should throw ISE if multiple references are set"() {
         given:
-        ref.add(nodeFactory.newNode(_, root))
-        ref.add(nodeFactory.newNode(_, root))
+        ref.add(nodeFactory.newNode(root))
+        ref.add(nodeFactory.newNode(root))
 
         when:
         ref.get()
@@ -83,16 +71,10 @@ class DataNodeReferenceHolderTest extends Specification {
         thrown(IllegalStateException)
     }
 
-    def "Add"() {
-    }
-
-    def "Get"() {
-    }
-
     def "Should return list of references and have multiple references"() {
         when:
-        ref.add(nodeFactory.newNode(_, root))
-        ref.add(nodeFactory.newNode(_, root))
+        ref.add(nodeFactory.newNode(root))
+        ref.add(nodeFactory.newNode(root))
 
         then:
         ref.getList().size() == 2

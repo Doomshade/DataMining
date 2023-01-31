@@ -65,13 +65,13 @@ order by ?pred
     @FXML
     private BorderPane rootPane;
     @FXML
-    private TreeView<DataNode<T>> ontologyTreeView;
+    private TreeView<DataNode> ontologyTreeView;
     @FXML
     private WebView wikiPageWebView;
     @FXML
     private JFXSpinner progressIndicator;
     //</editor-fold>
-    private DataNodeFactory<T> nodeFactory;
+    private DataNodeFactory nodeFactory;
     //</editor-fold>
     private DialogHelper dialogHelper;
     private final EventHandler<ActionEvent> createNewLineAction = e -> {
@@ -87,7 +87,7 @@ order by ?pred
                 });
                 return;
             }
-            final DataNodeRoot<T> dataNode = nodeFactory.newRoot(lineName);
+            final DataNodeRoot dataNode = nodeFactory.newRoot(lineName);
             ontologyTreeView.getRoot()
                             .getChildren()
                             .add(new TreeItem<>(dataNode));
@@ -101,7 +101,7 @@ order by ?pred
     }
 
     // TODO: test this method!
-    public static <T> TreeItem<DataNode<T>> findTreeItem(final DataNode<T> dataNode, final TreeItem<DataNode<T>> treeRoot) {
+    public static <T> TreeItem<DataNode> findTreeItem(final DataNode dataNode, final TreeItem<DataNode> treeRoot) {
         Objects.requireNonNull(dataNode);
         Objects.requireNonNull(treeRoot);
 
@@ -111,8 +111,8 @@ order by ?pred
         // inner loops because they aren't required to have the tree item present, whereas the root is
         // thus the check at the end of this loop and no check in the helper recursive method (i.e. if we threw the exception in the
         // inner loop the search would terminate prematurely; we need to terminate after the last of root's children is checked)
-        final AtomicReference<TreeItem<DataNode<T>>> ref = new AtomicReference<>();
-        for (final TreeItem<DataNode<T>> child : treeRoot.getChildren()) {
+        final AtomicReference<TreeItem<DataNode>> ref = new AtomicReference<>();
+        for (final TreeItem<DataNode> child : treeRoot.getChildren()) {
             if (ref.get() != null) {
                 break;
             }
@@ -129,15 +129,15 @@ order by ?pred
                 findTreeItem(dataNode, child, ref);
             }
         }
-        final TreeItem<DataNode<T>> treeItem = ref.get();
+        final TreeItem<DataNode> treeItem = ref.get();
         if (treeItem == null) {
             throw new NoSuchElementException(String.format("Data node %s not found.", dataNode));
         }
         return treeItem;
     }
 
-    private static <T> void findTreeItem(DataNode<T> dataNode, TreeItem<DataNode<T>> currTreeItem, AtomicReference<TreeItem<DataNode<T>>> ref) {
-        for (final TreeItem<DataNode<T>> child : currTreeItem.getChildren()) {
+    private static <T> void findTreeItem(DataNode dataNode, TreeItem<DataNode> currTreeItem, AtomicReference<TreeItem<DataNode>> ref) {
+        for (final TreeItem<DataNode> child : currTreeItem.getChildren()) {
             final long childId = child.getValue()
                                       .getId();
             LOGGER.trace("Checking ID {}", childId);
@@ -169,7 +169,7 @@ order by ?pred
         this.rootPane.disableProperty()
                      .bind(progressIndicator.visibleProperty());
 
-        final MultipleSelectionModel<TreeItem<DataNode<T>>> selectionModel = this.ontologyTreeView.getSelectionModel();
+        final MultipleSelectionModel<TreeItem<DataNode>> selectionModel = this.ontologyTreeView.getSelectionModel();
         selectionModel.setSelectionMode(SelectionMode.SINGLE);
 
         // TODO: this will likely be a popup
@@ -187,7 +187,7 @@ order by ?pred
         });
         this.ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory<>(lv, resources, this, dialogHelper, nodeFactory, requestHandler));
 
-        final TreeItem<DataNode<T>> root = new TreeItem<>(null);
+        final TreeItem<DataNode> root = new TreeItem<>(null);
         this.ontologyTreeView.setRoot(root);
         final ContextMenu contextMenu = createContextMenu(resources);
         this.ontologyTreeView.setContextMenu(contextMenu);
@@ -251,7 +251,7 @@ order by ?pred
      * @param root        the tree root
      * @param searchValue the search value
      */
-    public void search(final DataNodeRoot<T> root, final String searchValue) {
+    public void search(final DataNodeRoot root, final String searchValue) {
         if (searchValue.isBlank()) {
             LOGGER.trace("Search field is blank, not searching for anything.");
             final Alert alert = new Alert(Alert.AlertType.WARNING);
@@ -266,7 +266,7 @@ order by ?pred
     }
 
     @SuppressWarnings("ThrowableNotThrown")
-    private Service<Void> createSearchService(final DataNodeRoot<T> root, final String searchValue) {
+    private Service<Void> createSearchService(final DataNodeRoot root, final String searchValue) {
         final Service<Void> query = requestHandler.createBackgroundService(searchValue, root);
         query.setOnSucceeded(x -> ontologyTreeView.getSelectionModel()
                                                   .selectFirst());
@@ -290,21 +290,25 @@ order by ?pred
     }
 
     @Override
-    public void onAddNewDataNode(final DataNode<T> dataNode, final DataNodeRoot<T> dataNodeRoot) {
-        LOGGER.trace("Adding new data node '{}' to root '{}'", dataNode.getName(), dataNodeRoot.getName());
+    public void onAddNewDataNode(final DataNode dataNode, final DataNodeRoot dataNodeRoot) {
+        LOGGER.trace("Adding new data node '{}' to root '{}'",
+                     dataNode.getMetadataValue("name")
+                             .orElse("<no name>"),
+                     dataNodeRoot.getMetadataValue("name")
+                                 .orElse("<no name>"));
         Platform.runLater(() -> {
-            final TreeItem<DataNode<T>> parent = findTreeItem(dataNodeRoot, ontologyTreeView.getRoot());
-            final TreeItem<DataNode<T>> child = new TreeItem<>(dataNode);
+            final TreeItem<DataNode> parent = findTreeItem(dataNodeRoot, ontologyTreeView.getRoot());
+            final TreeItem<DataNode> child = new TreeItem<>(dataNode);
             parent.getChildren()
                   .add(child);
         });
     }
 
     @Override
-    public void onAddMultipleDataNodes(final DataNode<T> dataNodesParent, final List<DataNode<T>> dataNodes, final DataNode<T> chosenDataNode) {
+    public void onAddMultipleDataNodes(final DataNode dataNodesParent, final List<DataNode> dataNodes, final DataNode chosenDataNode) {
         LOGGER.trace("Adding multiple data nodes '{}' under '{}'", dataNodes, dataNodesParent);
         Platform.runLater(() -> {
-            final TreeItem<DataNode<T>> treeItem = findTreeItem(dataNodesParent, ontologyTreeView.getRoot());
+            final TreeItem<DataNode> treeItem = findTreeItem(dataNodesParent, ontologyTreeView.getRoot());
             treeItem.getChildren()
                     .addAll(dataNodes.stream()
                                      .map(TreeItem::new)
@@ -379,20 +383,21 @@ order by ?pred
      * @param observable the observable that was invalidated. not used, it's here just because of the signature of {@link InvalidationListener#invalidated(Observable)} method
      */
     private void onSelection(final Observable observable) {
-        final TreeItem<DataNode<T>> selectedItem = ontologyTreeView.getSelectionModel()
-                                                                   .getSelectedItem();
+        final TreeItem<DataNode> selectedItem = ontologyTreeView.getSelectionModel()
+                                                                .getSelectedItem();
         final WebEngine engine = this.wikiPageWebView.getEngine();
 
         // a valid item is a non-root item that's not null
-        final boolean hasSelectedValidItem = selectedItem != null && selectedItem != ontologyTreeView.getRoot() && !(selectedItem.getValue() instanceof DataNodeRoot<T>);
+        final boolean hasSelectedValidItem = selectedItem != null && selectedItem != ontologyTreeView.getRoot() && !(selectedItem.getValue() instanceof DataNodeRoot);
         if (!hasSelectedValidItem) {
             LOGGER.trace("Unloading web page because selected item was not valid. Cause: (null = {}, is root = {})", selectedItem == null, selectedItem != null);
             engine.load("");
             return;
         }
 
-        final DataNode<T> dataNode = selectedItem.getValue();
-        final String formattedItem = RDFNodeUtil.formatRDFNode(dataNode.getData());
+        final DataNode dataNode = selectedItem.getValue();
+        final RDFNode rdfNode = dataNode.getMetadataValueUnsafe("rdfNode");
+        final String formattedItem = RDFNodeUtil.formatRDFNode(rdfNode);
         final String url = String.format(WIKI_URL, formattedItem);
         LOGGER.trace("Loading web page with URL {}", url);
         engine.load(url);

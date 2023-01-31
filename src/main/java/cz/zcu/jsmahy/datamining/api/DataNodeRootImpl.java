@@ -12,39 +12,34 @@ import java.util.function.BiConsumer;
                    doNotUseGetters = true)
 @ToString(callSuper = true,
           doNotUseGetters = true)
-class DataNodeRootImpl<T> extends DataNodeImpl<T> implements DataNodeRoot<T> {
+class DataNodeRootImpl extends DataNodeImpl implements DataNodeRoot {
 
     @Override
-    public void iterate(BiConsumer<DataNode<T>, Integer> biConsumer) {
-        final ObservableList<DataNode<T>> children = this.getChildren();
+    public void iterate(BiConsumer<DataNode, Integer> biConsumer) {
+        final ObservableList<DataNode> children = this.getChildren();
         if (!children.isEmpty()) {
             iterate(biConsumer, -1, this);
         }
     }
 
     @Override
-    public T getData() {
-        throw new UnsupportedOperationException("Root has no data");
-    }
-
-    @Override
-    public DataNode<T> getParent() {
+    public DataNode getParent() {
         return null;
     }
 
-    private void iterate(BiConsumer<DataNode<T>, Integer> biConsumer, int depth, DataNode<T> dataNode) {
+    private void iterate(BiConsumer<DataNode, Integer> biConsumer, int depth, DataNode dataNode) {
         if (dataNode == null) {
             return;
         }
 
-        if (!(dataNode instanceof DataNodeRoot<T>)) {
+        if (!(dataNode instanceof DataNodeRoot)) {
             biConsumer.accept(dataNode, depth);
         }
 
-        final ObservableList<DataNode<T>> children = dataNode.getChildren();
+        final ObservableList<DataNode> children = dataNode.getChildren();
         if (!children.isEmpty()) {
             depth++;
-            for (final DataNode<T> node : children) {
+            for (final DataNode node : children) {
                 iterate(biConsumer, depth, node);
             }
         }

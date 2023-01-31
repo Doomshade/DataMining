@@ -13,31 +13,23 @@ import java.util.*;
 @Data
 @EqualsAndHashCode(doNotUseGetters = true)
 @ToString(doNotUseGetters = true)
-class DataNodeImpl<T> implements DataNode<T> {
+class DataNodeImpl implements DataNode {
     private static long ID_SEQ = 0;
 
-    @EqualsAndHashCode.Exclude
-    private final T data;
-    private final DataNode<T> parent;
+    private final DataNode parent;
     private final long id;
-    private final ObservableList<DataNode<T>> children = FXCollections.observableArrayList();
+    private final ObservableList<DataNode> children = FXCollections.observableArrayList();
     private final Map<String, Object> metadata = new HashMap<>();
-    private String name;
-    private String uri;
-    private Date startDate;
-    private Date endDate;
 
     {
         this.id = ID_SEQ++;
     }
 
     protected DataNodeImpl() {
-        this.data = null;
         this.parent = null;
     }
 
-    DataNodeImpl(final @NonNull T data, final DataNode<T> parent) {
-        this.data = data;
+    DataNodeImpl(final DataNode parent) {
         this.parent = parent;
     }
 
@@ -49,13 +41,13 @@ class DataNodeImpl<T> implements DataNode<T> {
      * @throws IllegalArgumentException if the child is an instance of {@link DataNodeRoot}
      * @throws NullPointerException     if the child is {@code null}
      */
-    public void addChild(@NonNull DataNode<T> child) throws IllegalArgumentException, NullPointerException {
-        assert !(child instanceof DataNodeRoot<T>);
+    public void addChild(@NonNull DataNode child) throws IllegalArgumentException, NullPointerException {
+        assert !(child instanceof DataNodeRoot);
         this.children.add(child);
     }
 
     @Override
-    public ObservableList<DataNode<T>> getChildren() {
+    public ObservableList<DataNode> getChildren() {
         return FXCollections.unmodifiableObservableList(children);
     }
 
@@ -66,19 +58,36 @@ class DataNodeImpl<T> implements DataNode<T> {
     }
 
     @Override
+    public <V> V getMetadataValueUnsafe(final String key) throws NoSuchElementException, ClassCastException {
+        final Optional<V> opt = getMetadataValue(key);
+        return opt.orElseThrow(() -> new NoSuchElementException(key));
+    }
+
+    @Override
+    public <V> V getMetadataValue(final String key, final V defaultValue) throws NoSuchElementException, ClassCastException {
+        final Optional<V> opt = getMetadataValue(key);
+        return opt.orElse(defaultValue);
+    }
+
+    @Override
     public void addMetadata(final String key, final Object value) {
         this.metadata.put(key, value);
     }
 
     @Override
-    public Optional<DataNodeRoot<T>> findRoot() {
-        DataNode<T> prev = parent;
+    public void addMetadata(final Map<String, Object> metadata) {
+        this.metadata.putAll(metadata);
+    }
+
+    @Override
+    public Optional<DataNodeRoot> findRoot() {
+        DataNode prev = parent;
         while (prev != null && prev.getParent() != null) {
             prev = prev.getParent();
         }
         if (prev != null) {
-            assert prev instanceof DataNodeRoot<T>; // the upmost parent should always be root
-            return Optional.of((DataNodeRoot<T>) prev);
+            assert prev instanceof DataNodeRoot; // the upmost parent should always be root
+            return Optional.of((DataNodeRoot) prev);
         }
         return Optional.empty();
     }
@@ -88,7 +97,7 @@ class DataNodeImpl<T> implements DataNode<T> {
     }
 
     @Override
-    public Iterator<DataNode<T>> iterator() {
+    public Iterator<DataNode> iterator() {
         return children.iterator();
     }
 }

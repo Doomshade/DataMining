@@ -28,14 +28,14 @@ import java.util.ResourceBundle;
  * @author Jakub Šmrha
  * @since 1.0
  */
-public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>> {
+public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode> {
     private TextField textField;
 
-    public RDFNodeCellFactory(final TreeView<DataNode<T>> treeView,
+    public RDFNodeCellFactory(final TreeView<DataNode> treeView,
                               final ResourceBundle resources,
                               final MainController<T> mainController,
                               final DialogHelper dialogHelper,
-                              final DataNodeFactory<T> nodeFactory,
+                              final DataNodeFactory nodeFactory,
                               final SparqlEndpointAgent<T, ?> requestHandler) {
         emptyProperty().addListener((obs, wasEmpty, isNowEmpty) -> {
             if (isNowEmpty) {
@@ -54,7 +54,7 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
             final MenuItem newLineItem = buildNewLineItem(resources, nodeFactory, requestHandler, treeView, mainController);
             final MenuItem continueLineItem = buildContinueLineItem(resources);
             final ObservableList<MenuItem> items = contextMenu.getItems();
-            if (getItem() instanceof DataNodeRoot<T>) {
+            if (getItem() instanceof DataNodeRoot) {
                 items.addAll(searchItem, addRestrictionItem, addItem, editItem, deleteItem);
             } else {
                 items.addAll(newLineItem, continueLineItem, addItem, deleteItem);
@@ -75,20 +75,22 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
     }
 
     private MenuItem buildNewLineItem(final ResourceBundle resources,
-                                      final DataNodeFactory<T> nodeFactory,
+                                      final DataNodeFactory nodeFactory,
                                       final SparqlEndpointAgent<T, ?> requestHandler,
-                                      final TreeView<DataNode<T>> treeView,
+                                      final TreeView<DataNode> treeView,
                                       final MainController<T> mainController) {
         final MenuItem menuItem = new MenuItem(resources.getString("create-new-line"));
         menuItem.setOnAction(event -> {
-            final TreeItem<DataNode<T>> root = treeView.getRoot();
-            final Optional<DataNodeRoot<T>> dataNodeRootOpt = getItem().findRoot();
+            final TreeItem<DataNode> root = treeView.getRoot();
+            final Optional<DataNodeRoot> dataNodeRootOpt = getItem().findRoot();
             assert dataNodeRootOpt.isPresent(); // the item should not be a root, thus the item's root should be present
-            final DataNodeRoot<T> newDataNodeRoot = nodeFactory.newRoot(dataNodeRootOpt.get()
-                                                                                       .getName() + " - copy");
+            final String name = dataNodeRootOpt.get()
+                                               .getMetadataValue("name")
+                                               .orElse("<no name>") + " - copy";
+            final DataNodeRoot newDataNodeRoot = nodeFactory.newRoot(name);
             root.getChildren()
                 .add(new TreeItem<>(newDataNodeRoot));
-            final Service<?> service = requestHandler.createBackgroundService(getItem().getUri(), newDataNodeRoot);
+            final Service<?> service = requestHandler.createBackgroundService(getItem().getMetadataValueUnsafe("uri"), newDataNodeRoot);
             mainController.bindService(service);
             service.restart();
         });
@@ -99,7 +101,7 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
         final MenuItem menuItem = new MenuItem(resources.getString("search"));
         menuItem.setOnAction(event -> dialogHelper.textInputDialog(resources.getString("item-to-search"), searchValue -> {
             getTreeItem().setExpanded(true);
-            final Service<?> service = sparqlEndpointAgent.createBackgroundService(searchValue.replaceAll(" ", "_"), (DataNodeRoot<T>) getItem());
+            final Service<?> service = sparqlEndpointAgent.createBackgroundService(searchValue.replaceAll(" ", "_"), (DataNodeRoot) getItem());
             mainController.bindService(service);
             service.restart();
         }, "Title"));
@@ -131,8 +133,8 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
         textField.setMinWidth(this.getWidth() - this.getGraphicTextGap() * 2);
         textField.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ENTER) {
-                if (getItem() instanceof DataNodeRoot<T> root) {
-                    root.setName(textField.getText());
+                if (getItem() instanceof DataNodeRoot root) {
+                    root.addMetadata("name", textField.getText());
                     commitEdit(root);
                     event.consume();
                 }
@@ -143,7 +145,7 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
     @Override
     public void startEdit() {
         super.startEdit();
-        if (!(getItem() instanceof DataNodeRoot<T>)) {
+        if (!(getItem() instanceof DataNodeRoot)) {
             return;
         }
         if (textField == null) {
@@ -155,7 +157,7 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
     }
 
     @Override
-    public void commitEdit(final DataNode<T> newValue) {
+    public void commitEdit(final DataNode newValue) {
         super.commitEdit(newValue);
         setGraphic(null);
         setText(prettyFormat(newValue));
@@ -170,16 +172,16 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
         setContentDisplay(ContentDisplay.TEXT_ONLY);
     }
 
-    private MenuItem buildDeleteItem(final ResourceBundle resources, final TreeView<DataNode<T>> treeView) {
+    private MenuItem buildDeleteItem(final ResourceBundle resources, final TreeView<DataNode> treeView) {
         final MenuItem menuItem = new MenuItem();
         menuItem.textProperty()
                 .bind(Bindings.format(resources.getString("ontology-prompt-delete"), textProperty()));
         menuItem.setOnAction(event -> {
-            final ObservableList<TreeItem<DataNode<T>>> selectedItems = treeView.getSelectionModel()
-                                                                                .getSelectedItems();
+            final ObservableList<TreeItem<DataNode>> selectedItems = treeView.getSelectionModel()
+                                                                             .getSelectedItems();
             // create a copy because we modify the inner list which would throw an exception otherwise
-            final List<TreeItem<DataNode<T>>> temp = new ArrayList<>(selectedItems);
-            for (final TreeItem<DataNode<T>> selectedItem : temp) {
+            final List<TreeItem<DataNode>> temp = new ArrayList<>(selectedItems);
+            for (final TreeItem<DataNode> selectedItem : temp) {
                 selectedItem.getParent()
                             .getChildren()
                             .remove(selectedItem);
@@ -210,15 +212,15 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode<T>>
      *
      * @see RDFNodeUtil#formatRDFNode(RDFNode)
      */
-    private String prettyFormat(DataNode<T> node) {
+    private String prettyFormat(DataNode node) {
         if (node == null) {
             return "";
         }
-        return node.getName();
+        return node.getMetadataValue("name", "<no name>");
     }
 
     @Override
-    protected void updateItem(final DataNode<T> item, final boolean empty) {
+    protected void updateItem(final DataNode item, final boolean empty) {
         super.updateItem(item, empty);
         if (empty) {
             setText(null);

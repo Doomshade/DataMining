@@ -4,7 +4,7 @@ import javafx.concurrent.Task;
 
 import java.io.*;
 
-public abstract class ExportTask extends Task<Void> implements Closeable {
+public abstract class ExportTask extends Task<Void> implements Closeable, Flushable {
     protected final Writer out;
 
     protected ExportTask(final OutputStream out) {
@@ -14,6 +14,11 @@ public abstract class ExportTask extends Task<Void> implements Closeable {
     @Override
     public void close() throws IOException {
         out.close();
+    }
+
+    @Override
+    public void flush() throws IOException {
+        out.flush();
     }
 
     // helper methods for Java's amazing I/O API

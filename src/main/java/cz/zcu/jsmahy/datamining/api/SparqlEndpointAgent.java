@@ -17,7 +17,7 @@ public class SparqlEndpointAgent<T, R> {
     @Getter
     private final ApplicationConfiguration<T, R> config;
     @Getter
-    private final DataNodeFactory<T> dataNodeFactory;
+    private final DataNodeFactory dataNodeFactory;
 
     /**
      * Reason for this parameter not having a generic parameter: {@link DataMiningModule}
@@ -30,7 +30,7 @@ public class SparqlEndpointAgent<T, R> {
         this.sparqlEndpointTaskProvider = requireNonNull(sparqlEndpointTaskProvider);
     }
 
-    public Service<R> createBackgroundService(@NonNull final String query, @NonNull final DataNodeRoot<T> dataNodeRoot) {
+    public Service<R> createBackgroundService(@NonNull final String query, @NonNull final DataNodeRoot dataNodeRoot) {
         if (query.isBlank()) {
             throw new IllegalArgumentException("Query cannot be blank.");
         }
