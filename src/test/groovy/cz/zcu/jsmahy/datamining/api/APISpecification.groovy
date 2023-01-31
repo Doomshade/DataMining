@@ -15,18 +15,16 @@ import static cz.zcu.jsmahy.datamining.api.ApplicationConfiguration.*
 class APISpecification extends Specification {
     @Shared
     static DataNodeFactory<?> nodeFactory
-
     @Shared
     static Injector injector
-
     @Shared
     private DataNodeRoot<?> root
-
     @Shared
     private ApplicationConfiguration<?, ?> config
-
     @Shared
     private DefaultSparqlEndpointTask<?, ?> defaultTask
+    @Shared
+    private SparqlEndpointAgent<?, ?> endpointAgent
 
     void setupSpec() {
         def config = Mock(ApplicationConfiguration)
@@ -50,6 +48,7 @@ class APISpecification extends Specification {
         this.root = nodeFactory.newRoot("Root")
         this.config = injector.getInstance(ApplicationConfiguration)
         this.defaultTask = new DefaultSparqlEndpointTask(config, nodeFactory, "queryTest", root)
+        this.endpointAgent = injector.getInstance(SparqlEndpointAgent.class)
     }
 
     def "Should throw NPE when passing null reference when trying to create a new data node"() {
@@ -248,6 +247,40 @@ class APISpecification extends Specification {
         1 * consumer.accept(fourthChildNode, 1)
         then:
         1 * consumer.accept(fourthNode, 0)
+    }
 
+    // TODO: rename
+    def "Should throw IAE if either query (#query) and tree item (#treeItem) is null"() {
+        when:
+        endpointAgent.createBackgroundService(query, treeItem)
+
+        then:
+        thrown(NullPointerException)
+
+        where:
+        query       | treeItem
+        null        | _ as DataNodeRoot<?>
+        _ as String | null
+    }
+
+    def "Should throw IAE if either query (#query) and tree item (#treeItem) is null (2)"() {
+        when:
+        endpointAgent.createBackgroundService(query, treeItem).start()
+
+        then:
+        thrown(NullPointerException)
+
+        where:
+        query       | treeItem
+        null        | _ as DataNodeRoot<?>
+        _ as String | null
+    }
+
+
+    def "Should throw IAE if query is empty"() {
+        when:
+        endpointAgent.createBackgroundService("", _ as DataNodeRoot<?>)
+        then:
+        thrown(IllegalArgumentException)
     }
 }

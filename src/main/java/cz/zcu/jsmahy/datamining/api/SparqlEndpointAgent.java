@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import lombok.Getter;
+import lombok.NonNull;
 
 import static java.util.Objects.requireNonNull;
 
@@ -26,7 +27,10 @@ public class SparqlEndpointAgent<T, R> {
         this.sparqlEndpointTaskProvider = requireNonNull(sparqlEndpointTaskProvider);
     }
 
-    public Service<R> createBackgroundService(final String query, final DataNodeRoot<T> dataNodeRoot) {
+    public Service<R> createBackgroundService(@NonNull final String query, @NonNull final DataNodeRoot<T> dataNodeRoot) {
+        if (query.isBlank()) {
+            throw new IllegalArgumentException("Query cannot be blank.");
+        }
         return new Service<>() {
             @Override
             protected Task<R> createTask() {

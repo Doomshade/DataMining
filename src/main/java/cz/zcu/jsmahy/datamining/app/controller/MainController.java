@@ -77,6 +77,16 @@ order by ?pred
     private final EventHandler<ActionEvent> createNewLineAction = e -> {
         final ResourceBundle lang = ResourceBundle.getBundle("lang");
         dialogHelper.textInputDialog(lang.getString("create-new-line"), lineName -> {
+            if (lineName.isBlank()) {
+                Platform.runLater(() -> {
+                    final Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setTitle("Invalid line");
+                    alert.setHeaderText("Empty string");
+                    alert.setContentText("Please fill in a non-blank value.");
+                    alert.show();
+                });
+                return;
+            }
             final DataNodeRoot<T> dataNode = nodeFactory.newRoot(lineName);
             ontologyTreeView.getRoot()
                             .getChildren()
