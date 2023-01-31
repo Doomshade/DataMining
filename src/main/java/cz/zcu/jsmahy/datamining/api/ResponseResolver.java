@@ -9,7 +9,13 @@ import java.util.List;
  * <p>Solves ambiguities of nodes where a list of them occurs.</p>
  * <p>An example would be a monarch having multiple descendents.</p>
  *
+ * @param <T>     The data type of {@link DataNode}
+ * @param <R>     The generic type of {@link SparqlEndpointTask}
+ * @param <DNRef> The {@link DataNodeReferenceHolder} (this allows us to return any implementation, see {@link BlockingResponseResolver})
+ *
  * @author Jakub Šmrha
+ * @see BlockingResponseResolver
+ * @see BlockingDataNodeReferenceHolder
  * @since 1.0
  */
 public interface ResponseResolver<T, R, DNRef extends DataNodeReferenceHolder<T>> {

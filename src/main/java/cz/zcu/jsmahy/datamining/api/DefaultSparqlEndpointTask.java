@@ -52,7 +52,7 @@ public class DefaultSparqlEndpointTask<T, R> extends SparqlEndpointTask<T, R> {
                                                                 .map(String::toLowerCase)
                                                                 .collect(Collectors.toSet());
         if (validDateFormatsSet.contains("any")) {
-            this.validDateFormats.addAll(ALL_VALID_DATE_FORMATS);
+            this.validDateFormats.addAll(ApplicationConfiguration.CollectionConstants.getAllValidDateFormats());
         } else {
             this.validDateFormats.addAll(validDateFormatsSet);
         }

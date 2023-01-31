@@ -90,6 +90,60 @@ order by ?pred
         return instance;
     }
 
+    // TODO: test this method!
+    public static <T> TreeItem<DataNode<T>> findTreeItem(final DataNode<T> dataNode, final TreeItem<DataNode<T>> treeRoot) {
+        Objects.requireNonNull(dataNode);
+        Objects.requireNonNull(treeRoot);
+
+        // first iterate over all of root's children, then recursively check for the children of each node
+        // if we don't find anything after the last element of the root's children no such tree item was found
+        // this might look duplicate in the helper method, but we need to ensure that the inner children don't throw an exception in the
+        // inner loops because they aren't required to have the tree item present, whereas the root is
+        // thus the check at the end of this loop and no check in the helper recursive method (i.e. if we threw the exception in the
+        // inner loop the search would terminate prematurely; we need to terminate after the last of root's children is checked)
+        final AtomicReference<TreeItem<DataNode<T>>> ref = new AtomicReference<>();
+        for (final TreeItem<DataNode<T>> child : treeRoot.getChildren()) {
+            if (ref.get() != null) {
+                break;
+            }
+            final long childId = child.getValue()
+                                      .getId();
+            LOGGER.trace("Checking ID {}", childId);
+            if (childId == dataNode.getId()) {
+                LOGGER.trace("Found ID {}. Terminating.", childId);
+                ref.set(child);
+                break;
+            }
+            if (!child.getChildren()
+                      .isEmpty()) {
+                findTreeItem(dataNode, child, ref);
+            }
+        }
+        final TreeItem<DataNode<T>> treeItem = ref.get();
+        if (treeItem == null) {
+            throw new NoSuchElementException(String.format("Data node %s not found.", dataNode));
+        }
+        return treeItem;
+    }
+
+    private static <T> void findTreeItem(DataNode<T> dataNode, TreeItem<DataNode<T>> currTreeItem, AtomicReference<TreeItem<DataNode<T>>> ref) {
+        for (final TreeItem<DataNode<T>> child : currTreeItem.getChildren()) {
+            final long childId = child.getValue()
+                                      .getId();
+            LOGGER.trace("Checking ID {}", childId);
+            if (childId == dataNode.getId()) {
+                LOGGER.trace("Found ID {}. Terminating.", childId);
+                ref.set(child);
+                return;
+            }
+            if (!child.getChildren()
+                      .isEmpty()) {
+                findTreeItem(dataNode, child, ref);
+            }
+        }
+
+    }
+
     @Override
     @SuppressWarnings("unchecked")
     public void initialize(final URL location, final ResourceBundle resources) {
@@ -181,65 +235,38 @@ order by ?pred
         return menuItem;
     }
 
-    // TODO: test this method!
-    public static <T> TreeItem<DataNode<T>> findTreeItem(final DataNode<T> dataNode, final TreeItem<DataNode<T>> treeRoot) {
-        Objects.requireNonNull(dataNode);
-        Objects.requireNonNull(treeRoot);
-
-        // first iterate over all of root's children, then recursively check for the children of each node
-        // if we don't find anything after the last element of the root's children no such tree item was found
-        // this might look duplicate in the helper method, but we need to ensure that the inner children don't throw an exception in the
-        // inner loops because they aren't required to have the tree item present, whereas the root is
-        // thus the check at the end of this loop and no check in the helper recursive method (i.e. if we threw the exception in the
-        // inner loop the search would terminate prematurely; we need to terminate after the last of root's children is checked)
-        final AtomicReference<TreeItem<DataNode<T>>> ref = new AtomicReference<>();
-        for (final TreeItem<DataNode<T>> child : treeRoot.getChildren()) {
-            if (ref.get() != null) {
-                break;
-            }
-            final long childId = child.getValue()
-                                      .getId();
-            LOGGER.trace("Checking ID {}", childId);
-            if (childId == dataNode.getId()) {
-                LOGGER.trace("Found ID {}. Terminating.", childId);
-                ref.set(child);
-                break;
-            }
-            if (!child.getChildren()
-                      .isEmpty()) {
-                findTreeItem(dataNode, child, ref);
-            }
-        }
-        final TreeItem<DataNode<T>> treeItem = ref.get();
-        if (treeItem == null) {
-            throw new NoSuchElementException(String.format("Data node %s not found.", dataNode));
-        }
-        return treeItem;
-    }
-
     /**
      * Handler for mouse press on the search button.
      *
      * @param root        the tree root
      * @param searchValue the search value
      */
-    @SuppressWarnings("ThrowableNotThrown")
     public void search(final DataNodeRoot<T> root, final String searchValue) {
         if (searchValue.isBlank()) {
-            LOGGER.info("Search field is blank, not searching for anything.");
+            LOGGER.trace("Search field is blank, not searching for anything.");
             final Alert alert = new Alert(Alert.AlertType.WARNING);
             alert.setTitle("Invalid search");
             alert.setContentText("Please enter some text to search.");
             return;
         }
 
+        LOGGER.trace("Creating a background service for {} with root {}", searchValue, root);
+        final Service<Void> query = createSearchService(root, searchValue);
+        query.restart();
+        bindService(query);
+    }
+
+    private Service<Void> createSearchService(final DataNodeRoot<T> root, final String searchValue) {
         final Service<Void> query = requestHandler.createBackgroundService(searchValue, root);
         query.setOnSucceeded(x -> ontologyTreeView.getSelectionModel()
                                                   .selectFirst());
-        query.setOnFailed(x -> query.getException()
-                                    .printStackTrace());
-        query.restart();
-        bindService(query);
+        query.exceptionProperty()
+             .addListener((observable, oldValue, newValue) -> {
+                 if (newValue != null) {
+                     newValue.printStackTrace();
+                 }
+             });
+        return query;
     }
 
     public synchronized void bindService(final Service<?> service) {
@@ -258,7 +285,7 @@ order by ?pred
 
     @Override
     public void onAddNewDataNode(final DataNode<T> dataNode, final DataNodeRoot<T> dataNodeRoot) {
-        LOGGER.debug("Adding new data node '{}' to root '{}'", dataNode.getName(), dataNodeRoot.getName());
+        LOGGER.trace("Adding new data node '{}' to root '{}'", dataNode.getName(), dataNodeRoot.getName());
         Platform.runLater(() -> {
             final TreeItem<DataNode<T>> parent = findTreeItem(dataNodeRoot, ontologyTreeView.getRoot());
             final TreeItem<DataNode<T>> child = new TreeItem<>(dataNode);
@@ -267,27 +294,9 @@ order by ?pred
         });
     }
 
-    private static <T> void findTreeItem(DataNode<T> dataNode, TreeItem<DataNode<T>> currTreeItem, AtomicReference<TreeItem<DataNode<T>>> ref) {
-        for (final TreeItem<DataNode<T>> child : currTreeItem.getChildren()) {
-            final long childId = child.getValue()
-                                      .getId();
-            LOGGER.trace("Checking ID {}", childId);
-            if (childId == dataNode.getId()) {
-                LOGGER.trace("Found ID {}. Terminating.", childId);
-                ref.set(child);
-                return;
-            }
-            if (!child.getChildren()
-                      .isEmpty()) {
-                findTreeItem(dataNode, child, ref);
-            }
-        }
-
-    }
-
     @Override
     public void onAddMultipleDataNodes(final DataNode<T> dataNodesParent, final List<DataNode<T>> dataNodes, final DataNode<T> chosenDataNode) {
-        LOGGER.debug("Adding multiple data nodes '{}' under '{}'", dataNodes, dataNodesParent);
+        LOGGER.trace("Adding multiple data nodes '{}' under '{}'", dataNodes, dataNodesParent);
         Platform.runLater(() -> {
             final TreeItem<DataNode<T>> treeItem = findTreeItem(dataNodesParent, ontologyTreeView.getRoot());
             treeItem.getChildren()
@@ -347,6 +356,16 @@ order by ?pred
         });
     }
 
+    @Override
+    public void onSearchDone() {
+
+    }
+
+    @Override
+    public void setStartAndDateProperty(final Property startDateProperty, final Property endDateProperty) {
+
+    }
+
     /**
      * Callback for {@link SelectionModel#selectedItemProperty()} in the ontology list view. Displays the selected item in Wikipedia. The selected item must not be a root of any kind ({@link TreeItem}
      * root nor {@link DataNodeRoot}).
@@ -361,22 +380,15 @@ order by ?pred
         // a valid item is a non-root item that's not null
         final boolean hasSelectedValidItem = selectedItem != null && selectedItem != ontologyTreeView.getRoot() && !(selectedItem.getValue() instanceof DataNodeRoot<T>);
         if (!hasSelectedValidItem) {
+            LOGGER.trace("Unloading web page because selected item was not valid. Cause: (null = {}, is root = {})", selectedItem == null, selectedItem != null);
             engine.load("");
             return;
         }
 
         final DataNode<T> dataNode = selectedItem.getValue();
         final String formattedItem = RDFNodeUtil.formatRDFNode(dataNode.getData());
-        engine.load(String.format(WIKI_URL, formattedItem));
-    }
-
-    @Override
-    public void onSearchDone() {
-
-    }
-
-    @Override
-    public void setStartAndDateProperty(final Property startDateProperty, final Property endDateProperty) {
-
+        final String url = String.format(WIKI_URL, formattedItem);
+        LOGGER.trace("Loading web page with URL {}", url);
+        engine.load(url);
     }
 }

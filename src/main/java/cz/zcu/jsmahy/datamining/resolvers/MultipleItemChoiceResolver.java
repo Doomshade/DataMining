@@ -22,14 +22,12 @@ import java.util.ResourceBundle;
  * @author Jakub Šmrha
  * @version 1.0
  */
-public class MultipleItemChoiceResolver<T extends RDFNode, R> implements BlockingResponseResolver<T, R> {
+public class MultipleItemChoiceResolver<T extends RDFNode, R> implements BlockingResponseResolver<T, R, BlockingDataNodeReferenceHolder<T>> {
 
     private static final Logger LOGGER = LogManager.getLogger(MultipleItemChoiceResolver.class);
 
     @Override
-    public BlockingDataNodeReferenceHolder<T> resolveRequest(final List<DataNode<T>> ambiguousInput,
-                                                             final QueryData inputMetadata,
-                                                             final SparqlEndpointTask<T, R> requestHandler) {
+    public BlockingDataNodeReferenceHolder<T> resolveRequest(final List<DataNode<T>> ambiguousInput, final QueryData inputMetadata, final SparqlEndpointTask<T, R> requestHandler) {
         // first off we check if we have an ontology path set
         // if not, pop up a dialogue
         final BlockingDataNodeReferenceHolder<T> ref = new BlockingDataNodeReferenceHolder<>();

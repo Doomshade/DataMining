@@ -43,6 +43,11 @@ class RDFNodeChooserDialog {
     @SuppressWarnings("unchecked")
     private final ObservableSet<Service<String>> services = FXCollections.synchronizedObservableSet(FXCollections.observableSet());
 
+    /**
+     * @param statements   The statements to display
+     * @param uriPredicate The predicate for the given URI in each cell. The predicate gets called for each cell in the {@code propertyColumn} (the first column) and if {@link Predicate#test(Object)}
+     *                     returns {@code true} it will attempt to look for the label of the property.
+     */
     RDFNodeChooserDialog(final Collection<Statement> statements, final Predicate<String> uriPredicate) {
         this.uriPredicate = uriPredicate;
         this.content = new TableView<>();
@@ -77,7 +82,6 @@ class RDFNodeChooserDialog {
                   .addAll(ButtonType.OK, ButtonType.CANCEL);
         dialogPane.setContent(content);
 
-        // TODO: progress indicator is not shown
         dialogPane.disableProperty()
                   .bind(Bindings.size(services)
                                 .greaterThan(0));
@@ -130,12 +134,12 @@ class RDFNodeChooserDialog {
                         final Property labelProperty = model.getProperty("http://www.w3.org/2000/01/rdf-schema#", "label");
                         final Statement val = model.getProperty(predicate, labelProperty, "en");
                         if (val == null) {
-                            LOGGER.info("Failed to find " + uri);
+                            LOGGER.debug("Failed to find " + uri);
                             return null;
                         }
                         final String str = val.getString();
                         modelCache.put(uri, str);
-                        LOGGER.info("URI: {}, STR: {}", uri, str);
+                        LOGGER.trace("URI: {}, STR: {}", uri, str);
                         return str;
                     }
                 };

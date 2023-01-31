@@ -39,10 +39,19 @@ public interface DataNode<T> extends Iterable<DataNode<T>> {
      */
     void setName(String name);
 
+    /**
+     * @return The URI of this data node.
+     */
     String getUri();
 
+    /**
+     * @param uri The URI of this data node.
+     */
     void setUri(String uri);
 
+    /**
+     * @return The parent of this data node or {@code null} if this node is root. If this returns {@code null} it <b>should</b> be guaranteed this is a {@link DataNodeRoot}.
+     */
     DataNode<T> getParent();
 
     DataNodeRoot<T> findRoot();

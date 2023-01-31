@@ -155,7 +155,7 @@ class APISpecification extends Specification {
         def task = new DefaultSparqlEndpointTask(config, nodeFactory, "queryTest", root)
 
         then:
-        task.validDateFormats.containsAll(ALL_VALID_DATE_FORMATS)
+        task.validDateFormats.containsAll(CollectionConstants.getAllValidDateFormats())
     }
 
     def "Should automatically set name if the node is a Resource"() {

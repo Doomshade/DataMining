@@ -9,6 +9,7 @@ import org.apache.logging.log4j.Logger;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
@@ -68,7 +69,9 @@ public class DefaultApplicationConfiguration<T, R> implements ApplicationConfigu
             this.configVariables.clear();
             final Map<? extends String, ?> values;
             try {
-                values = yaml.load(getClass().getResourceAsStream(CONFIG_FILE_NAME));
+                try (final InputStream in = getClass().getResourceAsStream(CONFIG_FILE_NAME)) {
+                    values = yaml.load(in);
+                }
             } catch (Exception e) {
                 throw new IOException(e);
             }

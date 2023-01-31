@@ -5,7 +5,7 @@ import javafx.application.Platform;
 
 import java.util.List;
 
-public class OntologyPathPredicateResolver<T, R> implements BlockingResponseResolver<T, R> {
+public class OntologyPathPredicateResolver<T, R> implements BlockingResponseResolver<T, R, BlockingDataNodeReferenceHolder<T>> {
     @Override
     public BlockingDataNodeReferenceHolder<T> resolveRequest(final List<DataNode<T>> ambiguousInput,
                                                              final QueryData inputMetadata,

@@ -3,38 +3,18 @@ package cz.zcu.jsmahy.datamining.api;
 import lombok.NonNull;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 /**
  * Responsible for loading configuration and other
  *
- * @param <T>
- * @param <R>
+ * @param <T> The data type of {@link DataNode}
+ * @param <R> The generic type of {@link SparqlEndpointTask}
  */
 public interface ApplicationConfiguration<T, R> {
     String IGNORE_PATH_PREDICATES = "ignored-path-predicates";
     String VALID_DATE_FORMATS = "valid-date-formats";
     String BASE_URL = "base-url";
-    Collection<String> ALL_VALID_DATE_FORMATS = new HashSet<>() {
-        {
-            add("integer");
-            add("date");
-            add("time");
-            add("dateTime");
-            add("dateTimeStamp");
-            add("duration");
-            add("duration#dayTimeDuration");
-            add("duration#yearMonthDuration");
-            add("gDay");
-            add("gMonth");
-            add("gYear");
-            add("gYearMonth");
-            add("gMonthDay");
-        }
-    };
 
     /**
      * Reads the configuration file and reloads the mapped values.
@@ -88,4 +68,31 @@ public interface ApplicationConfiguration<T, R> {
      * @return The resolver that should be called when asking for the start and end points in time.
      */
     ResponseResolver<T, R, ?> getStartAndEndDateResolver();
+
+    /**
+     * List of {@link Collection} constants (just to make them unmodifiable).
+     */
+    class CollectionConstants {
+        private static final Collection<String> ALL_VALID_DATE_FORMATS = new HashSet<>() {
+            {
+                add("integer");
+                add("date");
+                add("time");
+                add("dateTime");
+                add("dateTimeStamp");
+                add("duration");
+                add("duration#dayTimeDuration");
+                add("duration#yearMonthDuration");
+                add("gDay");
+                add("gMonth");
+                add("gYear");
+                add("gYearMonth");
+                add("gMonthDay");
+            }
+        };
+
+        public static Collection<String> getAllValidDateFormats() {
+            return Collections.unmodifiableCollection(ALL_VALID_DATE_FORMATS);
+        }
+    }
 }
