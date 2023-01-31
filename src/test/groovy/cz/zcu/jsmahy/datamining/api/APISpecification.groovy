@@ -16,15 +16,27 @@ class APISpecification extends Specification {
     @Shared
     private DataNodeRoot<?> root
     @Shared
+    private SparqlEndpointAgent<?, ?> endpointAgent
+
+    @Shared
     private static ApplicationConfiguration<?, ?> config
 
     void setupSpec() {
-        def mocks = new Mocks()
-        def injector = Guice.createInjector(mocks.module())
-        nodeFactory = Spy(injector.getInstance(DataNodeFactory))
         config = Mock(ApplicationConfiguration)
         config.getBaseUrl() >> "https://baseurltest.com/"
-        println config.getBaseUrl()
+        def mocks = new Mocks()
+        def taskProvider = Mock(SparqlEndpointTaskProvider.class)
+        taskProvider.createTask(_, _, _, _) >> new StubSparqlEndpointTask<Object, Void, ApplicationConfiguration<Object, Void>>(config, Mock(DataNodeFactory), "Query", Mock(DataNodeRoot)) {
+            @Override
+            protected Void call() throws Exception {
+                Thread.sleep(30_000)
+                return null
+            }
+        }
+
+        def injector = Guice.createInjector(mocks.module(config, taskProvider))
+        nodeFactory = Spy(injector.getInstance(DataNodeFactory))
+        endpointAgent = injector.getInstance(SparqlEndpointAgent)
     }
 
     void setup() {
@@ -209,5 +221,4 @@ class APISpecification extends Specification {
         1 * consumer.accept(fourthNode, 0)
 
     }
-
 }

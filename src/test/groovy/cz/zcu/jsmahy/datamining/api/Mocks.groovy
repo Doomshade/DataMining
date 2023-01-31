@@ -9,6 +9,10 @@ class Mocks {
     Module module() {
         def config = mockFactory.Mock(ApplicationConfiguration.class)
         def taskProvider = mockFactory.Mock(SparqlEndpointTaskProvider.class)
+        module(config, taskProvider)
+    }
+
+    Module module(ApplicationConfiguration<?, ?> config, SparqlEndpointTaskProvider<?, ?, ? extends ApplicationConfiguration<?, ?>> taskProvider) {
         new DataMiningModule() {
             @Override
             protected void configure() {
