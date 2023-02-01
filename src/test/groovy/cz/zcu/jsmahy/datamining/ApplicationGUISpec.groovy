@@ -43,7 +43,7 @@ class ApplicationGUISpec extends ApplicationSpec {
         FxToolkit.cleanupStages()
     }
 
-    @Ignore
+    @Ignore("Requires JavaFX platform")
     def "should click on button"() {
         given:
         def button = lookup("#searchButton").queryButton()
@@ -55,7 +55,7 @@ class ApplicationGUISpec extends ApplicationSpec {
         FxAssert.verifyThat(button, LabeledMatchers.hasText(resourceBundle.getString("search")))
     }
 
-    @Ignore
+    @Ignore("Requires JavaFX platform")
     def "Test search for debug"() {
         given:
         push(new KeyCodeCombination(KeyCode.N, ANY, DOWN, ANY, ANY, ANY))
