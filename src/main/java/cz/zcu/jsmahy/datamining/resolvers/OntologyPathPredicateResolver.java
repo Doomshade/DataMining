@@ -1,13 +1,17 @@
 package cz.zcu.jsmahy.datamining.resolvers;
 
-import cz.zcu.jsmahy.datamining.api.*;
+import cz.zcu.jsmahy.datamining.api.BlockingDataNodeReferenceHolder;
+import cz.zcu.jsmahy.datamining.api.BlockingResponseResolver;
+import cz.zcu.jsmahy.datamining.api.QueryData;
+import cz.zcu.jsmahy.datamining.api.SparqlEndpointTask;
 import javafx.application.Platform;
+import org.apache.jena.rdf.model.RDFNode;
 
 import java.util.List;
 
 public class OntologyPathPredicateResolver<R> implements BlockingResponseResolver<R, BlockingDataNodeReferenceHolder> {
     @Override
-    public BlockingDataNodeReferenceHolder resolveRequest(final List<DataNode> ambiguousInput,
+    public BlockingDataNodeReferenceHolder resolveRequest(final List<RDFNode> ambiguousInput,
                                                           final QueryData inputMetadata,
                                                           final SparqlEndpointTask<R> requestHandler) {
         final BlockingDataNodeReferenceHolder ref = new BlockingDataNodeReferenceHolder();

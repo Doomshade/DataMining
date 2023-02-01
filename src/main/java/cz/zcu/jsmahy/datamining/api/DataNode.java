@@ -22,6 +22,13 @@ public interface DataNode extends Iterable<DataNode> {
 
 
     /**
+     * NOTE: the map is <b>unmodifiable</b>
+     *
+     * @return The metadata
+     */
+    Map<String, Object> getMetadata();
+
+    /**
      * NOTE: the children are <b>unmodifiable</b>
      *
      * @return The children of this node.

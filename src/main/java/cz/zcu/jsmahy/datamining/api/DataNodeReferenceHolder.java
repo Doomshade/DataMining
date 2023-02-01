@@ -7,6 +7,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.RDFNode;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -23,7 +24,7 @@ public class DataNodeReferenceHolder {
     /**
      * The references.
      */
-    private final ObservableList<DataNode> references = FXCollections.observableArrayList();
+    private final ObservableList<RDFNode> references = FXCollections.observableArrayList();
 
     /**
      * The ontology path predicate.
@@ -104,7 +105,7 @@ public class DataNodeReferenceHolder {
      *
      * @param value the reference
      */
-    public void set(final DataNode value) {
+    public void set(final RDFNode value) {
         this.references.clear();
         this.add(value);
     }
@@ -114,7 +115,7 @@ public class DataNodeReferenceHolder {
      *
      * @param value the references
      */
-    public void set(final Collection<DataNode> value) {
+    public void set(final Collection<RDFNode> value) {
         this.references.clear();
         this.add(value);
     }
@@ -124,7 +125,7 @@ public class DataNodeReferenceHolder {
      *
      * @param value the reference
      */
-    public void add(final DataNode value) {
+    public void add(final RDFNode value) {
         this.references.add(value);
     }
 
@@ -133,7 +134,7 @@ public class DataNodeReferenceHolder {
      *
      * @param value the references
      */
-    public void add(final Collection<DataNode> value) {
+    public void add(final Collection<RDFNode> value) {
         this.references.addAll(value);
     }
 
@@ -142,7 +143,7 @@ public class DataNodeReferenceHolder {
      *
      * @throws IllegalStateException if this reference holder contains multiple references
      */
-    public DataNode get() throws IllegalStateException {
+    public RDFNode get() throws IllegalStateException {
         if (references.size() == 0) {
             return null;
         }
@@ -155,7 +156,7 @@ public class DataNodeReferenceHolder {
     /**
      * @return the list of references
      */
-    public List<DataNode> getList() {
+    public List<RDFNode> getList() {
         return Collections.unmodifiableList(references);
     }
 }

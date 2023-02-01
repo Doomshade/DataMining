@@ -72,5 +72,5 @@ public interface ResponseResolver<R, DNRef extends DataNodeReferenceHolder> {
      *
      * @return A list of {@link DataNode} references
      */
-    DNRef resolveRequest(List<DataNode> ambiguousInput, final QueryData inputMetadata, final SparqlEndpointTask<R> requestHandler);
+    DNRef resolveRequest(List<RDFNode> ambiguousInput, final QueryData inputMetadata, final SparqlEndpointTask<R> requestHandler);
 }

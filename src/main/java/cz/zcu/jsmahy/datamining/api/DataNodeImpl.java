@@ -50,22 +50,9 @@ class DataNodeImpl implements DataNode {
         this.children.add(child);
     }
 
-    private void iterate(BiConsumer<DataNode, Integer> biConsumer, int depth, DataNode dataNode) {
-        if (dataNode == null) {
-            return;
-        }
-
-        if (!dataNode.isRoot()) {
-            biConsumer.accept(dataNode, depth);
-        }
-
-        final ObservableList<DataNode> children = dataNode.getChildren();
-        if (!children.isEmpty()) {
-            depth++;
-            for (final DataNode node : children) {
-                iterate(biConsumer, depth, node);
-            }
-        }
+    @Override
+    public Map<String, Object> getMetadata() {
+        return Collections.unmodifiableMap(metadata);
     }
 
     @Override
@@ -126,6 +113,24 @@ class DataNodeImpl implements DataNode {
         final ObservableList<DataNode> children = this.getChildren();
         if (!children.isEmpty()) {
             iterate(biConsumer, -1, this);
+        }
+    }
+
+    private void iterate(BiConsumer<DataNode, Integer> biConsumer, int depth, DataNode dataNode) {
+        if (dataNode == null) {
+            return;
+        }
+
+        if (!dataNode.isRoot()) {
+            biConsumer.accept(dataNode, depth);
+        }
+
+        final ObservableList<DataNode> children = dataNode.getChildren();
+        if (!children.isEmpty()) {
+            depth++;
+            for (final DataNode node : children) {
+                iterate(biConsumer, depth, node);
+            }
         }
     }
 

@@ -28,8 +28,14 @@ public class DataNodeFactory {
 
     // TODO: javadocs
     public DataNode newNode(final @NonNull DataNode parent) {
+        return newNode(parent, true);
+    }
+
+    public DataNode newNode(final @NonNull DataNode parent, boolean addChild) {
         final DataNode dataNode = new DataNodeImpl(parent);
-        ((DataNodeImpl) parent).addChild(dataNode);
+        if (addChild) {
+            ((DataNodeImpl) parent).addChild(dataNode);
+        }
         return dataNode;
     }
 

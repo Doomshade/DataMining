@@ -3,20 +3,24 @@ package cz.zcu.jsmahy.datamining.app.controller;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.jfoenix.controls.JFXSpinner;
-import cz.zcu.jsmahy.datamining.api.DataNode;
-import cz.zcu.jsmahy.datamining.api.DataNodeFactory;
-import cz.zcu.jsmahy.datamining.api.RequestProgressListener;
-import cz.zcu.jsmahy.datamining.api.SparqlEndpointAgent;
+import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
 import cz.zcu.jsmahy.datamining.dbpedia.DBPediaEndpointTask;
 import cz.zcu.jsmahy.datamining.dbpedia.DBPediaModule;
+import cz.zcu.jsmahy.datamining.export.FialaBPExport;
 import cz.zcu.jsmahy.datamining.util.DialogHelper;
 import cz.zcu.jsmahy.datamining.util.RDFNodeUtil;
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.BooleanBinding;
+import javafx.beans.binding.DoubleBinding;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.concurrent.Service;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -33,6 +37,9 @@ import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.UncheckedIOException;
 import java.net.URL;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -234,7 +241,48 @@ order by ?pred
         fileMenu.setMnemonicParsing(true);
 
         final MenuItem exportToFile = new MenuItem(resources.getString("export"));
-        exportToFile.setAccelerator(KeyCombination.keyCombination("CTRL + E"));
+        exportToFile.setOnAction(e -> {
+
+            // TODO: This could be parallel
+            final ObservableList<TreeItem<DataNode>> children = ontologyTreeView.getRoot()
+                                                                                .getChildren();
+            if (children.size() == 0) {
+                return;
+            }
+            final ObservableList<Service<?>> services = FXCollections.observableArrayList();
+            final ObservableList<Service<?>> removedServices = FXCollections.observableArrayList();
+            final DoubleBinding progressProperty = Bindings.size(removedServices)
+                                                           .divide((double) children.size());
+            final BooleanBinding runningProperty = Bindings.size(services)
+                                                           .greaterThan(0);
+            bindProperties(runningProperty, progressProperty);
+
+            for (final TreeItem<DataNode> child : children) {
+                final DataNode root = child.getValue();
+                final FileOutputStream out;
+                try {
+                    out = new FileOutputStream(root.getMetadataValue("name", "<no name>") + ".json");
+                } catch (FileNotFoundException ex) {
+                    throw new UncheckedIOException(ex);
+                }
+                final DataNodeExporter dataNodeExporter = new DataNodeExporter(new FialaBPExport.FialaBPSerializer(out, root));
+                dataNodeExporter.setOnRunning(ev -> services.add(dataNodeExporter));
+                dataNodeExporter.setOnSucceeded(ev -> {
+                    removedServices.add(dataNodeExporter);
+                    services.remove(dataNodeExporter);
+                });
+                dataNodeExporter.setOnCancelled(ev -> {
+                    removedServices.add(dataNodeExporter);
+                    services.remove(dataNodeExporter);
+                });
+                dataNodeExporter.setOnFailed(ev -> {
+                    removedServices.add(dataNodeExporter);
+                    services.remove(dataNodeExporter);
+                });
+                dataNodeExporter.start();
+            }
+        });
+        exportToFile.setAccelerator(KeyCombination.keyCombination("ALT + E"));
         fileMenu.getItems()
                 .addAll(exportToFile);
         return fileMenu;
@@ -279,12 +327,16 @@ order by ?pred
     }
 
     public synchronized void bindService(final Service<?> service) {
+        bindProperties(service.runningProperty(), service.progressProperty());
+    }
+
+    public synchronized void bindProperties(ObservableValue<? extends Boolean> runningProperty, ObservableValue<? extends Number> progressProperty) {
         this.rootPane.disableProperty()
-                     .bind(service.runningProperty());
+                     .bind(runningProperty);
         this.progressIndicator.visibleProperty()
-                              .bind(service.runningProperty());
+                              .bind(runningProperty);
         this.progressIndicator.progressProperty()
-                              .bind(service.progressProperty());
+                              .bind(progressProperty);
     }
 
     @Override
@@ -308,7 +360,7 @@ order by ?pred
     }
 
     @Override
-    public void onAddMultipleDataNodes(final DataNode dataNodesParent, final List<DataNode> dataNodes, final DataNode chosenDataNode) {
+    public void onAddMultipleDataNodes(final DataNode dataNodesParent, final List<DataNode> dataNodes, final RDFNode chosenDataNode) {
         LOGGER.trace("Adding multiple data nodes '{}' under '{}'", dataNodes, dataNodesParent);
         Platform.runLater(() -> {
             final TreeItem<DataNode> treeItem = findTreeItem(dataNodesParent, ontologyTreeView.getRoot());

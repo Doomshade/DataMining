@@ -8,6 +8,7 @@ import javafx.collections.FXCollections;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.util.Callback;
+import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -26,7 +27,7 @@ public class MultipleItemChoiceResolver<R> implements BlockingResponseResolver<R
     private static final Logger LOGGER = LogManager.getLogger(MultipleItemChoiceResolver.class);
 
     @Override
-    public BlockingDataNodeReferenceHolder resolveRequest(final List<DataNode> ambiguousInput, final QueryData inputMetadata, final SparqlEndpointTask<R> requestHandler) {
+    public BlockingDataNodeReferenceHolder resolveRequest(final List<RDFNode> ambiguousInput, final QueryData inputMetadata, final SparqlEndpointTask<R> requestHandler) {
         // first off we check if we have an ontology path set
         // if not, pop up a dialogue
         final BlockingDataNodeReferenceHolder ref = new BlockingDataNodeReferenceHolder();
@@ -45,14 +46,14 @@ public class MultipleItemChoiceResolver<R> implements BlockingResponseResolver<R
     }
 
     private class MultipleItemChoiceDialog {
-        private final Dialog<List<DataNode>> dialog = new Dialog<>();
+        private final Dialog<List<RDFNode>> dialog = new Dialog<>();
         private final DialogPane dialogPane = dialog.getDialogPane();
-        private final ListView<DataNode> content = new ListView<>();
+        private final ListView<RDFNode> content = new ListView<>();
         private final DataNodeReferenceHolder ref;
 
-        public MultipleItemChoiceDialog(final List<DataNode> list,
+        public MultipleItemChoiceDialog(final List<RDFNode> list,
                                         final DataNodeReferenceHolder ref,
-                                        final Callback<ListView<DataNode>, ListCell<DataNode>> cellFactory,
+                                        final Callback<ListView<RDFNode>, ListCell<RDFNode>> cellFactory,
                                         final SelectionMode selectionMode) {
             final ResourceBundle resourceBundle = ResourceBundle.getBundle("lang");
             this.ref = ref;
@@ -82,7 +83,7 @@ public class MultipleItemChoiceResolver<R> implements BlockingResponseResolver<R
             // dialog content
             this.content.setCellFactory(cellFactory);
             this.content.setItems(FXCollections.observableArrayList(list));
-            final MultipleSelectionModel<DataNode> selectionModel = this.content.getSelectionModel();
+            final MultipleSelectionModel<RDFNode> selectionModel = this.content.getSelectionModel();
             selectionModel.setSelectionMode(selectionMode);
             this.content.setOnKeyPressed(event -> {
                 if (event.getCode() == KeyCode.ENTER) {
@@ -99,7 +100,7 @@ public class MultipleItemChoiceResolver<R> implements BlockingResponseResolver<R
 
         public void showDialogueAndWait() {
             // show the dialogue and wait for response
-            final Optional<List<DataNode>> result = dialog.showAndWait();
+            final Optional<List<RDFNode>> result = dialog.showAndWait();
             result.ifPresent(ref::set);
         }
     }

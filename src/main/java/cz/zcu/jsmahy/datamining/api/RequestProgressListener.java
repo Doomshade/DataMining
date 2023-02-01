@@ -2,6 +2,7 @@ package cz.zcu.jsmahy.datamining.api;
 
 import cz.zcu.jsmahy.datamining.dbpedia.DBPediaEndpointTask;
 import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.RDFNode;
 
 import java.util.List;
 
@@ -39,7 +40,7 @@ public interface RequestProgressListener {
      * @param dataNodes       the data nodes
      * @param chosenDataNode  the data node that the user chose to continue under
      */
-    void onAddMultipleDataNodes(DataNode dataNodesParent, List<DataNode> dataNodes, DataNode chosenDataNode);
+    void onAddMultipleDataNodes(DataNode dataNodesParent, List<DataNode> dataNodes, RDFNode chosenDataNode);
 
     /**
      * Called when an invalid query is passed. The cause is usually the resource not existing.

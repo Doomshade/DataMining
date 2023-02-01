@@ -16,8 +16,9 @@ import java.util.*;
 import java.util.function.Predicate;
 
 import static cz.zcu.jsmahy.datamining.api.DataNode.MD_KEY_NAME;
-import static cz.zcu.jsmahy.datamining.dbpedia.DBPediaMetadataKeys.KEY_END_DATE;
-import static cz.zcu.jsmahy.datamining.dbpedia.DBPediaMetadataKeys.KEY_START_DATE;
+import static cz.zcu.jsmahy.datamining.api.DataNode.MD_KEY_RDF_NODE;
+import static cz.zcu.jsmahy.datamining.export.FialaBPMetadataKeys.KEY_END_DATE;
+import static cz.zcu.jsmahy.datamining.export.FialaBPMetadataKeys.KEY_START_DATE;
 import static cz.zcu.jsmahy.datamining.util.RDFNodeUtil.setDataNodeNameFromRDFNode;
 
 /**
@@ -253,6 +254,15 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         };
     }
 
+    private void initializeDataNode(final DataNode dataNode, final RDFNode node, final QueryData inputMetadata) {
+        dataNode.addMetadata(MD_KEY_RDF_NODE, node);
+        setDataNodeNameFromRDFNode(dataNode, node);
+        if (node instanceof Resource resource) {
+            addDatesToNode(inputMetadata.getCurrentModel(), dataNode, inputMetadata.getStartDateProperty(), resource, true);
+            addDatesToNode(inputMetadata.getCurrentModel(), dataNode, inputMetadata.getEndDateProperty(), resource, false);
+        }
+    }
+
     /**
      * Recursively searches based on the given model, selector, and a previous link. Adds the subject of the selector to the tree.
      *
@@ -261,22 +271,20 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
     private void search(final QueryData inputMetadata, final Selector selector) {
         LOGGER.debug("Search");
         final Model model = inputMetadata.getCurrentModel();
+        final RequestProgressListener progressListener = config.getProgressListener();
 
         final DataNodeFactory nodeFactory = config.getDataNodeFactory();
         final DataNode curr = nodeFactory.newNode(dataNodeRoot);
-        curr.addMetadata(DataNode.MD_KEY_RDF_NODE, selector.getSubject());
-        setDataNodeNameFromRDFNode(curr, selector.getSubject());
-        addDatesToNode(model, curr, inputMetadata.getStartDateProperty(), selector.getSubject(), true);
-        addDatesToNode(model, curr, inputMetadata.getEndDateProperty(), selector.getSubject(), false);
+        final Resource currRDFNode = selector.getSubject();
+        initializeDataNode(curr, currRDFNode, inputMetadata);
 
-        final RequestProgressListener progressListener = config.getProgressListener();
         progressListener.onAddNewDataNode(curr, dataNodeRoot);
 
         final List<Statement> statements = model.listStatements(selector)
                                                 .toList();
         statements.sort(STATEMENT_COMPARATOR);
 
-        final List<DataNode> foundDataList = new ArrayList<>();
+        final List<RDFNode> foundDataList = new ArrayList<>();
         RDFNode previous = null;
         for (final Statement stmt : statements) {
             final RDFNode next = stmt.getObject();
@@ -293,11 +301,8 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
                 return;
             }
 
-            final DataNode nextNode = nodeFactory.newNode(dataNodeRoot);
-            nextNode.addMetadata(DataNode.MD_KEY_RDF_NODE, next);
-            setDataNodeNameFromRDFNode(nextNode, next);
             LOGGER.debug("Found {}", next);
-            foundDataList.add(nextNode);
+            foundDataList.add(next);
         }
 
         // no nodes found, stop searching
@@ -308,7 +313,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         // only one found, that means it's going linearly
         // we can continue searching
         if (foundDataList.size() == 1) {
-            final DataNode first = foundDataList.get(0);
+            final RDFNode first = foundDataList.get(0);
             searchFurther(inputMetadata, first);
             return;
         }
@@ -335,34 +340,32 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
                 }
             }
         }
-        final DataNode chosenDataNode = ref.get();
-        if (chosenDataNode == null) {
+        final RDFNode chosenNextRDFNode = ref.get();
+        if (chosenNextRDFNode == null) {
             return;
         }
 
         final List<DataNode> currDataNodeChildren = new ArrayList<>();
         // WARN: Deleted handling for multiple references as it might not even be in the final version.
-        for (final DataNode foundData : foundDataList) {
-            final DataNode newNode = nodeFactory.newNode(curr);
-            final RDFNode rdfNode = foundData.getMetadataValueUnsafe(DataNode.MD_KEY_RDF_NODE);
-            newNode.addMetadata(DataNode.MD_KEY_RDF_NODE, rdfNode);
-            setDataNodeNameFromRDFNode(newNode, rdfNode);
-            currDataNodeChildren.add(newNode);
+        for (final RDFNode rdfNode : foundDataList) {
+            final DataNode child = nodeFactory.newNode(curr);
+            child.addMetadata(MD_KEY_RDF_NODE, rdfNode);
+            setDataNodeNameFromRDFNode(child, rdfNode);
+            currDataNodeChildren.add(child);
         }
-        progressListener.onAddMultipleDataNodes(curr, currDataNodeChildren, chosenDataNode);
-        searchFurther(inputMetadata, chosenDataNode);
+        progressListener.onAddMultipleDataNodes(curr, currDataNodeChildren, chosenNextRDFNode);
+        searchFurther(inputMetadata, chosenNextRDFNode);
     }
 
-    private void searchFurther(final QueryData inputMetadata, final DataNode next) {
+    private void searchFurther(final QueryData inputMetadata, final RDFNode data) {
         // attempts to search further down the line if the given data is a URI resource
         // if it's not a URI resource the searching terminates
         // if it's a URI resource we first check if we've been here already - we don't want to be stuck in a cycle,
         // that's what usedURIs is for
         // otherwise build a selector and continue searching down the line
-        if (next == null) {
+        if (data == null) {
             return;
         }
-        final RDFNode data = next.getMetadataValueUnsafe(DataNode.MD_KEY_RDF_NODE);
         if (!data.isURIResource()) {
             return;
         }
