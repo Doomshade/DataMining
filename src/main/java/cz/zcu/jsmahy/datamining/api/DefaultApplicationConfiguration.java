@@ -9,7 +9,8 @@ import org.apache.logging.log4j.Logger;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.lang.reflect.Field;
 import java.util.*;
 
@@ -56,23 +57,23 @@ public class DefaultApplicationConfiguration<R> implements ApplicationConfigurat
         this.ambiguousResultResolver = ambiguousResultResolver;
         this.ontologyPathPredicateResolver = ontologyPathPredicateResolver;
         this.startAndEndDateResolver = startAndEndDateResolver;
-        this.reload();
+        this.reload(new InputStreamReader(Objects.requireNonNull(this.getClass()
+                                                                     .getResourceAsStream(CONFIG_FILE_NAME))));
     }
 
     @Override
-    public void reload() throws IOException {
+    public void reload(final Reader in) throws IOException {
         synchronized (lock) {
             final Yaml yaml = new Yaml();
             this.configVariables.clear();
-            final Map<? extends String, ?> values;
             try {
-                try (final InputStream in = getClass().getResourceAsStream(CONFIG_FILE_NAME)) {
-                    values = yaml.load(in);
+                try (in) {
+                    final Map<? extends String, ?> variables = yaml.load(in);
+                    this.configVariables.putAll(variables);
                 }
             } catch (Exception e) {
                 throw new IOException(e);
             }
-            this.configVariables.putAll(values);
         }
     }
 

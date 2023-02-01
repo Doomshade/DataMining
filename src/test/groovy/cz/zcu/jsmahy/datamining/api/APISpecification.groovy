@@ -25,9 +25,9 @@ class APISpecification extends Specification {
 
     void setupSpec() {
         def config = Mock(ApplicationConfiguration)
-        config.getUnsafe(BASE_URL) >> "https://baseurltest.com/"
-        config.getListUnsafe(IGNORE_PATH_PREDICATES) >> new ArrayList()
-        config.getListUnsafe(VALID_DATE_FORMATS) >> new ArrayList<>()
+        config.getUnsafe(CFG_KEY_BASE_URL) >> "https://baseurltest.com/"
+        config.getListUnsafe(CFG_KEY_IGNORE_PATH_PREDICATES) >> new ArrayList()
+        config.getListUnsafe(CFG_KEY_VALID_DATE_FORMATS) >> new ArrayList<>()
         def mocks = new Mocks()
         def taskProvider = Mock(SparqlEndpointTaskProvider.class)
         def task = Mock(SparqlEndpointTask)
@@ -115,7 +115,7 @@ class APISpecification extends Specification {
 
     def "Should return all valid date types if the type in the collection is \"any\""() {
         given:
-        config.getListUnsafe(VALID_DATE_FORMATS).add("any")
+        config.getListUnsafe(CFG_KEY_VALID_DATE_FORMATS).add(CFG_DATE_FORMAT_ANY)
 
         when:
         // create a new task because we are testing the constructor

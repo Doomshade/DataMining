@@ -3,6 +3,7 @@ package cz.zcu.jsmahy.datamining.api;
 import lombok.NonNull;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.util.*;
 
 /**
@@ -11,14 +12,19 @@ import java.util.*;
  * @param <R> The generic type of {@link SparqlEndpointTask}
  */
 public interface ApplicationConfiguration<R> {
-    String IGNORE_PATH_PREDICATES = "ignored-path-predicates";
-    String VALID_DATE_FORMATS = "valid-date-formats";
-    String BASE_URL = "base-url";
+    // general config keys
+    // CFG prefix works as "configuration" prefix
+    String CFG_KEY_IGNORE_PATH_PREDICATES = "ignored-path-predicates";
+    String CFG_KEY_VALID_DATE_FORMATS = "valid-date-formats";
+    String CFG_KEY_BASE_URL = "base-url";
+    String CFG_DATE_FORMAT_ANY = "any";
 
     /**
-     * Reads the configuration file and reloads the mapped values.
+     * Reads the input stream and reloads the mapped values.
+     *
+     * @param inputStream The input stream to load the configuration from
      */
-    void reload() throws IOException;
+    void reload(final Reader inputStream) throws IOException;
 
     /**
      * @param key the key the variable is stored under

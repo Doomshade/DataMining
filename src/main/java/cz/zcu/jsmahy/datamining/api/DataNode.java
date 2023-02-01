@@ -14,9 +14,10 @@ import java.util.Optional;
  */
 public interface DataNode extends Iterable<DataNode> {
     // general purpose metadata keys
-    String KEY_NAME = "name";
-    String KEY_URI = "uri";
-    String KEY_RDF_NODE = "rdfNode";
+    // MD prefix works as "metadata" prefix
+    String MD_KEY_NAME = "name";
+    String MD_KEY_URI = "uri";
+    String MD_KEY_RDF_NODE = "rdfNode";
 
 
     /**

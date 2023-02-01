@@ -15,7 +15,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.*;
 import java.util.function.Predicate;
 
-import static cz.zcu.jsmahy.datamining.api.DataNode.KEY_NAME;
+import static cz.zcu.jsmahy.datamining.api.DataNode.MD_KEY_NAME;
 import static cz.zcu.jsmahy.datamining.dbpedia.DBPediaMetadataKeys.KEY_END_DATE;
 import static cz.zcu.jsmahy.datamining.dbpedia.DBPediaMetadataKeys.KEY_START_DATE;
 import static cz.zcu.jsmahy.datamining.util.RDFNodeUtil.setDataNodeNameFromRDFNode;
@@ -66,7 +66,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
             } else {
                 throw new ClassCastException("Inner date type is of unknown value: " + innerDateType);
             }
-            LOGGER.debug("Setting {} date (inner type: {}, actual date: {}) to {}", isStartDate ? "start" : "end", innerDateType, date, curr.getMetadataValue(KEY_NAME, "<no name>"));
+            LOGGER.debug("Setting {} date (inner type: {}, actual date: {}) to {}", isStartDate ? "start" : "end", innerDateType, date, curr.getMetadataValue(MD_KEY_NAME, "<no name>"));
             if (isStartDate) {
                 curr.addMetadata(KEY_START_DATE, date);
             } else {
@@ -265,7 +265,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
 
         final DataNodeFactory nodeFactory = config.getDataNodeFactory();
         final DataNode curr = nodeFactory.newNode(dataNodeRoot);
-        curr.addMetadata(DataNode.KEY_RDF_NODE, selector.getSubject());
+        curr.addMetadata(DataNode.MD_KEY_RDF_NODE, selector.getSubject());
         setDataNodeNameFromRDFNode(curr, selector.getSubject());
         addDatesToNode(model, curr, inputMetadata.getStartDateProperty(), selector.getSubject(), true);
         addDatesToNode(model, curr, inputMetadata.getEndDateProperty(), selector.getSubject(), false);
@@ -295,7 +295,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
             }
 
             final DataNode nextNode = nodeFactory.newNode(dataNodeRoot);
-            nextNode.addMetadata(DataNode.KEY_RDF_NODE, next);
+            nextNode.addMetadata(DataNode.MD_KEY_RDF_NODE, next);
             setDataNodeNameFromRDFNode(nextNode, next);
             LOGGER.debug("Found {}", next);
             foundDataList.add(nextNode);
@@ -345,8 +345,8 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         // WARN: Deleted handling for multiple references as it might not even be in the final version.
         for (final DataNode foundData : foundDataList) {
             final DataNode newNode = nodeFactory.newNode(curr);
-            final RDFNode rdfNode = foundData.getMetadataValueUnsafe(DataNode.KEY_RDF_NODE);
-            newNode.addMetadata(DataNode.KEY_RDF_NODE, rdfNode);
+            final RDFNode rdfNode = foundData.getMetadataValueUnsafe(DataNode.MD_KEY_RDF_NODE);
+            newNode.addMetadata(DataNode.MD_KEY_RDF_NODE, rdfNode);
             setDataNodeNameFromRDFNode(newNode, rdfNode);
             currDataNodeChildren.add(newNode);
         }
@@ -363,7 +363,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         if (next == null) {
             return;
         }
-        final RDFNode data = next.getMetadataValueUnsafe(DataNode.KEY_RDF_NODE);
+        final RDFNode data = next.getMetadataValueUnsafe(DataNode.MD_KEY_RDF_NODE);
         if (!data.isURIResource()) {
             return;
         }
