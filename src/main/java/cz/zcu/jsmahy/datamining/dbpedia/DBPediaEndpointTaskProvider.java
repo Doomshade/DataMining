@@ -1,7 +1,7 @@
 package cz.zcu.jsmahy.datamining.dbpedia;
 
 import cz.zcu.jsmahy.datamining.api.ApplicationConfiguration;
-import cz.zcu.jsmahy.datamining.api.DataNodeRoot;
+import cz.zcu.jsmahy.datamining.api.DataNode;
 import cz.zcu.jsmahy.datamining.api.SparqlEndpointTask;
 import cz.zcu.jsmahy.datamining.api.SparqlEndpointTaskProvider;
 
@@ -9,7 +9,7 @@ public class DBPediaEndpointTaskProvider<R> implements SparqlEndpointTaskProvide
     @Override
     public SparqlEndpointTask<R> createTask(final ApplicationConfiguration<R> config,
                                             final String query,
-                                            final DataNodeRoot dataNodeRoot) {
+                                            final DataNode dataNodeRoot) {
         return new DBPediaEndpointTask<>(config, query, dataNodeRoot);
     }
 }

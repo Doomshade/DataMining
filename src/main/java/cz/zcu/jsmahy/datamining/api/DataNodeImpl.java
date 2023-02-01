@@ -10,6 +10,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
+import java.util.function.BiConsumer;
 
 
 @Data
@@ -29,8 +30,8 @@ class DataNodeImpl implements DataNode {
         this.id = ID_SEQ++;
     }
 
-    protected DataNodeImpl() {
-        this.parent = null;
+    DataNodeImpl() {
+        this(null);
     }
 
     DataNodeImpl(final DataNode parent) {
@@ -42,12 +43,29 @@ class DataNodeImpl implements DataNode {
      *
      * @param child the child to add to this node
      *
-     * @throws IllegalArgumentException if the child is an instance of {@link DataNodeRoot}
-     * @throws NullPointerException     if the child is {@code null}
+     * @throws NullPointerException if the child is {@code null}
      */
-    public void addChild(@NonNull DataNode child) throws IllegalArgumentException, NullPointerException {
-        assert !(child instanceof DataNodeRoot);
+    void addChild(@NonNull DataNode child) throws NullPointerException {
+        assert !child.isRoot();
         this.children.add(child);
+    }
+
+    private void iterate(BiConsumer<DataNode, Integer> biConsumer, int depth, DataNode dataNode) {
+        if (dataNode == null) {
+            return;
+        }
+
+        if (!dataNode.isRoot()) {
+            biConsumer.accept(dataNode, depth);
+        }
+
+        final ObservableList<DataNode> children = dataNode.getChildren();
+        if (!children.isEmpty()) {
+            depth++;
+            for (final DataNode node : children) {
+                iterate(biConsumer, depth, node);
+            }
+        }
     }
 
     @Override
@@ -84,7 +102,7 @@ class DataNodeImpl implements DataNode {
     }
 
     @Override
-    public Optional<DataNodeRoot> findRoot() {
+    public Optional<DataNode> findRoot() {
         LOGGER.debug("Parent: {}", parent);
         DataNode prev = parent;
         while (prev != null && prev.getParent() != null) {
@@ -92,10 +110,23 @@ class DataNodeImpl implements DataNode {
             LOGGER.debug("Searching deeper: {}", prev);
         }
         if (prev != null) {
-            assert prev instanceof DataNodeRoot; // the upmost parent should always be root
-            return Optional.of((DataNodeRoot) prev);
+            assert prev.isRoot(); // the upmost parent should always be root
+            return Optional.of(prev);
         }
         return Optional.empty();
+    }
+
+    @Override
+    public boolean isRoot() {
+        return parent == null;
+    }
+
+    @Override
+    public void iterate(BiConsumer<DataNode, Integer> biConsumer) {
+        final ObservableList<DataNode> children = this.getChildren();
+        if (!children.isEmpty()) {
+            iterate(biConsumer, -1, this);
+        }
     }
 
     @Override

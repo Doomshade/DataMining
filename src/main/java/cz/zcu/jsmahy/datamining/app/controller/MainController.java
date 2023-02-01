@@ -3,7 +3,10 @@ package cz.zcu.jsmahy.datamining.app.controller;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.jfoenix.controls.JFXSpinner;
-import cz.zcu.jsmahy.datamining.api.*;
+import cz.zcu.jsmahy.datamining.api.DataNode;
+import cz.zcu.jsmahy.datamining.api.DataNodeFactory;
+import cz.zcu.jsmahy.datamining.api.RequestProgressListener;
+import cz.zcu.jsmahy.datamining.api.SparqlEndpointAgent;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
 import cz.zcu.jsmahy.datamining.dbpedia.DBPediaEndpointTask;
 import cz.zcu.jsmahy.datamining.dbpedia.DBPediaModule;
@@ -87,7 +90,7 @@ order by ?pred
                 });
                 return;
             }
-            final DataNodeRoot dataNode = nodeFactory.newRoot(lineName);
+            final DataNode dataNode = nodeFactory.newRoot(lineName);
             ontologyTreeView.getRoot()
                             .getChildren()
                             .add(new TreeItem<>(dataNode));
@@ -251,7 +254,7 @@ order by ?pred
      * @param root        the tree root
      * @param searchValue the search value
      */
-    public void search(final DataNodeRoot root, final String searchValue) {
+    public void search(final DataNode root, final String searchValue) {
         if (searchValue.isBlank()) {
             LOGGER.trace("Search field is blank, not searching for anything.");
             final Alert alert = new Alert(Alert.AlertType.WARNING);
@@ -266,7 +269,7 @@ order by ?pred
     }
 
     @SuppressWarnings("ThrowableNotThrown")
-    private Service<Void> createSearchService(final DataNodeRoot root, final String searchValue) {
+    private Service<Void> createSearchService(final DataNode root, final String searchValue) {
         final Service<Void> query = requestHandler.createBackgroundService(searchValue, root);
         query.setOnSucceeded(x -> ontologyTreeView.getSelectionModel()
                                                   .selectFirst());
@@ -290,7 +293,7 @@ order by ?pred
     }
 
     @Override
-    public void onAddNewDataNode(final DataNode dataNode, final DataNodeRoot dataNodeRoot) {
+    public void onAddNewDataNode(final DataNode dataNode, final DataNode dataNodeRoot) {
         LOGGER.trace("Adding new data node '{}' to root '{}'",
                      dataNode.getMetadataValue("name")
                              .orElse("<no name>"),
@@ -378,7 +381,7 @@ order by ?pred
 
     /**
      * Callback for {@link SelectionModel#selectedItemProperty()} in the ontology list view. Displays the selected item in Wikipedia. The selected item must not be a root of any kind ({@link TreeItem}
-     * root nor {@link DataNodeRoot}).
+     * root nor {@link DataNode#isRoot()}
      *
      * @param observable the observable that was invalidated. not used, it's here just because of the signature of {@link InvalidationListener#invalidated(Observable)} method
      */
@@ -388,7 +391,8 @@ order by ?pred
         final WebEngine engine = this.wikiPageWebView.getEngine();
 
         // a valid item is a non-root item that's not null
-        final boolean hasSelectedValidItem = selectedItem != null && selectedItem != ontologyTreeView.getRoot() && !(selectedItem.getValue() instanceof DataNodeRoot);
+        final boolean hasSelectedValidItem = selectedItem != null && selectedItem != ontologyTreeView.getRoot() && !(selectedItem.getValue()
+                                                                                                                                 .isRoot());
         if (!hasSelectedValidItem) {
             LOGGER.trace("Unloading web page because selected item was not valid. Cause: (null = {}, is root = {})", selectedItem == null, selectedItem != null);
             engine.load("");

@@ -19,7 +19,7 @@ class DataNodeReferenceHolderTest extends Specification {
     @Shared
     DataNodeReferenceHolder ref
     @Shared
-    DataNodeRoot root
+    DataNode root
 
     void setup() {
         ref = new DataNodeReferenceHolder()

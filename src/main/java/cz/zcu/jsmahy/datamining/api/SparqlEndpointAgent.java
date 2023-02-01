@@ -31,7 +31,7 @@ public class SparqlEndpointAgent<R> {
     }
 
 
-    public Service<R> createBackgroundService(@NonNull final String query, @NonNull final DataNodeRoot dataNodeRoot) throws NullPointerException, IllegalArgumentException {
+    public Service<R> createBackgroundService(@NonNull final String query, @NonNull final DataNode dataNodeRoot) throws NullPointerException, IllegalArgumentException {
         if (query.isBlank()) {
             throw new IllegalArgumentException("Query cannot be blank.");
         }

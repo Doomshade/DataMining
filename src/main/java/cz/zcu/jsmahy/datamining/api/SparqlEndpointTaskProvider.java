@@ -8,5 +8,5 @@ public interface SparqlEndpointTaskProvider<R> {
      *
      * @return
      */
-    SparqlEndpointTask<R> createTask(ApplicationConfiguration<R> config, String query, DataNodeRoot dataNodeRoot);
+    SparqlEndpointTask<R> createTask(ApplicationConfiguration<R> config, String query, DataNode dataNodeRoot);
 }

@@ -4,11 +4,18 @@ import javafx.concurrent.Task;
 
 import java.io.*;
 
-public abstract class ExportTask extends Task<Void> implements Closeable, Flushable {
-    protected final Writer out;
+import static java.util.Objects.requireNonNull;
 
-    protected ExportTask(final OutputStream out) {
-        this.out = new OutputStreamWriter(out);
+public class ExportTask extends Task<String> implements Closeable, Flushable {
+    protected final Writer out;
+    protected final DataNode root;
+
+    protected ExportTask(final OutputStream out, final DataNode root, final ExportFormat exportFormat) {
+        this.out = new OutputStreamWriter(requireNonNull(out));
+        this.root = requireNonNull(root);
+        if (!root.isRoot()) {
+            throw new IllegalArgumentException("The data node must be root. Provided: " + root);
+        }
     }
 
     @Override
@@ -36,5 +43,10 @@ public abstract class ExportTask extends Task<Void> implements Closeable, Flusha
 
     protected final BufferedOutputStream buffered(final OutputStream out) {
         return new BufferedOutputStream(out);
+    }
+
+    @Override
+    protected String call() throws Exception {
+        return null;
     }
 }

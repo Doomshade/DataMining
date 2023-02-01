@@ -2,7 +2,7 @@ package cz.zcu.jsmahy.datamining.resolvers.handlers
 
 import com.google.inject.Guice
 import com.google.inject.Injector
-import cz.zcu.jsmahy.datamining.api.DataNodeRoot
+import cz.zcu.jsmahy.datamining.api.DataNode
 import cz.zcu.jsmahy.datamining.api.Mocks
 import cz.zcu.jsmahy.datamining.api.SparqlEndpointAgent
 import spock.lang.Shared
@@ -32,7 +32,7 @@ class DBPediaRequestHandlerTest extends Specification {
 
         where:
         query       | treeItem
-        null        | _ as DataNodeRoot
+        null        | _ as DataNode
         _ as String | null
     }
 }

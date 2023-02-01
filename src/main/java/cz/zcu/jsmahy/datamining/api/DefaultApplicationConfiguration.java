@@ -49,7 +49,7 @@ public class DefaultApplicationConfiguration<R> implements ApplicationConfigurat
         try {
             this.reload(new InputStreamReader(Objects.requireNonNull(this.getClass()
                                                                          .getResourceAsStream(CONFIG_FILE_NAME))));
-        } catch (IOException | YAMLException e) {
+        } catch (Exception e) {
             LOGGER.error("Failed to read {} as stream. Exception:", CONFIG_FILE_NAME, e);
         }
     }

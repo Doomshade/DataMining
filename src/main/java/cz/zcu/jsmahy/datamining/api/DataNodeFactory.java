@@ -9,7 +9,6 @@ import java.util.Map;
  *
  * @author Jakub Šmrha
  * @see DataNode
- * @see DataNodeRoot
  * @since 1.0
  */
 public class DataNodeFactory {
@@ -21,8 +20,8 @@ public class DataNodeFactory {
      *
      * @return a data node root
      */
-    public DataNodeRoot newRoot(final @NonNull String rootName) {
-        final DataNodeRoot root = new DataNodeRootImpl();
+    public DataNode newRoot(final @NonNull String rootName) {
+        final DataNode root = new DataNodeImpl();
         root.addMetadata("name", rootName);
         return root;
     }

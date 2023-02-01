@@ -2,7 +2,6 @@ package cz.zcu.jsmahy.datamining.app.controller.cell;
 
 import cz.zcu.jsmahy.datamining.api.DataNode;
 import cz.zcu.jsmahy.datamining.api.DataNodeFactory;
-import cz.zcu.jsmahy.datamining.api.DataNodeRoot;
 import cz.zcu.jsmahy.datamining.api.SparqlEndpointAgent;
 import cz.zcu.jsmahy.datamining.app.controller.MainController;
 import cz.zcu.jsmahy.datamining.util.DialogHelper;
@@ -54,7 +53,7 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
             final MenuItem newLineItem = buildNewLineItem(resources, nodeFactory, requestHandler, treeView, mainController);
             final MenuItem continueLineItem = buildContinueLineItem(resources);
             final ObservableList<MenuItem> items = contextMenu.getItems();
-            if (getItem() instanceof DataNodeRoot) {
+            if (getItem().isRoot()) {
                 items.addAll(searchItem, addRestrictionItem, addItem, editItem, deleteItem);
             } else {
                 items.addAll(newLineItem, continueLineItem, addItem, deleteItem);
@@ -82,12 +81,12 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
         final MenuItem menuItem = new MenuItem(resources.getString("create-new-line"));
         menuItem.setOnAction(event -> {
             final TreeItem<DataNode> root = treeView.getRoot();
-            final Optional<DataNodeRoot> dataNodeRootOpt = getItem().findRoot();
+            final Optional<DataNode> dataNodeRootOpt = getItem().findRoot();
             assert dataNodeRootOpt.isPresent(); // the item should not be a root, thus the item's root should be present
             final String name = dataNodeRootOpt.get()
                                                .getMetadataValue("name")
                                                .orElse("<no name>") + " - copy";
-            final DataNodeRoot newDataNodeRoot = nodeFactory.newRoot(name);
+            final DataNode newDataNodeRoot = nodeFactory.newRoot(name);
             root.getChildren()
                 .add(new TreeItem<>(newDataNodeRoot));
             final Service<?> service = requestHandler.createBackgroundService(getItem().getMetadataValueUnsafe("uri"), newDataNodeRoot);
@@ -101,7 +100,8 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
         final MenuItem menuItem = new MenuItem(resources.getString("search"));
         menuItem.setOnAction(event -> dialogHelper.textInputDialog(resources.getString("item-to-search"), searchValue -> {
             getTreeItem().setExpanded(true);
-            final Service<?> service = sparqlEndpointAgent.createBackgroundService(searchValue.replaceAll(" ", "_"), (DataNodeRoot) getItem());
+            assert getItem().isRoot();
+            final Service<?> service = sparqlEndpointAgent.createBackgroundService(searchValue.replaceAll(" ", "_"), getItem());
             mainController.bindService(service);
             service.restart();
         }, "Title"));
@@ -133,7 +133,9 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
         textField.setMinWidth(this.getWidth() - this.getGraphicTextGap() * 2);
         textField.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ENTER) {
-                if (getItem() instanceof DataNodeRoot root) {
+                // TODO: rename
+                final DataNode root = getItem();
+                if (root.isRoot()) {
                     root.addMetadata("name", textField.getText());
                     commitEdit(root);
                     event.consume();
@@ -145,7 +147,7 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
     @Override
     public void startEdit() {
         super.startEdit();
-        if (!(getItem() instanceof DataNodeRoot)) {
+        if (!getItem().isRoot()) {
             return;
         }
         if (textField == null) {

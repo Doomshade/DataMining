@@ -41,8 +41,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
     private final Collection<String> usedURIs = new HashSet<>();
 
 
-    public DBPediaEndpointTask(final ApplicationConfiguration<R> config, final String query, final DataNodeRoot dataNodeRoot) {
-        // DBPEDIA_BASE_URL
+    public DBPediaEndpointTask(final ApplicationConfiguration<R> config, final String query, final DataNode dataNodeRoot) {
         super(config, query, dataNodeRoot);
     }
 

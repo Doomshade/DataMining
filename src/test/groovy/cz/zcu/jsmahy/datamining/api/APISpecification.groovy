@@ -3,6 +3,9 @@ package cz.zcu.jsmahy.datamining.api
 import com.google.inject.Guice
 import com.google.inject.Injector
 import javafx.application.Platform
+import javafx.event.Event
+import javafx.event.EventDispatchChain
+import javafx.event.EventType
 import org.yaml.snakeyaml.parser.ParserException
 import spock.lang.Shared
 import spock.lang.Specification
@@ -43,6 +46,11 @@ class APISpecification extends Specification {
             Thread.sleep(30_000)
             null
         }
+        // need to mock dispatch chain because some internals use the dispatch event method and it does not expect it
+        // nor the event to return null
+        def dispatchChain = Mock(EventDispatchChain)
+        dispatchChain.dispatchEvent(_) >> new Event(EventType.ROOT)
+        task.buildEventDispatchChain(_) >> dispatchChain
         taskProvider.createTask(_, _, _) >> task
 
         injector = Guice.createInjector(mocks.module(config, taskProvider))
@@ -298,7 +306,7 @@ class APISpecification extends Specification {
 
         where:
         query       | treeItem
-        null        | _ as DataNodeRoot
+        null        | _ as DataNode
         _ as String | null
     }
 
@@ -311,21 +319,21 @@ class APISpecification extends Specification {
 
         where:
         query       | treeItem
-        null        | _ as DataNodeRoot
+        null        | _ as DataNode
         _ as String | null
     }
 
 
     def "Should throw IAE if query is empty"() {
         when:
-        endpointAgent.createBackgroundService("", _ as DataNodeRoot)
+        endpointAgent.createBackgroundService("", _ as DataNode)
         then:
         thrown(IllegalArgumentException)
     }
 
     def "Should return a valid service"() {
         when:
-        endpointAgent.createBackgroundService("queryTest", _ as DataNodeRoot)
+        endpointAgent.createBackgroundService("queryTest", _ as DataNode)
         then:
         noExceptionThrown()
     }
@@ -333,7 +341,7 @@ class APISpecification extends Specification {
     def "Should create a task via task provider when background service is started"() {
         given:
         Platform.startup {}
-        def svc = endpointAgent.createBackgroundService("queryTest", _ as DataNodeRoot)
+        def svc = endpointAgent.createBackgroundService("queryTest", _ as DataNode)
         when:
         svc.start()
 
