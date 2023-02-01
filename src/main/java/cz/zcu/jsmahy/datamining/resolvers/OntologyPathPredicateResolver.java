@@ -5,12 +5,12 @@ import javafx.application.Platform;
 
 import java.util.List;
 
-public class OntologyPathPredicateResolver<T, R> implements BlockingResponseResolver<T, R, BlockingDataNodeReferenceHolder<T>> {
+public class OntologyPathPredicateResolver<R> implements BlockingResponseResolver<R, BlockingDataNodeReferenceHolder> {
     @Override
-    public BlockingDataNodeReferenceHolder<T> resolveRequest(final List<DataNode> ambiguousInput,
-                                                             final QueryData inputMetadata,
-                                                             final SparqlEndpointTask<T, R> requestHandler) {
-        final BlockingDataNodeReferenceHolder<T> ref = new BlockingDataNodeReferenceHolder<>();
+    public BlockingDataNodeReferenceHolder resolveRequest(final List<DataNode> ambiguousInput,
+                                                          final QueryData inputMetadata,
+                                                          final SparqlEndpointTask<R> requestHandler) {
+        final BlockingDataNodeReferenceHolder ref = new BlockingDataNodeReferenceHolder();
 
         Platform.runLater(() -> {
             final RDFNodeChooserDialog dialog = new RDFNodeChooserDialog(inputMetadata.getCandidatesForOntologyPathPredicate(), RDFNodeChooserDialog.IS_DBPEDIA_SITE);

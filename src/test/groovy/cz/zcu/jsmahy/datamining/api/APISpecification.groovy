@@ -17,11 +17,11 @@ class APISpecification extends Specification {
     @Shared
     private DataNodeRoot root
     @Shared
-    private ApplicationConfiguration<?, ?> config
+    private ApplicationConfiguration<?> config
     @Shared
-    private DefaultSparqlEndpointTask<?, ?> defaultTask
+    private DefaultSparqlEndpointTask<?> defaultTask
     @Shared
-    private SparqlEndpointAgent<?, ?> endpointAgent
+    private SparqlEndpointAgent<?> endpointAgent
 
     void setupSpec() {
         def config = Mock(ApplicationConfiguration)

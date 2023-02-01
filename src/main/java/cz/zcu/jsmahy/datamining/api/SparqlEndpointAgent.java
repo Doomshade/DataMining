@@ -10,12 +10,12 @@ import org.apache.logging.log4j.Logger;
 
 import static java.util.Objects.requireNonNull;
 
-public class SparqlEndpointAgent<T, R> {
+public class SparqlEndpointAgent<R> {
     private static final Logger LOGGER = LogManager.getLogger(SparqlEndpointAgent.class);
     @Getter
-    private final SparqlEndpointTaskProvider<T, R> sparqlEndpointTaskProvider;
+    private final SparqlEndpointTaskProvider<R> sparqlEndpointTaskProvider;
     @Getter
-    private final ApplicationConfiguration<T, R> config;
+    private final ApplicationConfiguration<R> config;
     @Getter
     private final DataNodeFactory dataNodeFactory;
 

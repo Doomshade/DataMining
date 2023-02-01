@@ -12,7 +12,7 @@ import java.util.List;
  * @author Jakub Šmrha
  * @version 1.0
  */
-public interface RequestProgressListener<T> {
+public interface RequestProgressListener {
     /**
      * Called when the ontology path predicate is set. This callback should highlight the current ontology path predicate in the UI somewhere.
      *

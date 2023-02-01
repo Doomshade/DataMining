@@ -12,7 +12,7 @@ class DBPediaRequestHandlerTest extends Specification {
     @Shared
     static Injector injector
     @Shared
-    private SparqlEndpointAgent<?, ?> endpointAgent
+    private SparqlEndpointAgent<?> endpointAgent
 
     void setupSpec() {
         def mocks = new Mocks()

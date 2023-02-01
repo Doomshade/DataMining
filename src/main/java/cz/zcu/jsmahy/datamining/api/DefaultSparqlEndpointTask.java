@@ -17,20 +17,19 @@ import static java.util.Objects.requireNonNull;
  * <p>Default implementations for {@link SparqlEndpointTask}.</p>
  * <p>This class does not implement the {@link Task#call()} method, rather it returns {@link UnsupportedOperationException}! To run this task you must implement this method.</p>
  *
- * @param <T>
  * @param <R>
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class DefaultSparqlEndpointTask<T, R> extends SparqlEndpointTask<T, R> {
+public class DefaultSparqlEndpointTask<R> extends SparqlEndpointTask<R> {
     protected final Collection<String> ignoredPathPredicates = new HashSet<>();
     protected final Collection<String> validDateFormats = new HashSet<>();
-    protected final ApplicationConfiguration<T, R> config;
+    protected final ApplicationConfiguration<R> config;
     protected final DataNodeFactory dataNodeFactory;
     protected final String query;
     protected final DataNodeRoot dataNodeRoot;
 
-    public DefaultSparqlEndpointTask(final ApplicationConfiguration<T, R> config, final DataNodeFactory dataNodeFactory, String query, final DataNodeRoot dataNodeRoot) {
+    public DefaultSparqlEndpointTask(final ApplicationConfiguration<R> config, final DataNodeFactory dataNodeFactory, String query, final DataNodeRoot dataNodeRoot) {
         this.config = requireNonNull(config);
         this.dataNodeFactory = requireNonNull(dataNodeFactory);
         this.dataNodeRoot = requireNonNull(dataNodeRoot);

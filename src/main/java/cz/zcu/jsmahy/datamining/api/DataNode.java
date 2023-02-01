@@ -13,6 +13,11 @@ import java.util.Optional;
  * @since 1.0
  */
 public interface DataNode extends Iterable<DataNode> {
+    // general purpose metadata keys
+    String KEY_NAME = "name";
+    String KEY_URI = "uri";
+    String KEY_RDF_NODE = "rdfNode";
+
 
     /**
      * NOTE: the children are <b>unmodifiable</b>

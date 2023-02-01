@@ -1,14 +1,13 @@
 package cz.zcu.jsmahy.datamining.dbpedia;
 
 import cz.zcu.jsmahy.datamining.api.*;
-import org.apache.jena.rdf.model.RDFNode;
 
-public class DBPediaEndpointTaskProvider<T extends RDFNode, R extends Void> implements SparqlEndpointTaskProvider<T, R> {
+public class DBPediaEndpointTaskProvider<R> implements SparqlEndpointTaskProvider<R> {
     @Override
-    public SparqlEndpointTask<T, R> createTask(final ApplicationConfiguration<T, R> config,
-                                               final DataNodeFactory nodeFactory,
-                                               final String query,
-                                               final DataNodeRoot dataNodeRoot) {
+    public SparqlEndpointTask<R> createTask(final ApplicationConfiguration<R> config,
+                                            final DataNodeFactory nodeFactory,
+                                            final String query,
+                                            final DataNodeRoot dataNodeRoot) {
         return new DBPediaEndpointTask<>(config, nodeFactory, query, dataNodeRoot);
     }
 }

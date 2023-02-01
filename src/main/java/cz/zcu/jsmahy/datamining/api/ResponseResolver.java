@@ -9,7 +9,6 @@ import java.util.List;
  * <p>Solves ambiguities of nodes where a list of them occurs.</p>
  * <p>An example would be a monarch having multiple descendents.</p>
  *
- * @param <T>     The data type of {@link DataNode}
  * @param <R>     The generic type of {@link SparqlEndpointTask}
  * @param <DNRef> The {@link DataNodeReferenceHolder} (this allows us to return any implementation, see {@link BlockingResponseResolver})
  *
@@ -18,7 +17,7 @@ import java.util.List;
  * @see BlockingDataNodeReferenceHolder
  * @since 1.0
  */
-public interface ResponseResolver<T, R, DNRef extends DataNodeReferenceHolder<T>> {
+public interface ResponseResolver<R, DNRef extends DataNodeReferenceHolder> {
     /**
      * <p>WARNING: the program waits until {@link BlockingDataNodeReferenceHolder#isFinished()} returns true</p>
      * <p>The reference can be set any time. Once the reference is set, you are obliged to resolveRequest {@link BlockingDataNodeReferenceHolder#finish()} to mark the reference as set followed by
@@ -73,5 +72,5 @@ public interface ResponseResolver<T, R, DNRef extends DataNodeReferenceHolder<T>
      *
      * @return A list of {@link DataNode} references
      */
-    DNRef resolveRequest(List<DataNode> ambiguousInput, final QueryData inputMetadata, final SparqlEndpointTask<T, R> requestHandler);
+    DNRef resolveRequest(List<DataNode> ambiguousInput, final QueryData inputMetadata, final SparqlEndpointTask<R> requestHandler);
 }

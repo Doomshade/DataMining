@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author Jakub Šmrha
  * @version 1.0
  */
-public class MainController<T extends RDFNode> implements Initializable, RequestProgressListener<T> {
+public class MainController implements Initializable, RequestProgressListener {
     /*
 PREFIX rdf: <https://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX r: <http://dbpedia.org/resource/>
@@ -58,7 +58,7 @@ order by ?pred
      */
     private static final String WIKI_URL = "https://wikipedia.org/wiki/%s";
     private static final Logger LOGGER = LogManager.getLogger(MainController.class);
-    private static MainController<?> instance = null;
+    private static MainController instance = null;
     //<editor-fold desc="Attributes for query building">
     private final ObjectProperty<Property> ontologyPathPredicate = new SimpleObjectProperty<>();
     //<editor-fold desc="UI related attributes">
@@ -94,14 +94,14 @@ order by ?pred
         }, "Title");
 
     };
-    private SparqlEndpointAgent<T, Void> requestHandler;
+    private SparqlEndpointAgent<Void> requestHandler;
 
-    public static MainController<?> getInstance() {
+    public static MainController getInstance() {
         return instance;
     }
 
     // TODO: test this method!
-    public static <T> TreeItem<DataNode> findTreeItem(final DataNode dataNode, final TreeItem<DataNode> treeRoot) {
+    public static TreeItem<DataNode> findTreeItem(final DataNode dataNode, final TreeItem<DataNode> treeRoot) {
         Objects.requireNonNull(dataNode);
         Objects.requireNonNull(treeRoot);
 
@@ -185,7 +185,7 @@ order by ?pred
                 event.consume();
             }
         });
-        this.ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory<>(lv, resources, this, dialogHelper, nodeFactory, requestHandler));
+        this.ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory(lv, resources, this, dialogHelper, nodeFactory, requestHandler));
 
         final TreeItem<DataNode> root = new TreeItem<>(null);
         this.ontologyTreeView.setRoot(root);

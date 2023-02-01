@@ -2,15 +2,14 @@ package cz.zcu.jsmahy.datamining.resolvers;
 
 import cz.zcu.jsmahy.datamining.api.*;
 import javafx.application.Platform;
-import org.apache.jena.rdf.model.RDFNode;
 
 import java.util.List;
 
-public class StartAndEndDateResolver<T extends RDFNode, R extends Void> implements BlockingResponseResolver<T, R, BlockingDataNodeReferenceHolder<T>> {
+public class StartAndEndDateResolver<R extends Void> implements BlockingResponseResolver<R, BlockingDataNodeReferenceHolder> {
 
     @Override
-    public BlockingDataNodeReferenceHolder<T> resolveRequest(final List<DataNode> ambiguousInput, final QueryData inputMetadata, final SparqlEndpointTask<T, R> requestHandler) {
-        final BlockingDataNodeReferenceHolder<T> ref = new BlockingDataNodeReferenceHolder<>();
+    public BlockingDataNodeReferenceHolder resolveRequest(final List<DataNode> ambiguousInput, final QueryData inputMetadata, final SparqlEndpointTask<R> requestHandler) {
+        final BlockingDataNodeReferenceHolder ref = new BlockingDataNodeReferenceHolder();
         Platform.runLater(() -> {
             final RDFNodeChooserDialog startDateDialog = new RDFNodeChooserDialog(inputMetadata.getCandidatesForStartAndEndDates(), RDFNodeChooserDialog.IS_DBPEDIA_SITE);
             startDateDialog.showDialogueAndWait(statement -> ref.setStartDatePredicate(statement.getPredicate()));

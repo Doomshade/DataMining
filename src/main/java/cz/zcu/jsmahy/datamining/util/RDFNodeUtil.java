@@ -9,6 +9,9 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
+import static cz.zcu.jsmahy.datamining.api.DataNode.KEY_NAME;
+import static cz.zcu.jsmahy.datamining.api.DataNode.KEY_URI;
+
 public class RDFNodeUtil {
     public static final String SPECIAL_CHARACTERS = "_";
     private static final Logger LOGGER = LogManager.getLogger(RDFNodeUtil.class);
@@ -55,11 +58,11 @@ public class RDFNodeUtil {
         if (dataNode == null || rdfNode == null) {
             return;
         }
-        dataNode.addMetadata("name", formatRDFNode(rdfNode).replaceAll(SPECIAL_CHARACTERS, " "));
+        dataNode.addMetadata(KEY_NAME, formatRDFNode(rdfNode).replaceAll(SPECIAL_CHARACTERS, " "));
         if (rdfNode.isURIResource()) {
             final String uri = rdfNode.asResource()
                                       .getURI();
-            dataNode.addMetadata("uri", uri);
+            dataNode.addMetadata(KEY_URI, uri);
         }
     }
 }

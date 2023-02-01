@@ -14,7 +14,7 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 @Getter
-public class DefaultApplicationConfiguration<T, R> implements ApplicationConfiguration<T, R> {
+public class DefaultApplicationConfiguration<R> implements ApplicationConfiguration<R> {
 
     private static final Logger LOGGER = LogManager.getLogger(DefaultApplicationConfiguration.class);
     private static final Map<String, Field> KEY_TO_FIELD_MAP = new HashMap<>();
@@ -32,15 +32,15 @@ public class DefaultApplicationConfiguration<T, R> implements ApplicationConfigu
         }
     }
 
-    private final RequestProgressListener<T> progressListener;
+    private final RequestProgressListener progressListener;
 
     private final DataNodeFactory dataNodeFactory;
 
-    private final ResponseResolver<T, R, ?> ambiguousResultResolver;
+    private final ResponseResolver<R, ?> ambiguousResultResolver;
 
-    private final ResponseResolver<T, R, ?> ontologyPathPredicateResolver;
+    private final ResponseResolver<R, ?> ontologyPathPredicateResolver;
 
-    private final ResponseResolver<T, R, ?> startAndEndDateResolver;
+    private final ResponseResolver<R, ?> startAndEndDateResolver;
     private final Object lock = new Object();
     private final Map<String, Object> configVariables = new HashMap<>();
 

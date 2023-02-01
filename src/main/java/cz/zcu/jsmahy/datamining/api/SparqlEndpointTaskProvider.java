@@ -1,5 +1,5 @@
 package cz.zcu.jsmahy.datamining.api;
 
-public interface SparqlEndpointTaskProvider<T, R> {
-    SparqlEndpointTask<T, R> createTask(ApplicationConfiguration<T, R> config, DataNodeFactory nodeFactory, String query, DataNodeRoot dataNodeRoot);
+public interface SparqlEndpointTaskProvider<R> {
+    SparqlEndpointTask<R> createTask(ApplicationConfiguration<R> config, DataNodeFactory nodeFactory, String query, DataNodeRoot dataNodeRoot);
 }

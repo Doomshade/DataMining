@@ -17,12 +17,12 @@ class DataNodeReferenceHolderTest extends Specification {
 
 
     @Shared
-    DataNodeReferenceHolder<?> ref
+    DataNodeReferenceHolder ref
     @Shared
     DataNodeRoot root
 
     void setup() {
-        ref = new DataNodeReferenceHolder<>()
+        ref = new DataNodeReferenceHolder()
         root = nodeFactory.newRoot("Root")
     }
 

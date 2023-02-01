@@ -8,7 +8,6 @@ import javafx.collections.FXCollections;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.util.Callback;
-import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -22,18 +21,18 @@ import java.util.ResourceBundle;
  * @author Jakub Šmrha
  * @version 1.0
  */
-public class MultipleItemChoiceResolver<T extends RDFNode, R> implements BlockingResponseResolver<T, R, BlockingDataNodeReferenceHolder<T>> {
+public class MultipleItemChoiceResolver<R> implements BlockingResponseResolver<R, BlockingDataNodeReferenceHolder> {
 
     private static final Logger LOGGER = LogManager.getLogger(MultipleItemChoiceResolver.class);
 
     @Override
-    public BlockingDataNodeReferenceHolder<T> resolveRequest(final List<DataNode> ambiguousInput, final QueryData inputMetadata, final SparqlEndpointTask<T, R> requestHandler) {
+    public BlockingDataNodeReferenceHolder resolveRequest(final List<DataNode> ambiguousInput, final QueryData inputMetadata, final SparqlEndpointTask<R> requestHandler) {
         // first off we check if we have an ontology path set
         // if not, pop up a dialogue
-        final BlockingDataNodeReferenceHolder<T> ref = new BlockingDataNodeReferenceHolder<>();
+        final BlockingDataNodeReferenceHolder ref = new BlockingDataNodeReferenceHolder();
 
         Platform.runLater(() -> {
-            final MultipleItemChoiceDialog dialog = new MultipleItemChoiceDialog(ambiguousInput, ref, x -> new RDFNodeListCellFactory<>(), SelectionMode.SINGLE);
+            final MultipleItemChoiceDialog dialog = new MultipleItemChoiceDialog(ambiguousInput, ref, x -> new RDFNodeListCellFactory(), SelectionMode.SINGLE);
             dialog.showDialogueAndWait();
 
             // once we receive the response notify the thread under the request handler's monitor
@@ -49,10 +48,10 @@ public class MultipleItemChoiceResolver<T extends RDFNode, R> implements Blockin
         private final Dialog<List<DataNode>> dialog = new Dialog<>();
         private final DialogPane dialogPane = dialog.getDialogPane();
         private final ListView<DataNode> content = new ListView<>();
-        private final DataNodeReferenceHolder<T> ref;
+        private final DataNodeReferenceHolder ref;
 
         public MultipleItemChoiceDialog(final List<DataNode> list,
-                                        final DataNodeReferenceHolder<T> ref,
+                                        final DataNodeReferenceHolder ref,
                                         final Callback<ListView<DataNode>, ListCell<DataNode>> cellFactory,
                                         final SelectionMode selectionMode) {
             final ResourceBundle resourceBundle = ResourceBundle.getBundle("lang");

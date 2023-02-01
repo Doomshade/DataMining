@@ -15,6 +15,9 @@ import org.apache.logging.log4j.Logger;
 import java.util.*;
 import java.util.function.Predicate;
 
+import static cz.zcu.jsmahy.datamining.api.DataNode.KEY_NAME;
+import static cz.zcu.jsmahy.datamining.dbpedia.DBPediaMetadataKeys.KEY_END_DATE;
+import static cz.zcu.jsmahy.datamining.dbpedia.DBPediaMetadataKeys.KEY_START_DATE;
 import static cz.zcu.jsmahy.datamining.util.RDFNodeUtil.setDataNodeNameFromRDFNode;
 
 /**
@@ -23,7 +26,7 @@ import static cz.zcu.jsmahy.datamining.util.RDFNodeUtil.setDataNodeNameFromRDFNo
  * @author Jakub Šmrha
  * @version 1.0
  */
-public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends DefaultSparqlEndpointTask<T, R> {
+public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
     private static final Logger LOGGER = LogManager.getLogger(DBPediaEndpointTask.class);
     /**
      * <p>This comparator ensures the URI resources are placed first over literal resources.</p>
@@ -38,7 +41,7 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
     private final Collection<String> usedURIs = new HashSet<>();
 
 
-    public DBPediaEndpointTask(final ApplicationConfiguration<T, R> config, final DataNodeFactory nodeFactory, final String query, final DataNodeRoot dataNodeRoot) {
+    public DBPediaEndpointTask(final ApplicationConfiguration<R> config, final DataNodeFactory nodeFactory, final String query, final DataNodeRoot dataNodeRoot) {
         // DBPEDIA_BASE_URL
         super(config, nodeFactory, query, dataNodeRoot);
     }
@@ -63,21 +66,21 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
             } else {
                 throw new ClassCastException("Inner date type is of unknown value: " + innerDateType);
             }
-            LOGGER.debug("Setting {} date (inner type: {}, actual date: {}) to {}", isStartDate ? "start" : "end", innerDateType, date, curr.getMetadataValue("name", "<no name>"));
+            LOGGER.debug("Setting {} date (inner type: {}, actual date: {}) to {}", isStartDate ? "start" : "end", innerDateType, date, curr.getMetadataValue(KEY_NAME, "<no name>"));
             if (isStartDate) {
-                curr.addMetadata("startDate", date);
+                curr.addMetadata(KEY_START_DATE, date);
             } else {
-                curr.addMetadata("endDate", date);
+                curr.addMetadata(KEY_END_DATE, date);
             }
         } else {
             // TODO: solve this
             LOGGER.warn("No {} date found for {}!", isStartDate ? "start" : "end", subject);
             // if the end date was not found, default it to the start date
             if (!isStartDate) {
-                curr.getMetadataValue("startDate")
+                curr.getMetadataValue(KEY_START_DATE)
                     .ifPresent(startDate -> {
                         LOGGER.info("Setting end date to start date {} because no end date was found.", startDate);
-                        curr.addMetadata("endDate", startDate);
+                        curr.addMetadata(KEY_END_DATE, startDate);
                     });
             }
         }
@@ -85,7 +88,7 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
 
     @Override
     public synchronized R call() throws InvalidQueryException {
-        final RequestProgressListener<T> progressListener = config.getProgressListener();
+        final RequestProgressListener progressListener = config.getProgressListener();
         final Model model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
         final QueryData inputMetadata = new QueryData();
         try {
@@ -166,9 +169,9 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
         final List<Statement> statements = stmtIterator.toList();
         inputMetadata.setCandidatesForStartAndEndDates(statements);
 
-        final DataNodeReferenceHolder<T> ref = config.getStartAndEndDateResolver()
-                                                     .resolveRequest(null, inputMetadata, this);
-        if (ref instanceof BlockingDataNodeReferenceHolder<T> blockingRef) {
+        final DataNodeReferenceHolder ref = config.getStartAndEndDateResolver()
+                                                  .resolveRequest(null, inputMetadata, this);
+        if (ref instanceof BlockingDataNodeReferenceHolder blockingRef) {
             while (!blockingRef.isFinished()) {
                 try {
                     wait(5000L);
@@ -217,9 +220,9 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
         }
         inputMetadata.setCandidatesForOntologyPathPredicate(Collections.unmodifiableList(stmtIterator.toList()));
 
-        final DataNodeReferenceHolder<T> ref = config.getOntologyPathPredicateResolver()
-                                                     .resolveRequest(null, inputMetadata, this);
-        if (ref instanceof BlockingDataNodeReferenceHolder<T> blockingRef) {
+        final DataNodeReferenceHolder ref = config.getOntologyPathPredicateResolver()
+                                                  .resolveRequest(null, inputMetadata, this);
+        if (ref instanceof BlockingDataNodeReferenceHolder blockingRef) {
             while (!blockingRef.isFinished()) {
                 try {
                     wait(5000L);
@@ -256,19 +259,18 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
      *
      * @param selector the selector
      */
-    @SuppressWarnings("unchecked")
     private void search(final QueryData inputMetadata, final Selector selector) {
         LOGGER.debug("Search");
         final Model model = inputMetadata.getCurrentModel();
 
         final DataNodeFactory nodeFactory = config.getDataNodeFactory();
         final DataNode curr = nodeFactory.newNode(dataNodeRoot);
-        curr.addMetadata("rdfNode", selector.getSubject());
+        curr.addMetadata(DataNode.KEY_RDF_NODE, selector.getSubject());
         setDataNodeNameFromRDFNode(curr, selector.getSubject());
         addDatesToNode(model, curr, inputMetadata.getStartDateProperty(), selector.getSubject(), true);
         addDatesToNode(model, curr, inputMetadata.getEndDateProperty(), selector.getSubject(), false);
 
-        final RequestProgressListener<T> progressListener = config.getProgressListener();
+        final RequestProgressListener progressListener = config.getProgressListener();
         progressListener.onAddNewDataNode(curr, dataNodeRoot);
 
         final List<Statement> statements = model.listStatements(selector)
@@ -276,9 +278,9 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
         statements.sort(STATEMENT_COMPARATOR);
 
         final List<DataNode> foundDataList = new ArrayList<>();
-        T previous = null;
+        RDFNode previous = null;
         for (final Statement stmt : statements) {
-            final T next = (T) stmt.getObject();
+            final RDFNode next = stmt.getObject();
             final boolean meetsRequirements;
             try {
                 meetsRequirements = meetsRequirements(inputMetadata, previous, next);
@@ -293,7 +295,7 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
             }
 
             final DataNode nextNode = nodeFactory.newNode(dataNodeRoot);
-            nextNode.addMetadata("rdfNode", next);
+            nextNode.addMetadata(DataNode.KEY_RDF_NODE, next);
             setDataNodeNameFromRDFNode(nextNode, next);
             LOGGER.debug("Found {}", next);
             foundDataList.add(nextNode);
@@ -323,9 +325,9 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
         // --------------
         // the reference can either be non-blocking or blocking, depending on the implementation
         // usually when user input is required it's blocking
-        final DataNodeReferenceHolder<T> ref = config.getAmbiguousResultResolver()
-                                                     .resolveRequest(foundDataList, inputMetadata, this);
-        if (ref instanceof BlockingDataNodeReferenceHolder<T> blockingRef) {
+        final DataNodeReferenceHolder ref = config.getAmbiguousResultResolver()
+                                                  .resolveRequest(foundDataList, inputMetadata, this);
+        if (ref instanceof BlockingDataNodeReferenceHolder blockingRef) {
             while (!blockingRef.isFinished()) {
                 try {
                     wait(5000);
@@ -343,8 +345,8 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
         // WARN: Deleted handling for multiple references as it might not even be in the final version.
         for (final DataNode foundData : foundDataList) {
             final DataNode newNode = nodeFactory.newNode(curr);
-            final RDFNode rdfNode = foundData.getMetadataValueUnsafe("rdfNode");
-            newNode.addMetadata("rdfNode", rdfNode);
+            final RDFNode rdfNode = foundData.getMetadataValueUnsafe(DataNode.KEY_RDF_NODE);
+            newNode.addMetadata(DataNode.KEY_RDF_NODE, rdfNode);
             setDataNodeNameFromRDFNode(newNode, rdfNode);
             currDataNodeChildren.add(newNode);
         }
@@ -361,7 +363,7 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
         if (next == null) {
             return;
         }
-        final T data = next.getMetadataValueUnsafe("rdfNode");
+        final RDFNode data = next.getMetadataValueUnsafe(DataNode.KEY_RDF_NODE);
         if (!data.isURIResource()) {
             return;
         }
@@ -390,7 +392,7 @@ public class DBPediaEndpointTask<T extends RDFNode, R extends Void> extends Defa
      *
      * @throws IllegalStateException if the previous is not a URI resource
      */
-    private boolean meetsRequirements(final QueryData inputMetadata, final T previous, final T curr) throws IllegalArgumentException {
+    private boolean meetsRequirements(final QueryData inputMetadata, final RDFNode previous, final RDFNode curr) throws IllegalArgumentException {
         if (!curr.isURIResource()) {
             return true;
         }

@@ -19,7 +19,7 @@ import java.util.List;
  * @author Jakub Šmrha
  * @version 1.0
  */
-public class DataNodeReferenceHolder<V> {
+public class DataNodeReferenceHolder {
     /**
      * The references.
      */

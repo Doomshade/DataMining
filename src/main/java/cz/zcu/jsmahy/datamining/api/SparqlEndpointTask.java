@@ -6,16 +6,15 @@ import javafx.concurrent.Task;
  * <p>A SPARQL endpoint background task.</p>
  * <p>This abstraction exists mainly for testing purposes (it's easy to mock this class)</p>
  *
- * @param <T> The data type of {@link DataNode}
  * @param <R> The generic type of {@link Task}
  *
  * @see Task
  */
-public abstract class SparqlEndpointTask<T, R> extends Task<R> {
+public abstract class SparqlEndpointTask<R> extends Task<R> {
 
     public abstract void unlockDialogPane();
 
-    public abstract ApplicationConfiguration<T, R> getConfig();
+    public abstract ApplicationConfiguration<R> getConfig();
 
     public abstract DataNodeFactory getDataNodeFactory();
 

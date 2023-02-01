@@ -8,10 +8,9 @@ import java.util.*;
 /**
  * Responsible for loading configuration and other
  *
- * @param <T> The data type of {@link DataNode}
  * @param <R> The generic type of {@link SparqlEndpointTask}
  */
-public interface ApplicationConfiguration<T, R> {
+public interface ApplicationConfiguration<R> {
     String IGNORE_PATH_PREDICATES = "ignored-path-predicates";
     String VALID_DATE_FORMATS = "valid-date-formats";
     String BASE_URL = "base-url";
@@ -75,7 +74,7 @@ public interface ApplicationConfiguration<T, R> {
     /**
      * @return The progress listener for this endpoint.
      */
-    RequestProgressListener<T> getProgressListener();
+    RequestProgressListener getProgressListener();
 
     /**
      * @return The data node factory.
@@ -85,17 +84,17 @@ public interface ApplicationConfiguration<T, R> {
     /**
      * @return The resolver that should be called when the program does not know which path to choose.
      */
-    ResponseResolver<T, R, ?> getAmbiguousResultResolver();
+    ResponseResolver<R, ?> getAmbiguousResultResolver();
 
     /**
      * @return The resolver that should be called when asking for the path predicate.
      */
-    ResponseResolver<T, R, ?> getOntologyPathPredicateResolver();
+    ResponseResolver<R, ?> getOntologyPathPredicateResolver();
 
     /**
      * @return The resolver that should be called when asking for the start and end points in time.
      */
-    ResponseResolver<T, R, ?> getStartAndEndDateResolver();
+    ResponseResolver<R, ?> getStartAndEndDateResolver();
 
     /**
      * List of {@link Collection} constants (just to make them unmodifiable).

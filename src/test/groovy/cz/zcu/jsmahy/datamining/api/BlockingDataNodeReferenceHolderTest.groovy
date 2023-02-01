@@ -5,10 +5,10 @@ import spock.lang.Specification
 
 class BlockingDataNodeReferenceHolderTest extends Specification {
     @Shared
-    BlockingDataNodeReferenceHolder<?> ref
+    BlockingDataNodeReferenceHolder ref
 
     void setup() {
-        ref = new BlockingDataNodeReferenceHolder<>()
+        ref = new BlockingDataNodeReferenceHolder()
     }
 
     def "Reference should be finished once marked as finished"() {

@@ -28,15 +28,15 @@ import java.util.ResourceBundle;
  * @author Jakub Šmrha
  * @since 1.0
  */
-public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode> {
+public class RDFNodeCellFactory extends TreeCell<DataNode> {
     private TextField textField;
 
     public RDFNodeCellFactory(final TreeView<DataNode> treeView,
                               final ResourceBundle resources,
-                              final MainController<T> mainController,
+                              final MainController mainController,
                               final DialogHelper dialogHelper,
                               final DataNodeFactory nodeFactory,
-                              final SparqlEndpointAgent<T, ?> requestHandler) {
+                              final SparqlEndpointAgent<?> requestHandler) {
         emptyProperty().addListener((obs, wasEmpty, isNowEmpty) -> {
             if (isNowEmpty) {
                 setContextMenu(null);
@@ -76,9 +76,9 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode> {
 
     private MenuItem buildNewLineItem(final ResourceBundle resources,
                                       final DataNodeFactory nodeFactory,
-                                      final SparqlEndpointAgent<T, ?> requestHandler,
+                                      final SparqlEndpointAgent<?> requestHandler,
                                       final TreeView<DataNode> treeView,
-                                      final MainController<T> mainController) {
+                                      final MainController mainController) {
         final MenuItem menuItem = new MenuItem(resources.getString("create-new-line"));
         menuItem.setOnAction(event -> {
             final TreeItem<DataNode> root = treeView.getRoot();
@@ -97,7 +97,7 @@ public class RDFNodeCellFactory<T extends RDFNode> extends TreeCell<DataNode> {
         return menuItem;
     }
 
-    private MenuItem buildSearchItem(final ResourceBundle resources, final DialogHelper dialogHelper, final SparqlEndpointAgent<T, ?> sparqlEndpointAgent, final MainController<T> mainController) {
+    private MenuItem buildSearchItem(final ResourceBundle resources, final DialogHelper dialogHelper, final SparqlEndpointAgent<?> sparqlEndpointAgent, final MainController mainController) {
         final MenuItem menuItem = new MenuItem(resources.getString("search"));
         menuItem.setOnAction(event -> dialogHelper.textInputDialog(resources.getString("item-to-search"), searchValue -> {
             getTreeItem().setExpanded(true);

@@ -6,6 +6,7 @@ import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import org.apache.jena.rdf.model.RDFNode;
 
+import static cz.zcu.jsmahy.datamining.api.DataNode.KEY_RDF_NODE;
 import static cz.zcu.jsmahy.datamining.util.RDFNodeUtil.SPECIAL_CHARACTERS;
 import static cz.zcu.jsmahy.datamining.util.RDFNodeUtil.formatRDFNode;
 
@@ -15,7 +16,7 @@ import static cz.zcu.jsmahy.datamining.util.RDFNodeUtil.formatRDFNode;
  * @author Jakub Šmrha
  * @since 1.0
  */
-public class RDFNodeListCellFactory<T extends RDFNode> extends ListCell<DataNode> {
+public class RDFNodeListCellFactory extends ListCell<DataNode> {
 
     /**
      * <p>Formats the {@link RDFNode} for pretty output in the {@link ListView}.</p>
@@ -26,7 +27,7 @@ public class RDFNodeListCellFactory<T extends RDFNode> extends ListCell<DataNode
      * @see RDFNodeUtil#formatRDFNode(RDFNode)
      */
     private String prettyFormat(DataNode node) {
-        return formatRDFNode(node.getMetadataValueUnsafe("rdfNode")).replaceAll(SPECIAL_CHARACTERS, " ");
+        return formatRDFNode(node.getMetadataValueUnsafe(KEY_RDF_NODE)).replaceAll(SPECIAL_CHARACTERS, " ");
     }
 
     @Override
