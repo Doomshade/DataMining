@@ -16,8 +16,6 @@ public abstract class SparqlEndpointTask<R> extends Task<R> {
 
     public abstract ApplicationConfiguration<R> getConfig();
 
-    public abstract DataNodeFactory getDataNodeFactory();
-
     public abstract String getQuery();
 
     public abstract DataNodeRoot getDataNodeRoot();

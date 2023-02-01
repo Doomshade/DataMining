@@ -41,9 +41,9 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
     private final Collection<String> usedURIs = new HashSet<>();
 
 
-    public DBPediaEndpointTask(final ApplicationConfiguration<R> config, final DataNodeFactory nodeFactory, final String query, final DataNodeRoot dataNodeRoot) {
+    public DBPediaEndpointTask(final ApplicationConfiguration<R> config, final String query, final DataNodeRoot dataNodeRoot) {
         // DBPEDIA_BASE_URL
-        super(config, nodeFactory, query, dataNodeRoot);
+        super(config, query, dataNodeRoot);
     }
 
     private void addDatesToNode(final Model model, final DataNode curr, final Property dateProperty, final Resource subject, final boolean isStartDate) {

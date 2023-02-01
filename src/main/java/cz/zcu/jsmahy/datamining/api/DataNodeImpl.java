@@ -6,14 +6,18 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.ToString;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 
 
 @Data
 @EqualsAndHashCode(doNotUseGetters = true)
-@ToString(doNotUseGetters = true)
+@ToString(doNotUseGetters = true,
+          exclude = "parent")
 class DataNodeImpl implements DataNode {
+    private static final Logger LOGGER = LogManager.getLogger(DataNodeImpl.class);
     private static long ID_SEQ = 0;
 
     private final DataNode parent;
@@ -81,19 +85,17 @@ class DataNodeImpl implements DataNode {
 
     @Override
     public Optional<DataNodeRoot> findRoot() {
+        LOGGER.debug("Parent: {}", parent);
         DataNode prev = parent;
         while (prev != null && prev.getParent() != null) {
             prev = prev.getParent();
+            LOGGER.debug("Searching deeper: {}", prev);
         }
         if (prev != null) {
             assert prev instanceof DataNodeRoot; // the upmost parent should always be root
             return Optional.of((DataNodeRoot) prev);
         }
         return Optional.empty();
-    }
-
-    public Map<String, Object> getMetadata() {
-        return Collections.unmodifiableMap(metadata);
     }
 
     @Override

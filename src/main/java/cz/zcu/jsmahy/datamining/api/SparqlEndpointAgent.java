@@ -30,7 +30,8 @@ public class SparqlEndpointAgent<R> {
         this.sparqlEndpointTaskProvider = requireNonNull(sparqlEndpointTaskProvider);
     }
 
-    public Service<R> createBackgroundService(@NonNull final String query, @NonNull final DataNodeRoot dataNodeRoot) {
+
+    public Service<R> createBackgroundService(@NonNull final String query, @NonNull final DataNodeRoot dataNodeRoot) throws NullPointerException, IllegalArgumentException {
         if (query.isBlank()) {
             throw new IllegalArgumentException("Query cannot be blank.");
         }
@@ -38,7 +39,7 @@ public class SparqlEndpointAgent<R> {
         return new Service<>() {
             @Override
             protected Task<R> createTask() {
-                return sparqlEndpointTaskProvider.createTask(config, dataNodeFactory, query, dataNodeRoot);
+                return sparqlEndpointTaskProvider.createTask(config, query, dataNodeRoot);
             }
         };
     }

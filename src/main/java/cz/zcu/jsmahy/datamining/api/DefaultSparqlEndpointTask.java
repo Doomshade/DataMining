@@ -25,13 +25,11 @@ public class DefaultSparqlEndpointTask<R> extends SparqlEndpointTask<R> {
     protected final Collection<String> ignoredPathPredicates = new HashSet<>();
     protected final Collection<String> validDateFormats = new HashSet<>();
     protected final ApplicationConfiguration<R> config;
-    protected final DataNodeFactory dataNodeFactory;
     protected final String query;
     protected final DataNodeRoot dataNodeRoot;
 
-    public DefaultSparqlEndpointTask(final ApplicationConfiguration<R> config, final DataNodeFactory dataNodeFactory, String query, final DataNodeRoot dataNodeRoot) {
+    public DefaultSparqlEndpointTask(final ApplicationConfiguration<R> config, String query, final DataNodeRoot dataNodeRoot) {
         this.config = requireNonNull(config);
-        this.dataNodeFactory = requireNonNull(dataNodeFactory);
         this.dataNodeRoot = requireNonNull(dataNodeRoot);
 
         query = requireNonNull(query);
