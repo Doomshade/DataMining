@@ -6,53 +6,63 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.StdDateFormat;
 import cz.zcu.jsmahy.datamining.api.DataNode;
 import cz.zcu.jsmahy.datamining.api.DataNodeSerializer;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class FialaBPExport {
     private static final Logger LOGGER = LogManager.getLogger(FialaBPExport.class);
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
-
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @Data
-    private static class DataNodeExportFormat {
-        private long id;
-        private String stereotype;
-        private String name;
-        private Date begin;
-        private Date end;
-        private String description;
-        private Map<String, String> properties;
-        private List<SubItem> subItems;
+    public static class DataNodeExportNodeFormat {
+        private long id = -1;
+        private String stereotype = "";
+        private String name = "";
+        private String description = "";
+        private Date begin = new Date();
+        private Date end = new Date();
+        private Map<String, String> properties = new HashMap<>();
+        private List<SubItem> subItems = new ArrayList<>();
 
         @JsonInclude(JsonInclude.Include.NON_NULL)
         @Data
-        private static class SubItem {
-            private long id;
-            private String name;
-            private String type;
-            private Date begin;
-            private Date end;
-            private String css;
+        public static class SubItem {
+            private long id = -1;
+            private String name = "";
+            private String type = "";
+            private Date begin = new Date();
+            private Date end = new Date();
+            private String css = "";
         }
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class DataNodeExportEdgeFormat {
+        private long id = -1;
+        private String stereotype = "";
+        private int from = -1;
+        private int to = -1;
+        private String name = "";
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Data
     @RequiredArgsConstructor
-    private static class DataNodeExportFormatRoot {
-        private final List<DataNodeExportFormat> nodes;
+    public static class DataNodeExportFormatRoot {
+        private final List<DataNodeExportNodeFormat> nodes;
+        private final List<DataNodeExportEdgeFormat> edges;
     }
 
     public static class FialaBPSerializer extends DataNodeSerializer<Void> {
@@ -61,34 +71,37 @@ public class FialaBPExport {
             super(out, root);
         }
 
+        public void serialize(DataNodeExportFormatRoot root) throws IOException {
+            final ObjectMapper mapper = new ObjectMapper();
+            mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+            mapper.setDateFormat(new StdDateFormat().withColonInTimeZone(true));
+            mapper.writeValue(out, root);
+        }
+
         @Override
         protected Void call() throws Exception {
             final List<DataNode> dataNodes = root.getChildren();
             LOGGER.debug("DataNodes: {}", dataNodes);
-            final Field[] declaredFields = DataNodeExportFormat.class.getDeclaredFields();
+            final Field[] declaredFields = DataNodeExportNodeFormat.class.getDeclaredFields();
             for (Field field : declaredFields) {
                 field.trySetAccessible();
             }
 
-            final List<DataNodeExportFormat> nodes = new ArrayList<>();
+            final List<DataNodeExportNodeFormat> nodes = new ArrayList<>();
             for (final DataNode dataNode : dataNodes) {
                 final Map<String, Object> metadata = dataNode.getMetadata();
-                final DataNodeExportFormat dataNodeFormat = new DataNodeExportFormat();
+                final DataNodeExportNodeFormat dataNodeFormat = new DataNodeExportNodeFormat();
                 dataNodeFormat.setId(dataNode.getId());
                 for (Field field : declaredFields) {
                     if (metadata.containsKey(field.getName())) {
                         field.set(dataNodeFormat, metadata.get(field.getName()));
                     }
                 }
-                LOGGER.debug("Injected fields: {}", dataNodeFormat);
                 nodes.add(dataNodeFormat);
             }
-            final ObjectMapper mapper = new ObjectMapper();
-            mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-            mapper.setDateFormat(new StdDateFormat().withColonInTimeZone(true));
 
-            final DataNodeExportFormatRoot root = new DataNodeExportFormatRoot(nodes);
-            mapper.writeValue(out, root);
+            final DataNodeExportFormatRoot root = new DataNodeExportFormatRoot(nodes, new ArrayList<>());
+            serialize(root);
             return null;
         }
     }

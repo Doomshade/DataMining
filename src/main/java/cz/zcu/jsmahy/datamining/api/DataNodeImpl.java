@@ -90,11 +90,9 @@ class DataNodeImpl implements DataNode {
 
     @Override
     public Optional<DataNode> findRoot() {
-        LOGGER.debug("Parent: {}", parent);
         DataNode prev = parent;
         while (prev != null && prev.getParent() != null) {
             prev = prev.getParent();
-            LOGGER.debug("Searching deeper: {}", prev);
         }
         if (prev != null) {
             assert prev.isRoot(); // the upmost parent should always be root

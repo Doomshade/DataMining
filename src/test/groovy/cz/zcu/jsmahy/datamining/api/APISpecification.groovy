@@ -135,6 +135,10 @@ class APISpecification extends Specification {
         thrown(UnsupportedOperationException)
     }
 
+    def "Should serialize a datanode to a valid JSON"() {
+
+    }
+
     def "Should return all valid date types if the type in the collection is \"any\""() {
         given:
         def root = nodeFactory.newRoot("Root")
@@ -206,18 +210,15 @@ class APISpecification extends Specification {
         root.getChildren().size() == nodes.size()
     }
 
-    def "Should add children to the data node using Collection"() {
+    def "Should have metadata in map when something is added via addMetadata"() {
         given:
-        def root = nodeFactory.newRoot("Root")
-        def nodes = new ArrayList<DataNode>()
+        def node = nodeFactory.newRoot("Root")
 
         when:
-        nodes.add(nodeFactory.newNode(root))
-        nodes.add(nodeFactory.newNode(root))
-        nodes.add(nodeFactory.newNode(root))
+        node.addMetadata("testKey", "testValue")
 
         then:
-        root.getChildren().size() == nodes.size()
+        node.getMetadata().containsKey("testKey")
     }
 
     def "Should return a valid iterator"() {
