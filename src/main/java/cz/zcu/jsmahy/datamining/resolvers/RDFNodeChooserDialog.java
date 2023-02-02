@@ -13,6 +13,7 @@ import javafx.collections.ObservableSet;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.scene.control.*;
+import javafx.util.Callback;
 import org.apache.jena.ontology.OntModelSpec;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -44,11 +45,13 @@ class RDFNodeChooserDialog {
     private final ObservableSet<Service<String>> services = FXCollections.synchronizedObservableSet(FXCollections.observableSet());
 
     /**
-     * @param statements   The statements to display
-     * @param uriPredicate The predicate for the given URI in each cell. The predicate gets called for each cell in the {@code propertyColumn} (the first column) and if {@link Predicate#test(Object)}
-     *                     returns {@code true} it will attempt to look for the label of the property.
+     * @param statements             The statements to display
+     * @param uriPredicate           The predicate for the given URI in each cell. The predicate gets called for each cell in the {@code propertyColumn} (the first column) and if
+     *                               {@link Predicate#test(Object)} returns {@code true} it will attempt to look for the label of the property.
+     * @param valueColumnCellFactory the value column cell value vactory
      */
-    RDFNodeChooserDialog(final Collection<Statement> statements, final Predicate<String> uriPredicate) {
+    RDFNodeChooserDialog(final Collection<Statement> statements, final Predicate<String> uriPredicate,
+                         final Callback<TableColumn.CellDataFeatures<Statement, String>, ObservableValue<String>> valueColumnCellFactory) {
         this.uriPredicate = uriPredicate;
         this.content = new TableView<>();
         this.content.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
@@ -59,9 +62,7 @@ class RDFNodeChooserDialog {
         propertyColumn.setCellValueFactory(this::cellValueFactoryCallback);
 
         final TableColumn<Statement, String> valueColumn = new TableColumn<>();
-        valueColumn.setCellValueFactory(features -> new ReadOnlyObjectWrapper<>(features.getValue()
-                                                                                        .getObject()
-                                                                                        .toString()));
+        valueColumn.setCellValueFactory(valueColumnCellFactory);
         final ObservableList<TableColumn<Statement, ?>> columns = this.content.getColumns();
         columns.add(propertyColumn);
         columns.add(valueColumn);

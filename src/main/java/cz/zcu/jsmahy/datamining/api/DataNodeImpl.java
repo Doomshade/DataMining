@@ -14,17 +14,16 @@ import java.util.function.BiConsumer;
 
 
 @Data
-@EqualsAndHashCode(doNotUseGetters = true)
+@EqualsAndHashCode(callSuper = false, doNotUseGetters = true)
 @ToString(doNotUseGetters = true,
           exclude = "parent")
-class DataNodeImpl implements DataNode {
+class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
     private static final Logger LOGGER = LogManager.getLogger(DataNodeImpl.class);
     private static long ID_SEQ = 0;
 
     private final DataNode parent;
     private final long id;
     private final ObservableList<DataNode> children = FXCollections.observableArrayList();
-    private final Map<String, Object> metadata = new HashMap<>();
 
     {
         this.id = ID_SEQ++;
@@ -51,41 +50,8 @@ class DataNodeImpl implements DataNode {
     }
 
     @Override
-    public Map<String, Object> getMetadata() {
-        return Collections.unmodifiableMap(metadata);
-    }
-
-    @Override
     public ObservableList<DataNode> getChildren() {
         return FXCollections.unmodifiableObservableList(children);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public <V> Optional<V> getMetadataValue(final String key) throws ClassCastException {
-        return (Optional<V>) Optional.ofNullable(metadata.get(key));
-    }
-
-    @Override
-    public <V> V getMetadataValueUnsafe(final String key) throws NoSuchElementException, ClassCastException {
-        final Optional<V> opt = getMetadataValue(key);
-        return opt.orElseThrow(() -> new NoSuchElementException(key));
-    }
-
-    @Override
-    public <V> V getMetadataValue(final String key, final V defaultValue) throws NoSuchElementException, ClassCastException {
-        final Optional<V> opt = getMetadataValue(key);
-        return opt.orElse(defaultValue);
-    }
-
-    @Override
-    public void addMetadata(final String key, final Object value) {
-        this.metadata.put(key, value);
-    }
-
-    @Override
-    public void addMetadata(final Map<String, Object> metadata) {
-        this.metadata.putAll(metadata);
     }
 
     @Override

@@ -1,16 +1,18 @@
 package cz.zcu.jsmahy.datamining.util;
 
+import cz.zcu.jsmahy.datamining.api.ArbitraryDataHolder;
 import cz.zcu.jsmahy.datamining.api.DataNode;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.vocabulary.RDFS;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
-import static cz.zcu.jsmahy.datamining.api.DataNode.MD_KEY_NAME;
-import static cz.zcu.jsmahy.datamining.api.DataNode.MD_KEY_URI;
+import static cz.zcu.jsmahy.datamining.api.ArbitraryDataHolder.METADATA_KEY_NAME;
+import static cz.zcu.jsmahy.datamining.api.ArbitraryDataHolder.METADATA_KEY_URI;
 
 public class RDFNodeUtil {
     public static final String SPECIAL_CHARACTERS = "_";
@@ -40,29 +42,36 @@ public class RDFNodeUtil {
             LOGGER.trace(marker, "Literal \"{}\"", str);
             return str;
         }
+        final Literal literal;
         if (node.isURIResource()) {
             final Resource resource = node.asResource();
-            final String uri = resource.getURI();
-            final int lastPartIndex = uri.lastIndexOf('/') + 1;
-
-            final String localName = uri.substring(lastPartIndex);
-            LOGGER.trace(marker, "Resource \"{}\"", localName);
-            return localName;
+            literal = resource.getProperty(RDFS.label, "en")
+                              .getObject()
+                              .asLiteral();
+        } else if (node.isLiteral()) {
+            literal = node.asLiteral();
+        } else {
+            LOGGER.debug(marker, "RDFNode \"{}\" was neither literal or resource, using default toString method.", node);
+            return node.toString();
+        }
+        String str = literal.toString();
+        final int languageIndex = str.lastIndexOf('@');
+        if (languageIndex > 0) {
+            str = str.substring(0, languageIndex);
         }
 
-        LOGGER.debug(marker, "RDFNode \"{}\" was neither literal or resource, using default toString method.", node);
-        return node.toString();
+        return str;
     }
 
     public static void setDataNodeNameFromRDFNode(DataNode dataNode, RDFNode rdfNode) {
         if (dataNode == null || rdfNode == null) {
             return;
         }
-        dataNode.addMetadata(MD_KEY_NAME, formatRDFNode(rdfNode).replaceAll(SPECIAL_CHARACTERS, " "));
+        dataNode.addMetadata(METADATA_KEY_NAME, formatRDFNode(rdfNode).replaceAll(SPECIAL_CHARACTERS, " "));
         if (rdfNode.isURIResource()) {
             final String uri = rdfNode.asResource()
                                       .getURI();
-            dataNode.addMetadata(MD_KEY_URI, uri);
+            dataNode.addMetadata(METADATA_KEY_URI, uri);
         }
     }
 }

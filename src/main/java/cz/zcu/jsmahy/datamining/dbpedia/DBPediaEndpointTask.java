@@ -15,10 +15,8 @@ import org.apache.logging.log4j.Logger;
 import java.util.*;
 import java.util.function.Predicate;
 
-import static cz.zcu.jsmahy.datamining.api.DataNode.MD_KEY_NAME;
-import static cz.zcu.jsmahy.datamining.api.DataNode.MD_KEY_RDF_NODE;
-import static cz.zcu.jsmahy.datamining.export.FialaBPMetadataKeys.KEY_END_DATE;
-import static cz.zcu.jsmahy.datamining.export.FialaBPMetadataKeys.KEY_START_DATE;
+import static cz.zcu.jsmahy.datamining.api.ArbitraryDataHolder.*;
+import static cz.zcu.jsmahy.datamining.export.FialaBPMetadataKeys.*;
 import static cz.zcu.jsmahy.datamining.util.RDFNodeUtil.setDataNodeNameFromRDFNode;
 
 /**
@@ -66,21 +64,25 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
             } else {
                 throw new ClassCastException("Inner date type is of unknown value: " + innerDateType);
             }
-            LOGGER.debug("Setting {} date (inner type: {}, actual date: {}) to {}", isStartDate ? "start" : "end", innerDateType, date, curr.getMetadataValue(MD_KEY_NAME, "<no name>"));
+            LOGGER.debug("Setting {} date (inner type: {}, actual date: {}) to {}",
+                         isStartDate ? "start" : "end",
+                         innerDateType,
+                         date,
+                         curr.getMetadataValue(ArbitraryDataHolder.METADATA_KEY_NAME, "<no name>"));
             if (isStartDate) {
-                curr.addMetadata(KEY_START_DATE, date);
+                curr.addMetadata(METADATA_KEY_START_DATE, date);
             } else {
-                curr.addMetadata(KEY_END_DATE, date);
+                curr.addMetadata(METADATA_KEY_END_DATE, date);
             }
         } else {
             // TODO: solve this
             LOGGER.warn("No {} date found for {}!", isStartDate ? "start" : "end", subject);
             // if the end date was not found, default it to the start date
             if (!isStartDate) {
-                curr.getMetadataValue(KEY_START_DATE)
+                curr.getMetadataValue(METADATA_KEY_START_DATE)
                     .ifPresent(startDate -> {
                         LOGGER.info("Setting end date to start date {} because no end date was found.", startDate);
-                        curr.addMetadata(KEY_END_DATE, startDate);
+                        curr.addMetadata(METADATA_KEY_END_DATE, startDate);
                     });
             }
         }
@@ -110,7 +112,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         final InitialSearchResult result = initialSearch(inputMetadata);
         if (result == InitialSearchResult.OK) {
             final Selector selector = new SimpleSelector(subject, inputMetadata.getOntologyPathPredicate(), (RDFNode) null);
-            search(inputMetadata, selector);
+            search(inputMetadata, selector, null);
             LOGGER.info("Done searching");
             dataNodeRoot.iterate(((dataNode, integer) -> System.out.println(dataNode)));
             progressListener.onSearchDone();
@@ -204,6 +206,10 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
 
     private InitialSearchResult requestOntologyPathPredicate(final QueryData inputMetadata) {
         final Selector selector = createSelector(inputMetadata, stmt -> {
+            if (!stmt.getObject()
+                     .isURIResource()) {
+                return false;
+            }
             final Property predicate = stmt.getPredicate();
             for (String ignoredPathPredicate : ignoredPathPredicates) {
                 if (predicate.hasURI(ignoredPathPredicate)) {
@@ -255,20 +261,32 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
     }
 
     private void initializeDataNode(final DataNode dataNode, final RDFNode node, final QueryData inputMetadata) {
-        dataNode.addMetadata(MD_KEY_RDF_NODE, node);
+        dataNode.addMetadata(METADATA_KEY_RDF_NODE, node);
+        // TODO: let user set this stereotype
+        dataNode.addMetadata(METADATA_KEY_STEREOTYPE, "person");
+
         setDataNodeNameFromRDFNode(dataNode, node);
         if (node instanceof Resource resource) {
+            // TODO: this does not work
+            final Statement dboAbstract = resource.getProperty(PROPERTY_DBO_ABSTRACT);
+            if (dboAbstract != null) {
+                dataNode.addMetadata(METADATA_KEY_DESCRIPTION,
+                                     dboAbstract.getSubject()
+                                                .getLocalName());
+            }
             addDatesToNode(inputMetadata.getCurrentModel(), dataNode, inputMetadata.getStartDateProperty(), resource, true);
             addDatesToNode(inputMetadata.getCurrentModel(), dataNode, inputMetadata.getEndDateProperty(), resource, false);
         }
     }
+
+    private static final Property PROPERTY_DBO_ABSTRACT = ResourceFactory.createProperty("https://dbpedia.org/ontology/abstract");
 
     /**
      * Recursively searches based on the given model, selector, and a previous link. Adds the subject of the selector to the tree.
      *
      * @param selector the selector
      */
-    private void search(final QueryData inputMetadata, final Selector selector) {
+    private void search(final QueryData inputMetadata, final Selector selector, final DataNode prev) {
         LOGGER.debug("Search");
         final Model model = inputMetadata.getCurrentModel();
         final RequestProgressListener progressListener = config.getProgressListener();
@@ -277,6 +295,21 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         final DataNode curr = nodeFactory.newNode(dataNodeRoot);
         final Resource currRDFNode = selector.getSubject();
         initializeDataNode(curr, currRDFNode, inputMetadata);
+        if (prev != null) {
+            final List<Relationship> relationships = prev.getMetadataValue(METADATA_KEY_RELATIONSHIPS, new ArrayList<>());
+            // TODO: Relationship can go the opposite way
+            // for now leave it like this because we are testing doctoral advisors
+            final Relationship relationship = new Relationship(prev.getId(), curr.getId());
+            // TODO: User input
+            relationship.addMetadata(METADATA_KEY_STEREOTYPE, "relationship");
+            relationship.addMetadata(METADATA_KEY_NAME,
+                                     inputMetadata.getOntologyPathPredicate()
+                                                  .getLocalName());
+            relationships.add(relationship);
+            if (!prev.hasMetadataKey(METADATA_KEY_RELATIONSHIPS)) {
+                prev.addMetadata(METADATA_KEY_RELATIONSHIPS, relationships);
+            }
+        }
 
         progressListener.onAddNewDataNode(curr, dataNodeRoot);
 
@@ -314,7 +347,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         // we can continue searching
         if (foundDataList.size() == 1) {
             final RDFNode first = foundDataList.get(0);
-            searchFurther(inputMetadata, first);
+            searchFurther(inputMetadata, first, curr);
             return;
         }
 
@@ -349,33 +382,33 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         // WARN: Deleted handling for multiple references as it might not even be in the final version.
         for (final RDFNode rdfNode : foundDataList) {
             final DataNode child = nodeFactory.newNode(curr);
-            child.addMetadata(MD_KEY_RDF_NODE, rdfNode);
+            child.addMetadata(METADATA_KEY_RDF_NODE, rdfNode);
             setDataNodeNameFromRDFNode(child, rdfNode);
             currDataNodeChildren.add(child);
         }
         progressListener.onAddMultipleDataNodes(curr, currDataNodeChildren, chosenNextRDFNode);
-        searchFurther(inputMetadata, chosenNextRDFNode);
+        searchFurther(inputMetadata, chosenNextRDFNode, curr);
     }
 
-    private void searchFurther(final QueryData inputMetadata, final RDFNode data) {
+    private void searchFurther(final QueryData inputMetadata, final RDFNode next, final DataNode curr) {
         // attempts to search further down the line if the given data is a URI resource
         // if it's not a URI resource the searching terminates
         // if it's a URI resource we first check if we've been here already - we don't want to be stuck in a cycle,
         // that's what usedURIs is for
         // otherwise build a selector and continue searching down the line
-        if (data == null) {
+        if (next == null) {
             return;
         }
-        if (!data.isURIResource()) {
+        if (!next.isURIResource()) {
             return;
         }
         final Model model = inputMetadata.getCurrentModel();
-        final Resource resource = (Resource) data;
+        final Resource resource = (Resource) next;
         readResource(model, resource);
         final boolean hasBeenVisited = !usedURIs.add(resource.getURI());
         if (!hasBeenVisited) {
             final Selector sel = new SimpleSelector(resource, inputMetadata.getOntologyPathPredicate(), (RDFNode) null);
-            search(inputMetadata, sel);
+            search(inputMetadata, sel, curr);
         }
     }
 
