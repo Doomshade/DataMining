@@ -2,6 +2,7 @@ package cz.zcu.jsmahy.datamining.api
 
 import com.google.inject.Guice
 import javafx.collections.FXCollections
+import org.apache.jena.rdf.model.RDFNode
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -37,7 +38,7 @@ class DataNodeReferenceHolderTest extends Specification {
     // TODO: rename
     def "Should return a valid reference when one is set and have a single reference"() {
         when:
-        ref.set(nodeFactory.newNode(root))
+        ref.set(Mock(RDFNode))
 
         then:
         ref.get() != null
@@ -46,7 +47,7 @@ class DataNodeReferenceHolderTest extends Specification {
 
     def "Should return a valid reference when one is set and have a single reference"() {
         when:
-        ref.set(Arrays.asList(nodeFactory.newNode(root)))
+        ref.set(Arrays.asList(Mock(RDFNode)))
 
         then:
         ref.get() != null
@@ -61,8 +62,8 @@ class DataNodeReferenceHolderTest extends Specification {
 
     def "Should throw ISE if multiple references are set"() {
         given:
-        ref.add(nodeFactory.newNode(root))
-        ref.add(nodeFactory.newNode(root))
+        ref.add(Mock(RDFNode))
+        ref.add(Mock(RDFNode))
 
         when:
         ref.get()
@@ -73,8 +74,8 @@ class DataNodeReferenceHolderTest extends Specification {
 
     def "Should return list of references and have multiple references"() {
         when:
-        ref.add(nodeFactory.newNode(root))
-        ref.add(nodeFactory.newNode(root))
+        ref.add(Mock(RDFNode))
+        ref.add(Mock(RDFNode))
 
         then:
         ref.getList().size() == 2
