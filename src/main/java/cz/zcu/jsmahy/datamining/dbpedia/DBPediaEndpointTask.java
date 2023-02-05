@@ -35,6 +35,8 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
                                                                                                  .isURIResource(),
                                                                                                 y.getObject()
                                                                                                  .isURIResource());
+    public static final Map<String, String> METADATA_DEFAULT_PROPERTIES = Map.of("startPrecision", "day", "endPrecision", "day");
+    public static final String METADATA_DEFAULT_STEREOTYPE = "person";
 
 
     private final Collection<String> usedURIs = new HashSet<>();
@@ -114,7 +116,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
             final Selector selector = new SimpleSelector(subject, inputMetadata.getOntologyPathPredicate(), (RDFNode) null);
             search(inputMetadata, selector, null);
             LOGGER.info("Done searching");
-            dataNodeRoot.iterate(((dataNode, integer) -> System.out.println(dataNode)));
+//            dataNodeRoot.iterate(((dataNode, integer) -> System.out.println(dataNode)));
             progressListener.onSearchDone();
         } else {
             LOGGER.info("Invalid createBackgroundSparqlRequest '{}' - no results were found. Initial search result: {}", query, result);
@@ -151,15 +153,28 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
             if (!object.isLiteral()) {
                 return false;
             }
+            // the valid date format corresponds to the date datatype URI
+            // for example URL http://somewhere.else/foo_data_bar
+            // the data type is foo_data_bar
+            // we have two choices:
+            // either this could have false positives as the URI could be contained in the URL
+            // (or it could simply be as a part of an invalid date type like foo_data_bar_invalid)
+            // or false negatives, i.e. the date type data type is not found
+            // we heavily rely on Apache Jena's API to be precise in this matter -- it has to have the
+            // date types mapped correctly, otherwise this won't work
+            // the commented code below is there to showcase the first case where we could have false positives
+            // we chose option #2 as it's way less likely to encounter a false negative
+            // these checks can definitely be improved, but so far we will leave it as is
+            // by checking the URI
             final RDFDatatype dataType = object.asNode()
                                                .getLiteralDatatype();
-            final String uri = dataType.getURI();
-            for (String s : validDateFormats) {
-                if (uri.contains(s)) {
-                    return true;
-                }
-            }
-            return validDateFormats.contains(uri.substring(uri.lastIndexOf('/')));
+            final String validDateFormatUri = dataType.getURI();
+//            for (String validDateFormat : validDateFormats) {
+//                if (validDateFormatUri.contains(validDateFormat)) {
+//                    return true;
+//                }
+//            }
+            return validDateFormats.contains(validDateFormatUri.substring(validDateFormatUri.lastIndexOf('/')));
         });
         final Model model = inputMetadata.getCurrentModel();
         final StmtIterator stmtIterator = model.listStatements(selector);
@@ -193,11 +208,9 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         if (startDateProperty == null) {
             return InitialSearchResult.START_DATE_NOT_SELECTED;
         }
-        if (endDateProperty == null) {
-            return InitialSearchResult.END_DATE_NOT_SELECTED;
-        }
 
         inputMetadata.setStartDateProperty(startDateProperty);
+        // the end date does need to be specified because
         inputMetadata.setEndDateProperty(endDateProperty);
         config.getProgressListener()
               .setStartAndDateProperty(startDateProperty, endDateProperty);
@@ -262,8 +275,11 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
 
     private void initializeDataNode(final DataNode dataNode, final RDFNode node, final QueryData inputMetadata) {
         dataNode.addMetadata(METADATA_KEY_RDF_NODE, node);
-        // TODO: let user set this stereotype
-        dataNode.addMetadata(METADATA_KEY_STEREOTYPE, "person");
+        // TODO: let user set this stereotype, but default to person
+        dataNode.addMetadata(METADATA_KEY_STEREOTYPE, METADATA_DEFAULT_STEREOTYPE);
+        // TODO: let user choose the date type, but default to day
+        dataNode.addMetadata(METADATA_KEY_PROPERTIES, METADATA_DEFAULT_PROPERTIES);
+
 
         setDataNodeNameFromRDFNode(dataNode, node);
         if (node instanceof Resource resource) {

@@ -15,6 +15,14 @@ import java.io.Reader;
 import java.lang.reflect.Field;
 import java.util.*;
 
+/**
+ * Default implementation of the application configuration.
+ *
+ * @param <R> {@inheritDoc}
+ *
+ * @author Jakub Šmrha
+ * @version 1.0
+ */
 @Getter
 public class DefaultApplicationConfiguration<R> implements ApplicationConfiguration<R> {
 
@@ -23,13 +31,9 @@ public class DefaultApplicationConfiguration<R> implements ApplicationConfigurat
     private static final String CONFIG_FILE_NAME = "config.yml";
 
     private final RequestProgressListener progressListener;
-
     private final DataNodeFactory dataNodeFactory;
-
     private final ResponseResolver<R, ?> ambiguousResultResolver;
-
     private final ResponseResolver<R, ?> ontologyPathPredicateResolver;
-
     private final ResponseResolver<R, ?> startAndEndDateResolver;
     private final Object lock = new Object();
     private final Map<String, Object> configVariables = new HashMap<>();

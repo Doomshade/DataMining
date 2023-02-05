@@ -7,7 +7,8 @@ import java.io.Reader;
 import java.util.*;
 
 /**
- * Responsible for loading configuration and other
+ * <p>Responsible for loading configuration and other</p>
+ * <p>TODO: this could implement {@link ArbitraryDataHolder}</p>
  *
  * @param <R> The generic type of {@link SparqlEndpointTask}
  */

@@ -35,10 +35,10 @@ public class DefaultSparqlEndpointTask<R> extends SparqlEndpointTask<R> {
         query = requireNonNull(query);
         final String baseUrl = config.getUnsafe(CFG_KEY_BASE_URL);
         final boolean hasBaseUrl = query.startsWith(baseUrl);
-        if (hasBaseUrl) {
-            this.query = query;
-        } else {
+        if (!hasBaseUrl) {
             this.query = baseUrl.concat(query);
+        } else {
+            this.query = query;
         }
 
         final List<String> ignoredPathPredicates = config.getListUnsafe(CFG_KEY_IGNORE_PATH_PREDICATES);

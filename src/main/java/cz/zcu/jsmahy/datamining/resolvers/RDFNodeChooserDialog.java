@@ -58,6 +58,7 @@ class RDFNodeChooserDialog {
         this.content.getItems()
                     .addAll(statements);
         this.dialog.initOwner(Main.getPrimaryStage());
+        this.dialog.setResizable(true);
         final TableColumn<Statement, String> propertyColumn = new TableColumn<>();
         propertyColumn.setCellValueFactory(this::cellValueFactoryCallback);
 

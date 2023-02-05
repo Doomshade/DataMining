@@ -94,10 +94,11 @@ public class FialaBPExport {
         protected Void call() throws Exception {
             processedNodes = 0;
             final List<DataNode> dataNodes = root.getChildren();
-            LOGGER.debug("DataNodes: {}", dataNodes);
-
             final List<DataNodeExportNodeFormat> nodes = getNodes(dataNodes);
             final List<DataNodeExportEdgeFormat> edges = getEdges(dataNodes);
+            final boolean allProcessed = processedNodes == dataNodes.size() * 2L;
+            LOGGER.debug("Processed all: {}", allProcessed);
+            assert allProcessed;
             final DataNodeExportFormatRoot root = new DataNodeExportFormatRoot(nodes, edges);
             serialize(root);
             return null;

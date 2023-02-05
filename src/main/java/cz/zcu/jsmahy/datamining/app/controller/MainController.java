@@ -47,6 +47,8 @@ import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static cz.zcu.jsmahy.datamining.api.ArbitraryDataHolder.METADATA_KEY_NAME;
+
 /**
  * The controller for main UI where user builds the ontology.
  *
@@ -312,8 +314,8 @@ order by ?pred
         }
 
         final Service<Void> query = createSearchService(root, searchValue);
-        query.restart();
         bindService(query);
+        query.restart();
     }
 
     @SuppressWarnings("ThrowableNotThrown")
@@ -347,9 +349,9 @@ order by ?pred
     @Override
     public void onAddNewDataNode(final DataNode dataNode, final DataNode dataNodeRoot) {
         LOGGER.trace("Adding new data node '{}' to root '{}'",
-                     dataNode.getMetadataValue("name")
+                     dataNode.getMetadataValue(METADATA_KEY_NAME)
                              .orElse("<no name>"),
-                     dataNodeRoot.getMetadataValue("name")
+                     dataNodeRoot.getMetadataValue(METADATA_KEY_NAME)
                                  .orElse("<no name>"));
         Platform.runLater(() -> {
             final TreeItem<DataNode> parent = findTreeItem(dataNodeRoot, ontologyTreeView.getRoot());
