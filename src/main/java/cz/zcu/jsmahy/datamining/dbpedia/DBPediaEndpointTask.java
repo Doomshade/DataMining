@@ -65,11 +65,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
             } else {
                 throw new ClassCastException("Inner date type is of unknown value: " + innerDateType);
             }
-            LOGGER.debug("Setting {} date (inner type: {}, actual date: {}) to {}",
-                         isStartDate ? "start" : "end",
-                         innerDateType,
-                         date,
-                         curr.getMetadataValue(DataNode.METADATA_KEY_NAME, "<no name>"));
+            LOGGER.debug("Setting {} date (inner type: {}, actual date: {}) to {}", isStartDate ? "start" : "end", innerDateType, date, curr.getMetadataValue(DataNode.METADATA_KEY_NAME, "<no name>"));
             if (isStartDate) {
                 curr.addMetadata(METADATA_KEY_START_DATE, date);
             } else {
@@ -238,8 +234,8 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         }
         inputMetadata.setCandidatesForOntologyPathPredicate(Collections.unmodifiableList(stmtIterator.toList()));
 
-        final DataNodeReferenceHolder ref = config.getOntologyPathPredicateResolver()
-                                                  .resolveRequest(null, inputMetadata, this);
+        final ResponseResolver<R, ?> ontologyPathPredicateResolver = config.getOntologyPathPredicateResolver();
+        final DataNodeReferenceHolder ref = ontologyPathPredicateResolver.resolveRequest(null, inputMetadata, this);
         if (ref instanceof BlockingDataNodeReferenceHolder blockingRef) {
             while (!blockingRef.isFinished()) {
                 try {

@@ -1,13 +1,10 @@
 package cz.zcu.jsmahy.datamining.api;
 
-import lombok.NonNull;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Optional;
 
 /**
  * <p>Responsible for loading configuration and other</p>
