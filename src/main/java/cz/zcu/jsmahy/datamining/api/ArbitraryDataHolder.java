@@ -1,39 +1,16 @@
 package cz.zcu.jsmahy.datamining.api;
 
-import org.apache.jena.rdf.model.RDFNode;
-
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
 /**
- * TODO
+ * TODO: javadocs
  *
  * @author Jakub Smrha
  * @since 1.0
  */
 public interface ArbitraryDataHolder {
-    /**
-     * Corresponding value should be {@link String}
-     */
-    String METADATA_KEY_NAME = "name";
-    /**
-     * Corresponding value should be {@link String}
-     */
-    String METADATA_KEY_URI = "uri";
-    /**
-     * Corresponding value should be {@link RDFNode}
-     */
-    String METADATA_KEY_RDF_NODE = "rdfNode";
-    /**
-     * Corresponding value should be {@link String}
-     */
-    String METADATA_KEY_DESCRIPTION = "description";
-    /**
-     * Corresponding value should be {@link List} of {@link Relationship}s
-     */
-    String METADATA_KEY_RELATIONSHIPS = "relationships";
 
     /**
      * NOTE: the map is <b>unmodifiable</b>

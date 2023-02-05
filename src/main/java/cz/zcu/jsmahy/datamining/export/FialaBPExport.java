@@ -19,8 +19,8 @@ import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.util.*;
 
-import static cz.zcu.jsmahy.datamining.api.ArbitraryDataHolder.METADATA_KEY_NAME;
-import static cz.zcu.jsmahy.datamining.api.ArbitraryDataHolder.METADATA_KEY_RELATIONSHIPS;
+import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
+import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_RELATIONSHIPS;
 import static cz.zcu.jsmahy.datamining.export.FialaBPMetadataKeys.METADATA_KEY_STEREOTYPE;
 
 public class FialaBPExport {

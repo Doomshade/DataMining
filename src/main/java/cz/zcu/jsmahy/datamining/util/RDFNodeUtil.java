@@ -1,6 +1,5 @@
 package cz.zcu.jsmahy.datamining.util;
 
-import cz.zcu.jsmahy.datamining.api.ArbitraryDataHolder;
 import cz.zcu.jsmahy.datamining.api.DataNode;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.RDFNode;
@@ -11,8 +10,8 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
-import static cz.zcu.jsmahy.datamining.api.ArbitraryDataHolder.METADATA_KEY_NAME;
-import static cz.zcu.jsmahy.datamining.api.ArbitraryDataHolder.METADATA_KEY_URI;
+import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
+import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_URI;
 
 public class RDFNodeUtil {
     public static final String SPECIAL_CHARACTERS = "_";

@@ -47,7 +47,7 @@ import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static cz.zcu.jsmahy.datamining.api.ArbitraryDataHolder.METADATA_KEY_NAME;
+import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
 
 /**
  * The controller for main UI where user builds the ontology.

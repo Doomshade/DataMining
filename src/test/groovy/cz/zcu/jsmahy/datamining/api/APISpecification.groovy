@@ -37,9 +37,9 @@ class APISpecification extends Specification {
 
     void setupSpec() {
         def config = Mock(ApplicationConfiguration)
-        config.getUnsafe(CFG_KEY_BASE_URL) >> "https://baseurltest.com/"
-        config.getListUnsafe(CFG_KEY_IGNORE_PATH_PREDICATES) >> new ArrayList<>()
-        config.getListUnsafe(CFG_KEY_VALID_DATE_FORMATS) >> new ArrayList<>()
+        config.getMetadataValueUnsafe(CFG_KEY_BASE_URL) >> "https://baseurltest.com/"
+        config.getMetadataValueUnsafe(CFG_KEY_IGNORE_PATH_PREDICATES) >> new ArrayList<>()
+        config.getMetadataValueUnsafe(CFG_KEY_VALID_DATE_FORMATS) >> new ArrayList<>()
         def mocks = new Mocks()
         def taskProvider = Mock(SparqlEndpointTaskProvider)
         def task = Mock(SparqlEndpointTask)
@@ -142,7 +142,9 @@ class APISpecification extends Specification {
     def "Should return all valid date types if the type in the collection is \"any\""() {
         given:
         def root = nodeFactory.newRoot("Root")
-        config.getListUnsafe(CFG_KEY_VALID_DATE_FORMATS).add(CFG_DATE_FORMAT_ANY)
+
+        List<String> validDates = config.getMetadataValueUnsafe(ApplicationConfiguration.CFG_KEY_VALID_DATE_FORMATS)
+        validDates.add(CFG_DATE_FORMAT_ANY)
 
         when:
         // create a new task because we are testing the constructor
@@ -175,22 +177,22 @@ class APISpecification extends Specification {
 
         // test whether methods return correct values
         then:
-        config.has("base-url")
-        config.get("base-url").isPresent()
+        config.hasMetadataKey("base-url")
+        config.getMetadataValue("base-url").isPresent()
 
-        config.has("valid-date-formats")
-        config.getList("valid-date-formats").isPresent()
+        config.hasMetadataKey("valid-date-formats")
+        config.getMetadataValue("valid-date-formats").isPresent()
 
         // we need to do this because "only one exception condition is allowed per 'then' block"
         // check for base url
         when:
-        config.getUnsafe("base-url")
+        config.getMetadataValueUnsafe("base-url")
 
         then:
         noExceptionThrown()
 
         when:
-        config.getListUnsafe("valid-date-formats")
+        config.getMetadataValueUnsafe("valid-date-formats")
 
         then:
         noExceptionThrown()

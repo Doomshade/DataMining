@@ -5,7 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 
 /**
- * TODO
+ * TODO: javadocs
  *
  * @author Jakub Smrha
  * @since 1.0

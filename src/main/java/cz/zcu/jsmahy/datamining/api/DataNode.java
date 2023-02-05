@@ -1,7 +1,9 @@
 package cz.zcu.jsmahy.datamining.api;
 
 import javafx.collections.ObservableList;
+import org.apache.jena.rdf.model.RDFNode;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
@@ -13,6 +15,27 @@ import java.util.function.BiConsumer;
  */
 public interface DataNode extends Iterable<DataNode>, ArbitraryDataHolder {
 
+
+    /**
+     * Corresponding value should be {@link String}
+     */
+    String METADATA_KEY_NAME = "name";
+    /**
+     * Corresponding value should be {@link String}
+     */
+    String METADATA_KEY_URI = "uri";
+    /**
+     * Corresponding value should be {@link RDFNode}
+     */
+    String METADATA_KEY_RDF_NODE = "rdfNode";
+    /**
+     * Corresponding value should be {@link String}
+     */
+    String METADATA_KEY_DESCRIPTION = "description";
+    /**
+     * Corresponding value should be {@link List} of {@link Relationship}s
+     */
+    String METADATA_KEY_RELATIONSHIPS = "relationships";
 
     /**
      * NOTE: the children are <b>unmodifiable</b>

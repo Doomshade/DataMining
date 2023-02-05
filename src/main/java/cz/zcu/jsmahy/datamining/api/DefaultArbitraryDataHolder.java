@@ -5,14 +5,14 @@ import lombok.EqualsAndHashCode;
 import java.util.*;
 
 /**
- * TODO
+ * TODO: javadocs
  *
  * @author Jakub Smrha
  * @since 1.0
  */
 @EqualsAndHashCode
 class DefaultArbitraryDataHolder implements ArbitraryDataHolder {
-    private final Map<String, Object> metadata = new HashMap<>();
+    protected final Map<String, Object> metadata = new HashMap<>();
 
     @Override
     public Map<String, Object> getMetadata() {

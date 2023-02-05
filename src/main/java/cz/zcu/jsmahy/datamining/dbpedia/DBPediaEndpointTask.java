@@ -15,7 +15,6 @@ import org.apache.logging.log4j.Logger;
 import java.util.*;
 import java.util.function.Predicate;
 
-import static cz.zcu.jsmahy.datamining.api.ArbitraryDataHolder.*;
 import static cz.zcu.jsmahy.datamining.export.FialaBPMetadataKeys.*;
 import static cz.zcu.jsmahy.datamining.util.RDFNodeUtil.setDataNodeNameFromRDFNode;
 
@@ -70,7 +69,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
                          isStartDate ? "start" : "end",
                          innerDateType,
                          date,
-                         curr.getMetadataValue(ArbitraryDataHolder.METADATA_KEY_NAME, "<no name>"));
+                         curr.getMetadataValue(DataNode.METADATA_KEY_NAME, "<no name>"));
             if (isStartDate) {
                 curr.addMetadata(METADATA_KEY_START_DATE, date);
             } else {
@@ -274,7 +273,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
     }
 
     private void initializeDataNode(final DataNode dataNode, final RDFNode node, final QueryData inputMetadata) {
-        dataNode.addMetadata(METADATA_KEY_RDF_NODE, node);
+        dataNode.addMetadata(DataNode.METADATA_KEY_RDF_NODE, node);
         // TODO: let user set this stereotype, but default to person
         dataNode.addMetadata(METADATA_KEY_STEREOTYPE, METADATA_DEFAULT_STEREOTYPE);
         // TODO: let user choose the date type, but default to day
@@ -286,7 +285,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
             // TODO: this does not work
             final Statement dboAbstract = resource.getProperty(PROPERTY_DBO_ABSTRACT);
             if (dboAbstract != null) {
-                dataNode.addMetadata(METADATA_KEY_DESCRIPTION,
+                dataNode.addMetadata(DataNode.METADATA_KEY_DESCRIPTION,
                                      dboAbstract.getSubject()
                                                 .getLocalName());
             }
@@ -312,18 +311,18 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         final Resource currRDFNode = selector.getSubject();
         initializeDataNode(curr, currRDFNode, inputMetadata);
         if (prev != null) {
-            final List<Relationship> relationships = prev.getMetadataValue(METADATA_KEY_RELATIONSHIPS, new ArrayList<>());
+            final List<Relationship> relationships = prev.getMetadataValue(DataNode.METADATA_KEY_RELATIONSHIPS, new ArrayList<>());
             // TODO: Relationship can go the opposite way
             // for now leave it like this because we are testing doctoral advisors
             final Relationship relationship = new Relationship(prev.getId(), curr.getId());
             // TODO: User input
             relationship.addMetadata(METADATA_KEY_STEREOTYPE, "relationship");
-            relationship.addMetadata(METADATA_KEY_NAME,
+            relationship.addMetadata(DataNode.METADATA_KEY_NAME,
                                      inputMetadata.getOntologyPathPredicate()
                                                   .getLocalName());
             relationships.add(relationship);
-            if (!prev.hasMetadataKey(METADATA_KEY_RELATIONSHIPS)) {
-                prev.addMetadata(METADATA_KEY_RELATIONSHIPS, relationships);
+            if (!prev.hasMetadataKey(DataNode.METADATA_KEY_RELATIONSHIPS)) {
+                prev.addMetadata(DataNode.METADATA_KEY_RELATIONSHIPS, relationships);
             }
         }
 
@@ -398,7 +397,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         // WARN: Deleted handling for multiple references as it might not even be in the final version.
         for (final RDFNode rdfNode : foundDataList) {
             final DataNode child = nodeFactory.newNode(curr);
-            child.addMetadata(METADATA_KEY_RDF_NODE, rdfNode);
+            child.addMetadata(DataNode.METADATA_KEY_RDF_NODE, rdfNode);
             setDataNodeNameFromRDFNode(child, rdfNode);
             currDataNodeChildren.add(child);
         }

@@ -3,7 +3,6 @@ package cz.zcu.jsmahy.datamining.api;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import lombok.Getter;
-import lombok.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.yaml.snakeyaml.Yaml;
@@ -24,7 +23,7 @@ import java.util.*;
  * @version 1.0
  */
 @Getter
-public class DefaultApplicationConfiguration<R> implements ApplicationConfiguration<R> {
+public class DefaultApplicationConfiguration<R> extends DefaultArbitraryDataHolder implements ApplicationConfiguration<R> {
 
     private static final Logger LOGGER = LogManager.getLogger(DefaultApplicationConfiguration.class);
     private static final Map<String, Field> KEY_TO_FIELD_MAP = new HashMap<>();
@@ -62,40 +61,13 @@ public class DefaultApplicationConfiguration<R> implements ApplicationConfigurat
     public void reload(final Reader in) throws IOException, YAMLException {
         synchronized (lock) {
             final Yaml yaml = new Yaml();
-            this.configVariables.clear();
+            this.metadata.clear();
             try (in) {
                 final Map<? extends String, ?> variables = yaml.load(in);
-                this.configVariables.putAll(variables);
+                this.metadata.putAll(variables);
             }
         }
 
     }
 
-    @Override
-    @NonNull
-    @SuppressWarnings("unchecked")
-    public <V> Optional<V> get(final String key) throws NoSuchElementException, ClassCastException {
-        return (Optional<V>) Optional.ofNullable(configVariables.get(key));
-    }
-
-    @Override
-    public <V> Optional<List<V>> getList(final String key) throws NoSuchElementException, ClassCastException {
-        return get(key);
-    }
-
-    @Override
-    public boolean has(final String key) {
-        return configVariables.containsKey(key);
-    }
-
-    @Override
-    public <V> @NonNull V getUnsafe(final String key) throws NoSuchElementException, ClassCastException {
-        final Optional<V> opt = get(key);
-        return opt.orElseThrow(() -> new NoSuchElementException(key));
-    }
-
-    @Override
-    public @NonNull <V> List<V> getListUnsafe(final String key) throws NoSuchElementException, ClassCastException {
-        return getUnsafe(key);
-    }
 }
