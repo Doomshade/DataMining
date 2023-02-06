@@ -25,10 +25,11 @@ public interface RequestProgressListener {
     /**
      * Called when a new data node is created. This callback should create a new tree item under the tree root with the given data and return the tree new tree item.
      *
-     * @param dataNode the new data node
-     * @param root     the corresponding tree root for the data node
+     * @param root             the corresponding tree root for the data node
+     * @param previousDataNode
+     * @param newDataNode      the new data node
      */
-    void onAddNewDataNode(DataNode dataNode, DataNode root);
+    void onAddNewDataNode(DataNode root, final DataNode previousDataNode, DataNode newDataNode);
 
     /**
      * <p>Called when multiple {@link DataNode}s were found and they can be added under a tree item. The {@code treeItem} is not the tree root!</p>
@@ -63,4 +64,13 @@ public interface RequestProgressListener {
      * @param endDateProperty   the end date property
      */
     void setStartAndDateProperty(Property startDateProperty, @Nullable Property endDateProperty);
+
+    /**
+     * <p>Called once the initial search is done, i.e. returns {@link InitialSearchResult#OK}.</p>
+     * <p><strong>IMPORTANT: it is advised to store the reference of the parameter as that instance gets updated during the query</strong>. You may use any of the members, and you may also modify
+     * them with caution.</p>
+     *
+     * @param queryData the initial search data
+     */
+    void onInitialSearch(QueryData queryData);
 }

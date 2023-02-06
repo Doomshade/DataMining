@@ -3,6 +3,7 @@ package cz.zcu.jsmahy.datamining.api;
 import javafx.collections.ObservableList;
 import org.apache.jena.rdf.model.RDFNode;
 
+import java.util.Calendar;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -14,8 +15,6 @@ import java.util.function.BiConsumer;
  * @since 1.0
  */
 public interface DataNode extends Iterable<DataNode>, ArbitraryDataHolder {
-
-
     /**
      * Corresponding value should be {@link String}
      */
@@ -36,6 +35,14 @@ public interface DataNode extends Iterable<DataNode>, ArbitraryDataHolder {
      * Corresponding value should be {@link List} of {@link Relationship}s
      */
     String METADATA_KEY_RELATIONSHIPS = "relationships";
+    /**
+     * Corresponding value should be {@link Calendar}
+     */
+    String METADATA_KEY_START_DATE = "begin";
+    /**
+     * Corresponding value should be {@link Calendar}
+     */
+    String METADATA_KEY_END_DATE = "end";
 
     /**
      * NOTE: the children are <b>unmodifiable</b>

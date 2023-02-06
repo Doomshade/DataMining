@@ -8,7 +8,7 @@ package cz.zcu.jsmahy.datamining.export;
  */
 public final class FialaBPMetadataKeys {
     public static final String METADATA_KEY_STEREOTYPE = "stereotype";
-    public static final String METADATA_KEY_START_DATE = "begin";
-    public static final String METADATA_KEY_END_DATE = "end";
     public static final String METADATA_KEY_PROPERTIES = "properties";
+    public static final String METADATA_KEY_FROM = "from";
+    public static final String METADATA_KEY_TO = "to";
 }

@@ -39,13 +39,12 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.UncheckedIOException;
 import java.net.URL;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
+import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_RELATIONSHIPS;
+import static cz.zcu.jsmahy.datamining.export.FialaBPMetadataKeys.*;
 
 /**
  * The controller for main UI where user builds the ontology.
@@ -54,6 +53,8 @@ import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
  * @version 1.0
  */
 public class MainController implements Initializable, RequestProgressListener {
+    public static final Map<String, String> METADATA_DEFAULT_PROPERTIES = Map.of("startPrecision", "day", "endPrecision", "day");
+    public static final String METADATA_DEFAULT_STEREOTYPE = "person";
     /*
 PREFIX rdf: <https://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX r: <http://dbpedia.org/resource/>
@@ -105,6 +106,7 @@ order by ?pred
 
     };
     private SparqlEndpointAgent<Void> requestHandler;
+    private QueryData queryData = null;
 
     public static MainController getInstance() {
         return instance;
@@ -345,15 +347,38 @@ order by ?pred
     }
 
     @Override
-    public void onAddNewDataNode(final DataNode dataNode, final DataNode dataNodeRoot) {
+    public void onAddNewDataNode(final DataNode root, final DataNode prev, final DataNode curr) {
         LOGGER.trace("Adding new data node '{}' to root '{}'",
-                     dataNode.getValue(METADATA_KEY_NAME)
-                             .orElse("<no name>"),
-                     dataNodeRoot.getValue(METADATA_KEY_NAME)
-                                 .orElse("<no name>"));
+                     curr.getValue(METADATA_KEY_NAME)
+                         .orElse("<no name>"),
+                     root.getValue(METADATA_KEY_NAME)
+                         .orElse("<no name>"));
+        // TODO: let user set this stereotype, but default to person
+        curr.addMetadata(METADATA_KEY_STEREOTYPE, METADATA_DEFAULT_STEREOTYPE);
+        // TODO: let user choose the date type, but default to day
+        curr.addMetadata(METADATA_KEY_PROPERTIES, METADATA_DEFAULT_PROPERTIES);
+        // add relationships
+        if (prev != null) {
+            final List<ArbitraryDataHolder> relationships = prev.getValue(METADATA_KEY_RELATIONSHIPS, new ArrayList<>());
+            // TODO: Relationship can go the opposite way
+            // for now leave it like this because we are testing doctoral advisors
+            final ArbitraryDataHolder relationship = new DefaultArbitraryDataHolder();
+            relationship.addMetadata(METADATA_KEY_FROM, prev.getId());
+            relationship.addMetadata(METADATA_KEY_TO, curr.getId());
+            relationship.addMetadata(METADATA_KEY_NAME,
+                                     queryData.getOntologyPathPredicate()
+                                              .getLocalName());
+
+            // TODO: User input
+            relationship.addMetadata(METADATA_KEY_STEREOTYPE, "relationship");
+            relationships.add(relationship);
+            if (!prev.hasMetadataKey(METADATA_KEY_RELATIONSHIPS)) {
+                prev.addMetadata(METADATA_KEY_RELATIONSHIPS, relationships);
+            }
+        }
         Platform.runLater(() -> {
-            final TreeItem<DataNode> parent = findTreeItem(dataNodeRoot, ontologyTreeView.getRoot());
-            final TreeItem<DataNode> child = new TreeItem<>(dataNode);
+            final TreeItem<DataNode> parent = findTreeItem(root, ontologyTreeView.getRoot());
+            final TreeItem<DataNode> child = new TreeItem<>(curr);
             parent.getChildren()
                   .add(child);
         });
@@ -429,6 +454,11 @@ order by ?pred
     @Override
     public void setStartAndDateProperty(final Property startDateProperty, final Property endDateProperty) {
 
+    }
+
+    @Override
+    public void onInitialSearch(final QueryData queryData) {
+        this.queryData = queryData;
     }
 
     /**

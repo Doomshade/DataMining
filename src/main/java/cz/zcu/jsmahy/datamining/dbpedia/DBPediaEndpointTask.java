@@ -18,7 +18,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.*;
 import java.util.function.Predicate;
 
-import static cz.zcu.jsmahy.datamining.export.FialaBPMetadataKeys.*;
+import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
 import static cz.zcu.jsmahy.datamining.resolvers.MultipleItemChoiceResolver.RESULT_KEY_CHOSEN_RDF_NODE;
 import static cz.zcu.jsmahy.datamining.resolvers.StartAndEndDateResolver.RESULT_KEY_END_DATE_PREDICATE;
 import static cz.zcu.jsmahy.datamining.resolvers.StartAndEndDateResolver.RESULT_KEY_START_DATE_PREDICATE;
@@ -31,8 +31,6 @@ import static cz.zcu.jsmahy.datamining.util.RDFNodeUtil.setDataNodeNameFromRDFNo
  * @version 1.0
  */
 public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
-    public static final Map<String, String> METADATA_DEFAULT_PROPERTIES = Map.of("startPrecision", "day", "endPrecision", "day");
-    public static final String METADATA_DEFAULT_STEREOTYPE = "person";
     private static final Logger LOGGER = LogManager.getLogger(DBPediaEndpointTask.class);
     /**
      * <p>This comparator ensures the URI resources are placed first over literal resources.</p>
@@ -67,32 +65,32 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
                                                                                 .getObject()
                                                                                 .asLiteral()
                                                                                 .getValue();
-
-            final Date date;
+            final Calendar calendar;
             if (innerDateType instanceof XSDDateTime dateTime) {
-                date = dateTime.asCalendar()
-                               .getTime();
+                calendar = dateTime.asCalendar();
             } else if (innerDateType instanceof XSDDuration duration) {
                 final long millis = duration.getFullSeconds() * 1000L;
-                date = new Date(millis);
+                // default duration to gregorian calendar
+                calendar = new GregorianCalendar();
+                calendar.setTimeInMillis(millis);
             } else {
                 throw new ClassCastException("Inner date type is of unknown value: " + innerDateType);
             }
-            LOGGER.debug("Setting {} date (inner type: {}, actual date: {}) to {}", isStartDate ? "start" : "end", innerDateType, date, curr.getValue(DataNode.METADATA_KEY_NAME, "<no name>"));
+            LOGGER.debug("Setting {} date (inner type: {}, actual date: {}) to {}", isStartDate ? "start" : "end", innerDateType, calendar, curr.getValue(METADATA_KEY_NAME, "<no name>"));
             if (isStartDate) {
-                curr.addMetadata(METADATA_KEY_START_DATE, date);
+                curr.addMetadata(DataNode.METADATA_KEY_START_DATE, calendar);
             } else {
-                curr.addMetadata(METADATA_KEY_END_DATE, date);
+                curr.addMetadata(DataNode.METADATA_KEY_END_DATE, calendar);
             }
         } else {
             // TODO: solve this
             LOGGER.warn("No {} date found for {}!", isStartDate ? "start" : "end", subject);
             // if the end date was not found, default it to the start date
             if (!isStartDate) {
-                curr.getValue(METADATA_KEY_START_DATE)
+                curr.getValue(DataNode.METADATA_KEY_START_DATE)
                     .ifPresent(startDate -> {
-                        LOGGER.info("Setting end date to start date {} because no end date was found.", startDate);
-                        curr.addMetadata(METADATA_KEY_END_DATE, startDate);
+                        LOGGER.debug("Setting end date to match start date ({}) because no end date was found.", startDate);
+                        curr.addMetadata(DataNode.METADATA_KEY_END_DATE, startDate);
                     });
             }
         }
@@ -121,6 +119,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         LOGGER.info("Start searching");
         final InitialSearchResult result = initialSearch(inputMetadata);
         if (result == InitialSearchResult.OK) {
+            progressListener.onInitialSearch(inputMetadata);
             final Selector selector = new SimpleSelector(subject, inputMetadata.getOntologyPathPredicate(), (RDFNode) null);
             search(inputMetadata, selector, null);
             LOGGER.info("Done searching");
@@ -275,12 +274,6 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
 
     private void initializeDataNode(final DataNode dataNode, final RDFNode node, final QueryData inputMetadata) {
         dataNode.addMetadata(DataNode.METADATA_KEY_RDF_NODE, node);
-        // TODO: let user set this stereotype, but default to person
-        dataNode.addMetadata(METADATA_KEY_STEREOTYPE, METADATA_DEFAULT_STEREOTYPE);
-        // TODO: let user choose the date type, but default to day
-        dataNode.addMetadata(METADATA_KEY_PROPERTIES, METADATA_DEFAULT_PROPERTIES);
-
-
         setDataNodeNameFromRDFNode(dataNode, node);
         if (node instanceof Resource resource) {
             // TODO: this does not work
@@ -309,23 +302,8 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         final DataNode curr = nodeFactory.newNode(dataNodeRoot);
         final Resource currRDFNode = selector.getSubject();
         initializeDataNode(curr, currRDFNode, inputMetadata);
-        if (prev != null) {
-            final List<Relationship> relationships = prev.getValue(DataNode.METADATA_KEY_RELATIONSHIPS, new ArrayList<>());
-            // TODO: Relationship can go the opposite way
-            // for now leave it like this because we are testing doctoral advisors
-            final Relationship relationship = new Relationship(prev.getId(), curr.getId());
-            // TODO: User input
-            relationship.addMetadata(METADATA_KEY_STEREOTYPE, "relationship");
-            relationship.addMetadata(DataNode.METADATA_KEY_NAME,
-                                     inputMetadata.getOntologyPathPredicate()
-                                                  .getLocalName());
-            relationships.add(relationship);
-            if (!prev.hasMetadataKey(DataNode.METADATA_KEY_RELATIONSHIPS)) {
-                prev.addMetadata(DataNode.METADATA_KEY_RELATIONSHIPS, relationships);
-            }
-        }
 
-        progressListener.onAddNewDataNode(curr, dataNodeRoot);
+        progressListener.onAddNewDataNode(dataNodeRoot, prev, curr);
 
         final List<Statement> statements = model.listStatements(selector)
                                                 .toList();
@@ -376,6 +354,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         // --------------
         // the reference can either be non-blocking or blocking, depending on the implementation
         // usually when user input is required it's blocking
+        LOGGER.debug("Found multiple nodes, asking user to clarify...");
         ambiguousResultResolver.resolve(foundDataList, this);
         while (!ambiguousResultResolver.hasResponseReady()) {
             try {
@@ -387,9 +366,11 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         final ArbitraryDataHolder response = ambiguousResultResolver.getResponse();
         final Optional<RDFNode> chosenNextRDFNodeOpt = response.getValue(RESULT_KEY_CHOSEN_RDF_NODE);
         if (chosenNextRDFNodeOpt.isEmpty()) {
+            LOGGER.debug("Received no response");
             return;
         }
         final RDFNode chosenNextRDFNode = chosenNextRDFNodeOpt.get();
+        LOGGER.debug("Received next node: {}", chosenNextRDFNode);
 
         final List<DataNode> currDataNodeChildren = new ArrayList<>();
         // WARN: Deleted handling for multiple references as it might not even be in the final version.
