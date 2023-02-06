@@ -119,7 +119,8 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         LOGGER.info("Start searching");
         final InitialSearchResult result = initialSearch(inputMetadata);
         if (result == InitialSearchResult.OK) {
-            progressListener.onInitialSearch(inputMetadata);
+            progressListener.queryDataProperty()
+                            .set(inputMetadata);
             final Selector selector = new SimpleSelector(subject, inputMetadata.getOntologyPathPredicate(), (RDFNode) null);
             search(inputMetadata, selector, null);
             LOGGER.info("Done searching");
@@ -208,15 +209,18 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         final Optional<Property> startDatePropertyOpt = ref.getValue(RESULT_KEY_START_DATE_PREDICATE);
         final Property endDateProperty = ref.getValue(RESULT_KEY_END_DATE_PREDICATE, null);
 
+        // TODO: this should be handled somewhere else
         if (startDatePropertyOpt.isEmpty()) {
             return InitialSearchResult.START_DATE_NOT_SELECTED;
         }
 
         inputMetadata.setStartDateProperty(startDatePropertyOpt.get());
-        // the end date does need to be specified because
+        // the end date does need to be specified
         inputMetadata.setEndDateProperty(endDateProperty);
-        config.getProgressListener()
-              .setStartAndDateProperty(startDatePropertyOpt.get(), endDateProperty);
+        progressListener.startDateProperty()
+                        .set(startDatePropertyOpt.get());
+        progressListener.endDateProperty()
+                        .set(endDateProperty);
         return InitialSearchResult.OK;
     }
 
@@ -259,7 +263,8 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
 
         inputMetadata.setOntologyPathPredicate(ontologyPathPredicateOpt.get());
         config.getProgressListener()
-              .onSetOntologyPathPredicate(ontologyPathPredicateOpt.get());
+              .ontologyPathPredicateProperty()
+              .set(ontologyPathPredicateOpt.get());
         return InitialSearchResult.OK;
     }
 

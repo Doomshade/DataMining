@@ -47,7 +47,7 @@ import static com.google.inject.Scopes.SINGLETON;
  * @author Jakub Šmrha
  * @since 1.0
  */
-public abstract class DataMiningModule extends AbstractModule {
+public class DataMiningModule extends AbstractModule {
 
     @Override
     protected void configure() {

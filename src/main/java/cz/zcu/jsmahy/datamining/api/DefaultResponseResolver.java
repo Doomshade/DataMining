@@ -4,7 +4,7 @@ import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 
 /**
- * TODO
+ * TODO: javadoc
  *
  * @author Jakub Smrha
  * @since 1.0

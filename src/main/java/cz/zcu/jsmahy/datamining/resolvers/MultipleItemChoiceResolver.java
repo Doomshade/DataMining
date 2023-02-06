@@ -1,8 +1,6 @@
 package cz.zcu.jsmahy.datamining.resolvers;
 
 import cz.zcu.jsmahy.datamining.Main;
-import cz.zcu.jsmahy.datamining.api.BlockingDataNodeReferenceHolder;
-import cz.zcu.jsmahy.datamining.api.DataNodeReferenceHolder;
 import cz.zcu.jsmahy.datamining.api.DefaultResponseResolver;
 import cz.zcu.jsmahy.datamining.api.SparqlEndpointTask;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeListCellFactory;
@@ -35,10 +33,8 @@ public class MultipleItemChoiceResolver extends DefaultResponseResolver<Collecti
     public void resolve(final Collection<RDFNode> lineContinuationCandidates, final SparqlEndpointTask<?> requestHandler) {
         // first off we check if we have an ontology path set
         // if not, pop up a dialogue
-        final BlockingDataNodeReferenceHolder ref = new BlockingDataNodeReferenceHolder();
-
         Platform.runLater(() -> {
-            final MultipleItemChoiceDialog dialog = new MultipleItemChoiceDialog(lineContinuationCandidates, ref, x -> new RDFNodeListCellFactory(), SelectionMode.SINGLE);
+            final MultipleItemChoiceDialog dialog = new MultipleItemChoiceDialog(lineContinuationCandidates, x -> new RDFNodeListCellFactory(), SelectionMode.SINGLE);
             dialog.showDialogueAndWait()
                   .ifPresent(res -> {
                       result.addMetadata(RESULT_KEY_CHOSEN_RDF_NODE, res.get(0));
@@ -56,14 +52,11 @@ public class MultipleItemChoiceResolver extends DefaultResponseResolver<Collecti
         private final Dialog<List<RDFNode>> dialog = new Dialog<>();
         private final DialogPane dialogPane = dialog.getDialogPane();
         private final ListView<RDFNode> content = new ListView<>();
-        private final DataNodeReferenceHolder ref;
 
         public MultipleItemChoiceDialog(final Collection<RDFNode> lineContinuationCandidates,
-                                        final DataNodeReferenceHolder ref,
                                         final Callback<ListView<RDFNode>, ListCell<RDFNode>> cellFactory,
                                         final SelectionMode selectionMode) {
             final ResourceBundle resourceBundle = ResourceBundle.getBundle("lang");
-            this.ref = ref;
 
             // setup dialog, such as buttons, title etc
             this.dialogPane.getButtonTypes()
@@ -107,9 +100,7 @@ public class MultipleItemChoiceResolver extends DefaultResponseResolver<Collecti
 
         public Optional<List<RDFNode>> showDialogueAndWait() {
             // show the dialogue and wait for response
-            final Optional<List<RDFNode>> result = dialog.showAndWait();
-            result.ifPresent(ref::set);
-            return result;
+            return dialog.showAndWait();
         }
     }
 }

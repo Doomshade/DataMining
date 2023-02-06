@@ -5,7 +5,8 @@ import com.google.inject.Injector;
 import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
 import cz.zcu.jsmahy.datamining.dbpedia.DBPediaModule;
-import cz.zcu.jsmahy.datamining.export.FialaBPExport;
+import cz.zcu.jsmahy.datamining.export.FialaBPModule;
+import cz.zcu.jsmahy.datamining.export.FialaBPSerializer;
 import cz.zcu.jsmahy.datamining.util.DialogHelper;
 import cz.zcu.jsmahy.datamining.util.RDFNodeUtil;
 import javafx.application.Platform;
@@ -14,12 +15,11 @@ import javafx.beans.Observable;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.binding.DoubleBinding;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Service;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
@@ -30,48 +30,42 @@ import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
-import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URL;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
-
-import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
-import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_RELATIONSHIPS;
-import static cz.zcu.jsmahy.datamining.export.FialaBPMetadataKeys.*;
+import java.util.ResourceBundle;
 
 /**
- * The controller for main UI where user builds the ontology.
+ * <p>The controller for main UI where user builds the ontology.</p>
+ * <p>This controller uses the DBPedia endpoint and Fiala's Bachelor project program as its export.</p>
  *
  * @author Jakub Šmrha
  * @version 1.0
  */
-public class MainController implements Initializable, RequestProgressListener {
-    public static final Map<String, String> METADATA_DEFAULT_PROPERTIES = Map.of("startPrecision", "day", "endPrecision", "day");
-    public static final String METADATA_DEFAULT_STEREOTYPE = "person";
+public class MainController implements Initializable {
+    public static final String FILE_NAME_FORMAT = "%s.%s";
     /*
-PREFIX rdf: <https://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX r: <http://dbpedia.org/resource/>
-PREFIX dbo: <http://dbpedia.org/ontology/>
-PREFIX dbp: <http://dbpedia.org/property/>
-select distinct ?name
-{
-?pred dbp:predecessor <http://dbpedia.org/resource/Charles_IV,_Holy_Roman_Emperor> .
-?pred dbp:predecessor+ ?name
-}
-order by ?pred
-     */
+    PREFIX rdf: <https://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    PREFIX r: <http://dbpedia.org/resource/>
+    PREFIX dbo: <http://dbpedia.org/ontology/>
+    PREFIX dbp: <http://dbpedia.org/property/>
+    select distinct ?name
+    {
+    ?pred dbp:predecessor <http://dbpedia.org/resource/Charles_IV,_Holy_Roman_Emperor> .
+    ?pred dbp:predecessor+ ?name
+    }
+    order by ?pred
+         */
     private static final String WIKI_URL = "https://wikipedia.org/wiki/%s";
     private static final Logger LOGGER = LogManager.getLogger(MainController.class);
     private static MainController instance = null;
     //<editor-fold desc="Attributes for query building">
-    private final ObjectProperty<Property> ontologyPathPredicate = new SimpleObjectProperty<>();
     //<editor-fold desc="UI related attributes">
     @FXML
     private BorderPane rootPane;
@@ -106,74 +100,26 @@ order by ?pred
 
     };
     private SparqlEndpointAgent<Void> requestHandler;
-    private QueryData queryData = null;
 
     public static MainController getInstance() {
         return instance;
     }
 
-    // TODO: test this method!
-    public static TreeItem<DataNode> findTreeItem(final DataNode dataNode, final TreeItem<DataNode> treeRoot) {
-        Objects.requireNonNull(dataNode);
-        Objects.requireNonNull(treeRoot);
-
-        // first iterate over all of root's children, then recursively check for the children of each node
-        // if we don't find anything after the last element of the root's children no such tree item was found
-        // this might look duplicate in the helper method, but we need to ensure that the inner children don't throw an exception in the
-        // inner loops because they aren't required to have the tree item present, whereas the root is
-        // thus the check at the end of this loop and no check in the helper recursive method (i.e. if we threw the exception in the
-        // inner loop the search would terminate prematurely; we need to terminate after the last of root's children is checked)
-        final AtomicReference<TreeItem<DataNode>> ref = new AtomicReference<>();
-        for (final TreeItem<DataNode> child : treeRoot.getChildren()) {
-            if (ref.get() != null) {
-                break;
-            }
-            final long childId = child.getValue()
-                                      .getId();
-            LOGGER.trace("Checking ID {}", childId);
-            if (childId == dataNode.getId()) {
-                LOGGER.trace("Found ID {}. Terminating.", childId);
-                ref.set(child);
-                break;
-            }
-            if (!child.getChildren()
-                      .isEmpty()) {
-                findTreeItem(dataNode, child, ref);
-            }
-        }
-        final TreeItem<DataNode> treeItem = ref.get();
-        if (treeItem == null) {
-            throw new NoSuchElementException(String.format("Data node %s not found.", dataNode));
-        }
-        return treeItem;
-    }
-
-    private static <T> void findTreeItem(DataNode dataNode, TreeItem<DataNode> currTreeItem, AtomicReference<TreeItem<DataNode>> ref) {
-        for (final TreeItem<DataNode> child : currTreeItem.getChildren()) {
-            final long childId = child.getValue()
-                                      .getId();
-            LOGGER.trace("Checking ID {}", childId);
-            if (childId == dataNode.getId()) {
-                LOGGER.trace("Found ID {}. Terminating.", childId);
-                ref.set(child);
-                return;
-            }
-            if (!child.getChildren()
-                      .isEmpty()) {
-                findTreeItem(dataNode, child, ref);
-            }
-        }
-
-    }
 
     @Override
     @SuppressWarnings("unchecked")
     public void initialize(final URL location, final ResourceBundle resources) {
         instance = this;
-        final Injector injector = Guice.createInjector(new DBPediaModule());
+        final DataMiningModule dataMiningModule = new DataMiningModule();
+        final DBPediaModule dbPediaModule = new DBPediaModule();
+        final FialaBPModule fialaBPModule = new FialaBPModule();
+
+        final Injector injector = Guice.createInjector(dataMiningModule, dbPediaModule, fialaBPModule);
         this.nodeFactory = injector.getInstance(DataNodeFactory.class);
         this.requestHandler = injector.getInstance(SparqlEndpointAgent.class);
         this.dialogHelper = injector.getInstance(DialogHelper.class);
+        final TreeItem<DataNode> root = new TreeItem<>(null);
+        this.ontologyTreeView.setRoot(root);
 
         final MenuBar menuBar = createMenuBar(resources);
         this.rootPane.setTop(menuBar);
@@ -199,10 +145,12 @@ order by ?pred
         });
         this.ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory(lv, resources, this, dialogHelper, nodeFactory, requestHandler));
 
-        final TreeItem<DataNode> root = new TreeItem<>(null);
-        this.ontologyTreeView.setRoot(root);
+
         final ContextMenu contextMenu = createContextMenu(resources);
         this.ontologyTreeView.setContextMenu(contextMenu);
+        injector.getInstance(RequestProgressListener.class)
+                .treeRootProperty()
+                .set(ontologyTreeView.getRoot());
     }
 
     private ContextMenu createContextMenu(final ResourceBundle resources) {
@@ -246,29 +194,41 @@ order by ?pred
         exportToFile.setOnAction(e -> {
 
             // TODO: This could be parallel
-            final ObservableList<TreeItem<DataNode>> children = ontologyTreeView.getRoot()
-                                                                                .getChildren();
-            if (children.size() == 0) {
+            final ObservableList<TreeItem<DataNode>> dataNodeRoots = ontologyTreeView.getRoot()
+                                                                                     .getChildren();
+            if (dataNodeRoots.size() == 0) {
                 return;
             }
             final ObservableList<Service<?>> services = FXCollections.observableArrayList();
             final ObservableList<Service<?>> removedServices = FXCollections.observableArrayList();
             final DoubleBinding progressProperty = Bindings.size(removedServices)
-                                                           .divide((double) children.size());
+                                                           .divide((double) dataNodeRoots.size());
             final BooleanBinding runningProperty = Bindings.size(services)
                                                            .greaterThan(0);
             bindProperties(runningProperty, progressProperty);
 
-            for (final TreeItem<DataNode> child : children) {
-                final DataNode root = child.getValue();
-                final FileOutputStream out;
+            final FialaBPSerializer serializer = new FialaBPSerializer();
+            for (final TreeItem<DataNode> root : dataNodeRoots) {
+                final DataNode dataNodeRoot = root.getValue();
+                final OutputStream out;
                 try {
-                    out = new FileOutputStream(root.getValue("name", "<no name>") + ".json");
+                    final String fileName = dataNodeRoot.getValue("name", "<no name>");
+                    final String fileExtension = serializer.getFileExtension();
+                    out = new FileOutputStream(String.format(FILE_NAME_FORMAT, fileName, fileExtension));
                 } catch (FileNotFoundException ex) {
                     throw new UncheckedIOException(ex);
                 }
-                final DataNodeExporter dataNodeExporter = new DataNodeExporter(new FialaBPExport.FialaBPSerializer(out, root));
-                dataNodeExporter.setOnRunning(ev -> services.add(dataNodeExporter));
+                // TODO: add option for different exporters
+                final Service<Void> dataNodeExporter = new Service<>() {
+                    @Override
+                    protected Task<Void> createTask() {
+                        return serializer.createSerializerTask(out, dataNodeRoot);
+                    }
+                };
+                dataNodeExporter.setOnRunning(ev -> {
+                    services.add(dataNodeExporter);
+
+                });
                 dataNodeExporter.setOnSucceeded(ev -> {
                     removedServices.add(dataNodeExporter);
                     services.remove(dataNodeExporter);
@@ -314,7 +274,7 @@ order by ?pred
         }
 
         final Service<Void> query = createSearchService(root, searchValue);
-        bindService(query);
+        bindQueryService(query);
         query.restart();
     }
 
@@ -328,7 +288,7 @@ order by ?pred
         return query;
     }
 
-    public synchronized void bindService(final Service<?> service) {
+    public synchronized void bindQueryService(final Service<?> service) {
         bindProperties(service.runningProperty(), service.progressProperty());
     }
 
@@ -339,126 +299,6 @@ order by ?pred
                               .bind(runningProperty);
         this.progressIndicator.progressProperty()
                               .bind(progressProperty);
-    }
-
-    @Override
-    public synchronized void onSetOntologyPathPredicate(final Property ontologyPathPredicate) {
-        this.ontologyPathPredicate.setValue(ontologyPathPredicate);
-    }
-
-    @Override
-    public void onAddNewDataNode(final DataNode root, final DataNode prev, final DataNode curr) {
-        LOGGER.trace("Adding new data node '{}' to root '{}'",
-                     curr.getValue(METADATA_KEY_NAME)
-                         .orElse("<no name>"),
-                     root.getValue(METADATA_KEY_NAME)
-                         .orElse("<no name>"));
-        // TODO: let user set this stereotype, but default to person
-        curr.addMetadata(METADATA_KEY_STEREOTYPE, METADATA_DEFAULT_STEREOTYPE);
-        // TODO: let user choose the date type, but default to day
-        curr.addMetadata(METADATA_KEY_PROPERTIES, METADATA_DEFAULT_PROPERTIES);
-        // add relationships
-        if (prev != null) {
-            final List<ArbitraryDataHolder> relationships = prev.getValue(METADATA_KEY_RELATIONSHIPS, new ArrayList<>());
-            // TODO: Relationship can go the opposite way
-            // for now leave it like this because we are testing doctoral advisors
-            final ArbitraryDataHolder relationship = new DefaultArbitraryDataHolder();
-            relationship.addMetadata(METADATA_KEY_FROM, prev.getId());
-            relationship.addMetadata(METADATA_KEY_TO, curr.getId());
-            relationship.addMetadata(METADATA_KEY_NAME,
-                                     queryData.getOntologyPathPredicate()
-                                              .getLocalName());
-
-            // TODO: User input
-            relationship.addMetadata(METADATA_KEY_STEREOTYPE, "relationship");
-            relationships.add(relationship);
-            if (!prev.hasMetadataKey(METADATA_KEY_RELATIONSHIPS)) {
-                prev.addMetadata(METADATA_KEY_RELATIONSHIPS, relationships);
-            }
-        }
-        Platform.runLater(() -> {
-            final TreeItem<DataNode> parent = findTreeItem(root, ontologyTreeView.getRoot());
-            final TreeItem<DataNode> child = new TreeItem<>(curr);
-            parent.getChildren()
-                  .add(child);
-        });
-    }
-
-    @Override
-    public void onAddMultipleDataNodes(final DataNode dataNodesParent, final List<DataNode> dataNodes, final RDFNode chosenDataNode) {
-        LOGGER.trace("Adding multiple data nodes '{}' under '{}'", dataNodes, dataNodesParent);
-        Platform.runLater(() -> {
-            final TreeItem<DataNode> treeItem = findTreeItem(dataNodesParent, ontologyTreeView.getRoot());
-            treeItem.getChildren()
-                    .addAll(dataNodes.stream()
-                                     .map(TreeItem::new)
-                                     .toList());
-            treeItem.setExpanded(true);
-        });
-    }
-
-    @Override
-    public void onInvalidQuery(final String invalidQuery, final InitialSearchResult result) {
-        Platform.runLater(() -> {
-            // TODO: resource bundle
-            // TODO: different alerts for different results
-            assert result != InitialSearchResult.OK;
-            final Alert alert = new Alert(Alert.AlertType.ERROR);
-            switch (result) {
-                case SUBJECT_NOT_FOUND -> {
-                    alert.setTitle("Invalid query");
-                    alert.setHeaderText("ERROR - Invalid query");
-                    final String wikiUrl = "https://en.wikipedia.org/wiki/";
-                    final String queryWikiUrl = wikiUrl + invalidQuery;
-                    final String exampleWikiUrl = wikiUrl + "Charles_IV,_Holy_Roman_Emperor";
-                    final String exampleUri = "Charles IV, Holy Roman Emperor";
-                    alert.setContentText(String.format(
-                            "No results were found querying '%s'. The query must correspond to the wikipedia URL:%n%n%s%n%nYour query corresponds to an unknown URL:%n%n%s%n%nIn this example '%s' is" +
-                            " a valid query. Spaces instead of underscores are allowed.",
-                            invalidQuery,
-                            exampleWikiUrl,
-                            queryWikiUrl,
-                            exampleUri));
-                }
-                case START_DATE_NOT_SELECTED -> {
-                    alert.setTitle("Start date not chosen");
-                    alert.setHeaderText("ERROR - Invalid start date");
-                    alert.setContentText("Please choose a start date");
-                }
-                case END_DATE_NOT_SELECTED -> {
-                    alert.setTitle("End date not chosen");
-                    alert.setHeaderText("ERROR - Invalid end date");
-                    alert.setContentText("Please choose a end date");
-                }
-                case PATH_NOT_SELECTED -> {
-                    alert.setTitle("Path not chosen");
-                    alert.setHeaderText("ERROR - Invalid path");
-                    alert.setContentText("Please choose a path");
-                }
-                case UNKNOWN -> {
-                    alert.setTitle("Unknown error");
-                    alert.setHeaderText("ERROR - Unknown error occurred");
-                    alert.setContentText(String.format("An unknown error happened with the query '%s'", invalidQuery));
-                }
-                default -> throw new UnsupportedOperationException("Result type not handled: " + result);
-            }
-            alert.show();
-        });
-    }
-
-    @Override
-    public void onSearchDone() {
-
-    }
-
-    @Override
-    public void setStartAndDateProperty(final Property startDateProperty, final Property endDateProperty) {
-
-    }
-
-    @Override
-    public void onInitialSearch(final QueryData queryData) {
-        this.queryData = queryData;
     }
 
     /**

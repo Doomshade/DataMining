@@ -56,15 +56,15 @@ class FialaBPExportSpecification extends Specification {
                 new GregorianCalendar(1901, Calendar.AUGUST, 21, 1, 0, 0))
 
         def out = System.out
-        final Field[] declaredFields = FialaBPExport.DataNodeExportNodeFormat.class.getDeclaredFields()
+        final Field[] declaredFields = FialaBPExportNodeFormat.class.getDeclaredFields()
         for (Field field : declaredFields) {
             field.trySetAccessible()
         }
-        final List<FialaBPExport.DataNodeExportNodeFormat> nodes = new ArrayList<>()
+        final List<FialaBPExportNodeFormat> nodes = new ArrayList<>()
         def dataNodes = root.getChildren()
         for (final DataNode dataNode : dataNodes) {
             final Map<String, Object> metadata = dataNode.getMetadata()
-            final FialaBPExport.DataNodeExportNodeFormat dataNodeFormat = new FialaBPExport.DataNodeExportNodeFormat()
+            final FialaBPExportNodeFormat dataNodeFormat = new FialaBPExportNodeFormat()
             dataNodeFormat.setId(dataNode.getId())
             for (Field field : declaredFields) {
                 if (metadata.containsKey(field.getName())) {
@@ -74,14 +74,14 @@ class FialaBPExportSpecification extends Specification {
             nodes.add(dataNodeFormat)
         }
 
-        List<FialaBPExport.DataNodeExportEdgeFormat> edges = new ArrayList<>()
-        edges.add(new FialaBPExport.DataNodeExportEdgeFormat(1, "relationship", 2, 1, "doctoral advisor"))
-        edges.add(new FialaBPExport.DataNodeExportEdgeFormat(2, "relationship", 3, 2, "doctoral advisor"))
-        edges.add(new FialaBPExport.DataNodeExportEdgeFormat(3, "relationship", 4, 3, "doctoral advisor"))
-        def serializer = new FialaBPExport.FialaBPSerializer(out, root)
+        List<FialaBPExportEdgeFormat> edges = new ArrayList<>()
+        edges.add(new FialaBPExportEdgeFormat(1, "relationship", 2, 1, "doctoral advisor"))
+        edges.add(new FialaBPExportEdgeFormat(2, "relationship", 3, 2, "doctoral advisor"))
+        edges.add(new FialaBPExportEdgeFormat(3, "relationship", 4, 3, "doctoral advisor"))
+        def serializer = new FialaBPSerializerTask(out, root)
 
         when:
-        serializer.serialize(new FialaBPExport.DataNodeExportFormatRoot(nodes, edges))
+        serializer.serialize(new FialaBPExportFormatRoot(nodes, edges))
 
         then:
         noExceptionThrown()

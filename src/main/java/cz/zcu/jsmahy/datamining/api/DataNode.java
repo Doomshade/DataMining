@@ -32,7 +32,7 @@ public interface DataNode extends Iterable<DataNode>, ArbitraryDataHolder {
      */
     String METADATA_KEY_DESCRIPTION = "description";
     /**
-     * Corresponding value should be {@link List} of {@link Relationship}s
+     * Corresponding value should be {@link List} of {@link ArbitraryDataHolder}s
      */
     String METADATA_KEY_RELATIONSHIPS = "relationships";
     /**
@@ -45,8 +45,6 @@ public interface DataNode extends Iterable<DataNode>, ArbitraryDataHolder {
     String METADATA_KEY_END_DATE = "end";
 
     /**
-     * NOTE: the children are <b>unmodifiable</b>
-     *
      * @return The children of this node.
      */
     ObservableList<DataNode> getChildren();

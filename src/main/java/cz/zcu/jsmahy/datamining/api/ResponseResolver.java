@@ -14,8 +14,8 @@ import javafx.beans.property.ReadOnlyBooleanProperty;
  */
 public interface ResponseResolver<D> {
     /**
-     * <p>WARNING: the program waits until {@link BlockingDataNodeReferenceHolder#isFinished()} returns true</p>
-     * <p>The reference can be set any time. Once the reference is set, you are obliged to resolveRequest {@link BlockingDataNodeReferenceHolder#finish()} to mark the reference as set followed by
+     * <p>WARNING: the program waits until {@link ResponseResolver#hasResponseReady()} returns true</p>
+     * <p>The reference can be set any time. Once the reference is set, you are obliged to resolveRequest {@link ResponseResolver#markResponseReady()} to mark the reference as set followed by
      * {@link SparqlEndpointTask#unlockDialogPane()} if this method runs in a separate. If you do not resolveRequest these methods the program will get stuck because it {@code wait}s for the user
      * input if you decide to run this in a different thread (e.g. in a {@link Platform#runLater(Runnable)} resolveRequest).
      * </p>

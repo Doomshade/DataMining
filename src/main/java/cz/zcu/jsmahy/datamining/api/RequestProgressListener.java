@@ -1,9 +1,10 @@
 package cz.zcu.jsmahy.datamining.api;
 
+import javafx.beans.property.ObjectProperty;
+import javafx.scene.control.TreeItem;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
 
-import javax.annotation.Nullable;
 import java.util.List;
 
 /**
@@ -15,12 +16,33 @@ import java.util.List;
  * @version 1.0
  */
 public interface RequestProgressListener {
+
     /**
-     * Called when the ontology path predicate is set. This callback should highlight the current ontology path predicate in the UI somewhere.
-     *
-     * @param ontologyPathPredicate the ontology path predicate
+     * @return The property for ontology path predicate.
      */
-    void onSetOntologyPathPredicate(Property ontologyPathPredicate);
+    ObjectProperty<Property> ontologyPathPredicateProperty();
+
+    /**
+     * @return The start date property.
+     */
+    ObjectProperty<Property> startDateProperty();
+
+    /**
+     * @return The end date property.
+     */
+    ObjectProperty<Property> endDateProperty();
+
+    /**
+     * @return The tree root property.
+     */
+    ObjectProperty<TreeItem<DataNode>> treeRootProperty();
+
+    /**
+     * <p>You may use any of the members of the {@link QueryData} instance, and you may also modify them with caution.</p>
+     *
+     * @return the query data
+     */
+    ObjectProperty<QueryData> queryDataProperty();
 
     /**
      * Called when a new data node is created. This callback should create a new tree item under the tree root with the given data and return the tree new tree item.
@@ -57,20 +79,4 @@ public interface RequestProgressListener {
      */
     void onSearchDone();
 
-    /**
-     * Called once the start and end date properties are set. These predicates should be highlighted in the UI somewhere.
-     *
-     * @param startDateProperty the start date property
-     * @param endDateProperty   the end date property
-     */
-    void setStartAndDateProperty(Property startDateProperty, @Nullable Property endDateProperty);
-
-    /**
-     * <p>Called once the initial search is done, i.e. returns {@link InitialSearchResult#OK}.</p>
-     * <p><strong>IMPORTANT: it is advised to store the reference of the parameter as that instance gets updated during the query</strong>. You may use any of the members, and you may also modify
-     * them with caution.</p>
-     *
-     * @param queryData the initial search data
-     */
-    void onInitialSearch(QueryData queryData);
 }

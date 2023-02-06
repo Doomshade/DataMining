@@ -3,7 +3,6 @@ package cz.zcu.jsmahy.datamining.api;
 import com.google.inject.Inject;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
-import lombok.Getter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -16,7 +15,6 @@ import static java.util.Objects.requireNonNull;
  */
 public class SparqlEndpointAgent<R> {
     private static final Logger LOGGER = LogManager.getLogger(SparqlEndpointAgent.class);
-    @Getter
     private final SparqlEndpointTaskProvider<R> sparqlEndpointTaskProvider;
 
     /**

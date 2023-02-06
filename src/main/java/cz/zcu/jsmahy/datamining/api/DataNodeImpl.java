@@ -52,7 +52,7 @@ class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
 
     @Override
     public ObservableList<DataNode> getChildren() {
-        return FXCollections.unmodifiableObservableList(children);
+        return children;
     }
 
     @Override

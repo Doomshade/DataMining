@@ -1,5 +1,8 @@
 package cz.zcu.jsmahy.datamining.api;
 
+/**
+ * TODO: javadoc
+ */
 public enum InitialSearchResult {
     OK,
     SUBJECT_NOT_FOUND,

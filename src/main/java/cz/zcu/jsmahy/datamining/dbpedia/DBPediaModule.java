@@ -1,9 +1,8 @@
 package cz.zcu.jsmahy.datamining.dbpedia;
 
+import com.google.inject.AbstractModule;
 import cz.zcu.jsmahy.datamining.api.DataMiningModule;
-import cz.zcu.jsmahy.datamining.api.RequestProgressListener;
 import cz.zcu.jsmahy.datamining.api.SparqlEndpointTaskProvider;
-import cz.zcu.jsmahy.datamining.app.controller.MainController;
 
 import static com.google.inject.Scopes.SINGLETON;
 
@@ -14,12 +13,10 @@ import static com.google.inject.Scopes.SINGLETON;
  * @see DataMiningModule
  * @since 1.0
  */
-public class DBPediaModule extends DataMiningModule {
+public class DBPediaModule extends AbstractModule {
     protected void configure() {
-        super.configure();
         // the main request handler with its progress listener
         bind(SparqlEndpointTaskProvider.class).to(DBPediaEndpointTaskProvider.class)
                                               .in(SINGLETON);
-        bind(RequestProgressListener.class).toInstance(MainController.getInstance());
     }
 }

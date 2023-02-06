@@ -89,8 +89,9 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
             final DataNode newDataNodeRoot = nodeFactory.newRoot(name);
             root.getChildren()
                 .add(new TreeItem<>(newDataNodeRoot));
-            final Service<?> service = requestHandler.createBackgroundService(getItem().getValueUnsafe("uri"), newDataNodeRoot);
-            mainController.bindService(service);
+            final String query = getItem().getValueUnsafe("uri");
+            final Service<?> service = requestHandler.createBackgroundService(query, newDataNodeRoot);
+            mainController.bindQueryService(service);
             service.restart();
         });
         return menuItem;
@@ -102,7 +103,7 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
             getTreeItem().setExpanded(true);
             assert getItem().isRoot();
             final Service<?> service = sparqlEndpointAgent.createBackgroundService(searchValue.replaceAll(" ", "_"), getItem());
-            mainController.bindService(service);
+            mainController.bindQueryService(service);
             service.restart();
         }, "Title"));
         menuItem.setAccelerator(KeyCombination.keyCombination("CTRL + H"));
@@ -184,9 +185,12 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
             // create a copy because we modify the inner list which would throw an exception otherwise
             final List<TreeItem<DataNode>> temp = new ArrayList<>(selectedItems);
             for (final TreeItem<DataNode> selectedItem : temp) {
-                selectedItem.getParent()
-                            .getChildren()
-                            .remove(selectedItem);
+                final TreeItem<DataNode> parent = selectedItem.getParent();
+                parent.getChildren()
+                      .remove(selectedItem);
+                parent.getValue()
+                      .getChildren()
+                      .remove(selectedItem.getValue());
             }
         });
         menuItem.setAccelerator(KeyCombination.keyCombination("delete"));

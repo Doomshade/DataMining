@@ -6,7 +6,7 @@ package cz.zcu.jsmahy.datamining.export;
  * @author Jakub Šmrha
  * @version 1.0
  */
-public final class FialaBPMetadataKeys {
+final class FialaBPMetadataKeys {
     public static final String METADATA_KEY_STEREOTYPE = "stereotype";
     public static final String METADATA_KEY_PROPERTIES = "properties";
     public static final String METADATA_KEY_FROM = "from";

@@ -11,7 +11,7 @@ import java.util.*;
  * @since 1.0
  */
 @EqualsAndHashCode
-class DefaultArbitraryDataHolder implements ArbitraryDataHolder {
+public class DefaultArbitraryDataHolder implements ArbitraryDataHolder {
     protected final Map<String, Object> metadata = Collections.synchronizedMap(new HashMap<>());
 
     @Override
