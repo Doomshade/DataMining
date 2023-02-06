@@ -1,7 +1,10 @@
 package cz.zcu.jsmahy.datamining.dbpedia;
 
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
+import cz.zcu.jsmahy.datamining.resolvers.OntologyPathPredicateResolver;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.datatypes.RDFDatatype;
 import org.apache.jena.datatypes.xsd.AbstractDateTime;
@@ -16,6 +19,9 @@ import java.util.*;
 import java.util.function.Predicate;
 
 import static cz.zcu.jsmahy.datamining.export.FialaBPMetadataKeys.*;
+import static cz.zcu.jsmahy.datamining.resolvers.MultipleItemChoiceResolver.RESULT_KEY_CHOSEN_RDF_NODE;
+import static cz.zcu.jsmahy.datamining.resolvers.StartAndEndDateResolver.RESULT_KEY_END_DATE_PREDICATE;
+import static cz.zcu.jsmahy.datamining.resolvers.StartAndEndDateResolver.RESULT_KEY_START_DATE_PREDICATE;
 import static cz.zcu.jsmahy.datamining.util.RDFNodeUtil.setDataNodeNameFromRDFNode;
 
 /**
@@ -25,6 +31,8 @@ import static cz.zcu.jsmahy.datamining.util.RDFNodeUtil.setDataNodeNameFromRDFNo
  * @version 1.0
  */
 public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
+    public static final Map<String, String> METADATA_DEFAULT_PROPERTIES = Map.of("startPrecision", "day", "endPrecision", "day");
+    public static final String METADATA_DEFAULT_STEREOTYPE = "person";
     private static final Logger LOGGER = LogManager.getLogger(DBPediaEndpointTask.class);
     /**
      * <p>This comparator ensures the URI resources are placed first over literal resources.</p>
@@ -34,15 +42,20 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
                                                                                                  .isURIResource(),
                                                                                                 y.getObject()
                                                                                                  .isURIResource());
-    public static final Map<String, String> METADATA_DEFAULT_PROPERTIES = Map.of("startPrecision", "day", "endPrecision", "day");
-    public static final String METADATA_DEFAULT_STEREOTYPE = "person";
-
-
+    private static final Property PROPERTY_DBO_ABSTRACT = ResourceFactory.createProperty("https://dbpedia.org/ontology/abstract");
     private final Collection<String> usedURIs = new HashSet<>();
 
-
-    public DBPediaEndpointTask(final ApplicationConfiguration<R> config, final String query, final DataNode dataNodeRoot) {
-        super(config, query, dataNodeRoot);
+    @Inject
+    @SuppressWarnings("rawtypes")
+    public DBPediaEndpointTask(final String query,
+                               final DataNode dataNodeRoot,
+                               final ApplicationConfiguration config,
+                               final RequestProgressListener progressListener,
+                               final DataNodeFactory dataNodeFactory,
+                               final @Named("userAssisted") ResponseResolver ambiguousResultResolver,
+                               final @Named("ontologyPathPredicate") ResponseResolver ontologyPathPredicateResolver,
+                               final @Named("date") ResponseResolver startAndEndDateResolver) {
+        super(query, dataNodeRoot, config, progressListener, dataNodeFactory, ambiguousResultResolver, ontologyPathPredicateResolver, startAndEndDateResolver);
     }
 
     private void addDatesToNode(final Model model, final DataNode curr, final Property dateProperty, final Resource subject, final boolean isStartDate) {
@@ -65,7 +78,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
             } else {
                 throw new ClassCastException("Inner date type is of unknown value: " + innerDateType);
             }
-            LOGGER.debug("Setting {} date (inner type: {}, actual date: {}) to {}", isStartDate ? "start" : "end", innerDateType, date, curr.getMetadataValue(DataNode.METADATA_KEY_NAME, "<no name>"));
+            LOGGER.debug("Setting {} date (inner type: {}, actual date: {}) to {}", isStartDate ? "start" : "end", innerDateType, date, curr.getValue(DataNode.METADATA_KEY_NAME, "<no name>"));
             if (isStartDate) {
                 curr.addMetadata(METADATA_KEY_START_DATE, date);
             } else {
@@ -76,7 +89,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
             LOGGER.warn("No {} date found for {}!", isStartDate ? "start" : "end", subject);
             // if the end date was not found, default it to the start date
             if (!isStartDate) {
-                curr.getMetadataValue(METADATA_KEY_START_DATE)
+                curr.getValue(METADATA_KEY_START_DATE)
                     .ifPresent(startDate -> {
                         LOGGER.info("Setting end date to start date {} because no end date was found.", startDate);
                         curr.addMetadata(METADATA_KEY_END_DATE, startDate);
@@ -143,7 +156,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
     }
 
     private InitialSearchResult requestStartAndEndDatePredicate(final QueryData inputMetadata) {
-        final Selector selector = createSelector(inputMetadata, stmt -> {
+        final Selector selector = createSelector(inputMetadata.getInitialSubject(), stmt -> {
             final RDFNode object = stmt.getObject();
             if (!object.isLiteral()) {
                 return false;
@@ -164,56 +177,52 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
             final RDFDatatype dataType = object.asNode()
                                                .getLiteralDatatype();
             final String validDateFormatUri = dataType.getURI();
-//            for (String validDateFormat : validDateFormats) {
-//                if (validDateFormatUri.contains(validDateFormat)) {
-//                    return true;
-//                }
-//            }
+            for (String validDateFormat : validDateFormats) {
+                if (validDateFormatUri.contains(validDateFormat)) {
+                    return true;
+                }
+            }
             return validDateFormats.contains(validDateFormatUri.substring(validDateFormatUri.lastIndexOf('/')));
         });
         final Model model = inputMetadata.getCurrentModel();
-        final StmtIterator stmtIterator = model.listStatements(selector);
-        if (!stmtIterator.hasNext()) {
+        final StmtIterator statements = model.listStatements(selector);
+        if (!statements.hasNext()) {
             LOGGER.info("No date found for input {}", inputMetadata);
             return InitialSearchResult.NO_DATE_FOUND;
         }
 
-        final List<Statement> statements = stmtIterator.toList();
-        inputMetadata.setCandidatesForStartAndEndDates(statements);
-
-        final DataNodeReferenceHolder ref = config.getStartAndEndDateResolver()
-                                                  .resolveRequest(null, inputMetadata, this);
-        if (ref instanceof BlockingDataNodeReferenceHolder blockingRef) {
-            while (!blockingRef.isFinished()) {
-                try {
-                    wait(5000L);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
+        startAndEndDateResolver.resolve(Collections.unmodifiableCollection(statements.toList()), this);
+        while (!startAndEndDateResolver.hasResponseReady()) {
+            try {
+                wait(5000L);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
         }
 
+        final ArbitraryDataHolder ref = startAndEndDateResolver.getResponse();
         if (ref == null) {
             LOGGER.error("Internal error occurred when resolving request for date input. Selector: {}", selector);
             return InitialSearchResult.UNKNOWN;
         }
-        final Property startDateProperty = ref.getStartDatePredicate();
-        final Property endDateProperty = ref.getEndDatePredicate();
 
-        if (startDateProperty == null) {
+        final Optional<Property> startDatePropertyOpt = ref.getValue(RESULT_KEY_START_DATE_PREDICATE);
+        final Property endDateProperty = ref.getValue(RESULT_KEY_END_DATE_PREDICATE, null);
+
+        if (startDatePropertyOpt.isEmpty()) {
             return InitialSearchResult.START_DATE_NOT_SELECTED;
         }
 
-        inputMetadata.setStartDateProperty(startDateProperty);
+        inputMetadata.setStartDateProperty(startDatePropertyOpt.get());
         // the end date does need to be specified because
         inputMetadata.setEndDateProperty(endDateProperty);
         config.getProgressListener()
-              .setStartAndDateProperty(startDateProperty, endDateProperty);
+              .setStartAndDateProperty(startDatePropertyOpt.get(), endDateProperty);
         return InitialSearchResult.OK;
     }
 
     private InitialSearchResult requestOntologyPathPredicate(final QueryData inputMetadata) {
-        final Selector selector = createSelector(inputMetadata, stmt -> {
+        final Selector selector = createSelector(inputMetadata.getInitialSubject(), stmt -> {
             if (!stmt.getObject()
                      .isURIResource()) {
                 return false;
@@ -228,39 +237,35 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         });
         final Model model = inputMetadata.getCurrentModel();
 
-        final StmtIterator stmtIterator = model.listStatements(selector);
-        if (!stmtIterator.hasNext()) {
+        final StmtIterator statements = model.listStatements(selector);
+        if (!statements.hasNext()) {
             return InitialSearchResult.SUBJECT_NOT_FOUND;
         }
-        inputMetadata.setCandidatesForOntologyPathPredicate(Collections.unmodifiableList(stmtIterator.toList()));
-
-        final ResponseResolver<R, ?> ontologyPathPredicateResolver = config.getOntologyPathPredicateResolver();
-        final DataNodeReferenceHolder ref = ontologyPathPredicateResolver.resolveRequest(null, inputMetadata, this);
-        if (ref instanceof BlockingDataNodeReferenceHolder blockingRef) {
-            while (!blockingRef.isFinished()) {
-                try {
-                    wait(5000L);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
+        ontologyPathPredicateResolver.resolve(Collections.unmodifiableList(statements.toList()), this);
+        while (!ontologyPathPredicateResolver.hasResponseReady()) {
+            try {
+                wait(5000L);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
         }
+        final ArbitraryDataHolder ref = ontologyPathPredicateResolver.getResponse();
         if (ref == null) {
             return InitialSearchResult.UNKNOWN;
         }
-        final Property ontologyPathPredicate = ref.getOntologyPathPredicate();
-        if (ontologyPathPredicate == null) {
+        final Optional<Property> ontologyPathPredicateOpt = ref.getValue(OntologyPathPredicateResolver.RESULT_KEY_ONTOLOGY_PATH_PREDICATE);
+        if (ontologyPathPredicateOpt.isEmpty()) {
             return InitialSearchResult.PATH_NOT_SELECTED;
         }
 
-        inputMetadata.setOntologyPathPredicate(ontologyPathPredicate);
+        inputMetadata.setOntologyPathPredicate(ontologyPathPredicateOpt.get());
         config.getProgressListener()
-              .onSetOntologyPathPredicate(ontologyPathPredicate);
+              .onSetOntologyPathPredicate(ontologyPathPredicateOpt.get());
         return InitialSearchResult.OK;
     }
 
-    private Selector createSelector(final QueryData inputMetadata, final Predicate<Statement> selectorSelects) {
-        return new SimpleSelector(inputMetadata.getInitialSubject(), null, null, "en") {
+    private Selector createSelector(final Resource initialSubject, final Predicate<Statement> selectorSelects) {
+        return new SimpleSelector(initialSubject, null, null, "en") {
             @Override
             public boolean selects(final Statement s) {
                 return selectorSelects.test(s);
@@ -290,8 +295,6 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         }
     }
 
-    private static final Property PROPERTY_DBO_ABSTRACT = ResourceFactory.createProperty("https://dbpedia.org/ontology/abstract");
-
     /**
      * Recursively searches based on the given model, selector, and a previous link. Adds the subject of the selector to the tree.
      *
@@ -307,7 +310,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         final Resource currRDFNode = selector.getSubject();
         initializeDataNode(curr, currRDFNode, inputMetadata);
         if (prev != null) {
-            final List<Relationship> relationships = prev.getMetadataValue(DataNode.METADATA_KEY_RELATIONSHIPS, new ArrayList<>());
+            final List<Relationship> relationships = prev.getValue(DataNode.METADATA_KEY_RELATIONSHIPS, new ArrayList<>());
             // TODO: Relationship can go the opposite way
             // for now leave it like this because we are testing doctoral advisors
             final Relationship relationship = new Relationship(prev.getId(), curr.getId());
@@ -373,21 +376,20 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         // --------------
         // the reference can either be non-blocking or blocking, depending on the implementation
         // usually when user input is required it's blocking
-        final DataNodeReferenceHolder ref = config.getAmbiguousResultResolver()
-                                                  .resolveRequest(foundDataList, inputMetadata, this);
-        if (ref instanceof BlockingDataNodeReferenceHolder blockingRef) {
-            while (!blockingRef.isFinished()) {
-                try {
-                    wait(5000);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
+        ambiguousResultResolver.resolve(foundDataList, this);
+        while (!ambiguousResultResolver.hasResponseReady()) {
+            try {
+                wait(5000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
         }
-        final RDFNode chosenNextRDFNode = ref.get();
-        if (chosenNextRDFNode == null) {
+        final ArbitraryDataHolder response = ambiguousResultResolver.getResponse();
+        final Optional<RDFNode> chosenNextRDFNodeOpt = response.getValue(RESULT_KEY_CHOSEN_RDF_NODE);
+        if (chosenNextRDFNodeOpt.isEmpty()) {
             return;
         }
+        final RDFNode chosenNextRDFNode = chosenNextRDFNodeOpt.get();
 
         final List<DataNode> currDataNodeChildren = new ArrayList<>();
         // WARN: Deleted handling for multiple references as it might not even be in the final version.
@@ -469,15 +471,4 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         String uri = resource.getURI();
         model.read(uri);
     }
-
-    public enum InitialSearchResult {
-        OK,
-        SUBJECT_NOT_FOUND,
-        PATH_NOT_SELECTED,
-        NO_DATE_FOUND,
-        START_DATE_NOT_SELECTED,
-        END_DATE_NOT_SELECTED,
-        UNKNOWN
-    }
-
 }

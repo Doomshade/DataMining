@@ -2,10 +2,8 @@ package cz.zcu.jsmahy.datamining.app.controller;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.jfoenix.controls.JFXSpinner;
 import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
-import cz.zcu.jsmahy.datamining.dbpedia.DBPediaEndpointTask;
 import cz.zcu.jsmahy.datamining.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.export.FialaBPExport;
 import cz.zcu.jsmahy.datamining.util.DialogHelper;
@@ -81,7 +79,7 @@ order by ?pred
     @FXML
     private WebView wikiPageWebView;
     @FXML
-    private JFXSpinner progressIndicator;
+    private ProgressIndicator progressIndicator;
     //</editor-fold>
     private DataNodeFactory nodeFactory;
     //</editor-fold>
@@ -263,7 +261,7 @@ order by ?pred
                 final DataNode root = child.getValue();
                 final FileOutputStream out;
                 try {
-                    out = new FileOutputStream(root.getMetadataValue("name", "<no name>") + ".json");
+                    out = new FileOutputStream(root.getValue("name", "<no name>") + ".json");
                 } catch (FileNotFoundException ex) {
                     throw new UncheckedIOException(ex);
                 }
@@ -349,9 +347,9 @@ order by ?pred
     @Override
     public void onAddNewDataNode(final DataNode dataNode, final DataNode dataNodeRoot) {
         LOGGER.trace("Adding new data node '{}' to root '{}'",
-                     dataNode.getMetadataValue(METADATA_KEY_NAME)
+                     dataNode.getValue(METADATA_KEY_NAME)
                              .orElse("<no name>"),
-                     dataNodeRoot.getMetadataValue(METADATA_KEY_NAME)
+                     dataNodeRoot.getValue(METADATA_KEY_NAME)
                                  .orElse("<no name>"));
         Platform.runLater(() -> {
             final TreeItem<DataNode> parent = findTreeItem(dataNodeRoot, ontologyTreeView.getRoot());
@@ -375,11 +373,11 @@ order by ?pred
     }
 
     @Override
-    public void onInvalidQuery(final String invalidQuery, final DBPediaEndpointTask.InitialSearchResult result) {
+    public void onInvalidQuery(final String invalidQuery, final InitialSearchResult result) {
         Platform.runLater(() -> {
             // TODO: resource bundle
             // TODO: different alerts for different results
-            assert result != DBPediaEndpointTask.InitialSearchResult.OK;
+            assert result != InitialSearchResult.OK;
             final Alert alert = new Alert(Alert.AlertType.ERROR);
             switch (result) {
                 case SUBJECT_NOT_FOUND -> {
@@ -454,7 +452,7 @@ order by ?pred
         }
 
         final DataNode dataNode = selectedItem.getValue();
-        final RDFNode rdfNode = dataNode.getMetadataValueUnsafe("rdfNode");
+        final RDFNode rdfNode = dataNode.getValueUnsafe("rdfNode");
         final String formattedItem = RDFNodeUtil.formatRDFNode(rdfNode);
         final String url = String.format(WIKI_URL, formattedItem);
         LOGGER.trace("Loading web page with URL {}", url);

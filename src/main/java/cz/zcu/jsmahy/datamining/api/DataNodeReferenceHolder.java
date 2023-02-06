@@ -16,7 +16,6 @@ import java.util.List;
 /**
  * <p>A {@link DataNode} reference with convenience methods to distinguish various outputs. The main reason being the output being {@code null} because the user chose nothing -- that doesn't
  * necessarily mean he hasn't chosen ANYTHING yet. The {@code finished} property helps distinguish that.</p>
- * <p>TODO: This class could implement {@link ArbitraryDataHolder}.</p>
  *
  * @author Jakub Šmrha
  * @version 1.0

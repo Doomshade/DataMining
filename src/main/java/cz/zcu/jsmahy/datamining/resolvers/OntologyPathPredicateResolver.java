@@ -1,22 +1,21 @@
 package cz.zcu.jsmahy.datamining.resolvers;
 
-import cz.zcu.jsmahy.datamining.api.BlockingDataNodeReferenceHolder;
-import cz.zcu.jsmahy.datamining.api.BlockingResponseResolver;
-import cz.zcu.jsmahy.datamining.api.QueryData;
+import cz.zcu.jsmahy.datamining.api.DefaultResponseResolver;
 import cz.zcu.jsmahy.datamining.api.SparqlEndpointTask;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.Statement;
 
-import java.util.List;
+import java.util.Collection;
 
-public class OntologyPathPredicateResolver<R> implements BlockingResponseResolver<R, BlockingDataNodeReferenceHolder> {
+public class OntologyPathPredicateResolver extends DefaultResponseResolver<Collection<Statement>> {
+    public static final String RESULT_KEY_ONTOLOGY_PATH_PREDICATE = "ontologyPathPredicate";
+
     @Override
-    public BlockingDataNodeReferenceHolder resolveRequest(final List<RDFNode> ambiguousInput, final QueryData inputMetadata, final SparqlEndpointTask<R> requestHandler) {
-        final BlockingDataNodeReferenceHolder ref = new BlockingDataNodeReferenceHolder();
-
+    public void resolve(final Collection<Statement> candidatesForOntologyPathPredicate, final SparqlEndpointTask<?> requestHandler) {
         Platform.runLater(() -> {
-            final RDFNodeChooserDialog dialog = new RDFNodeChooserDialog(inputMetadata.getCandidatesForOntologyPathPredicate(), RDFNodeChooserDialog.IS_DBPEDIA_SITE, features -> {
+            final RDFNodeChooserDialog dialog = new RDFNodeChooserDialog(candidatesForOntologyPathPredicate, RDFNodeChooserDialog.IS_DBPEDIA_SITE, features -> {
                 final RDFNode object = features.getValue()
                                                .getObject();
                 assert object.isURIResource(); // should be URI resource because we are looking for a path predicate
@@ -25,15 +24,14 @@ public class OntologyPathPredicateResolver<R> implements BlockingResponseResolve
                                                .replaceAll("_", " ");
                 return new ReadOnlyObjectWrapper<>(localName);
             });
-            dialog.showDialogueAndWait(stmt -> ref.setOntologyPathPredicate(stmt.getPredicate()));
+            dialog.showDialogueAndWait(stmt -> result.addMetadata(RESULT_KEY_ONTOLOGY_PATH_PREDICATE, stmt.getPredicate()));
 
             // once we receive the response notify the thread under the request handler's monitor
             // that we got a response from the user
             // the thread waits otherwise for another 5 seconds
-            ref.finish();
+            markResponseReady();
             requestHandler.unlockDialogPane();
         });
-        return ref;
     }
 
 

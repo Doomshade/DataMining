@@ -84,12 +84,12 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
             final Optional<DataNode> dataNodeRootOpt = getItem().findRoot();
             assert dataNodeRootOpt.isPresent(); // the item should not be a root, thus the item's root should be present
             final String name = dataNodeRootOpt.get()
-                                               .getMetadataValue("name")
+                                               .getValue("name")
                                                .orElse("<no name>") + " - copy";
             final DataNode newDataNodeRoot = nodeFactory.newRoot(name);
             root.getChildren()
                 .add(new TreeItem<>(newDataNodeRoot));
-            final Service<?> service = requestHandler.createBackgroundService(getItem().getMetadataValueUnsafe("uri"), newDataNodeRoot);
+            final Service<?> service = requestHandler.createBackgroundService(getItem().getValueUnsafe("uri"), newDataNodeRoot);
             mainController.bindService(service);
             service.restart();
         });
@@ -218,7 +218,7 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
         if (node == null) {
             return "";
         }
-        return node.getMetadataValue("name", "<no name>");
+        return node.getValue("name", "<no name>");
     }
 
     @Override

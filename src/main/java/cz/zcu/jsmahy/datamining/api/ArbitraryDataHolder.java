@@ -5,7 +5,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 
 /**
- * TODO: javadocs
+ * Represents a holder of arbitrary data. This is particularly useful for things such as configuration files or general data holders (such as data nodes).
  *
  * @author Jakub Smrha
  * @since 1.0
@@ -27,7 +27,7 @@ public interface ArbitraryDataHolder {
      *
      * @throws ClassCastException if the value type is incorrect
      */
-    <V> Optional<V> getMetadataValue(String key) throws ClassCastException;
+    <V> Optional<V> getValue(String key) throws ClassCastException;
 
     /**
      * @param key the key
@@ -38,7 +38,7 @@ public interface ArbitraryDataHolder {
      * @throws NoSuchElementException if no such key is mapped to a variable
      * @throws ClassCastException     if the value type is incorrect
      */
-    <V> V getMetadataValueUnsafe(String key) throws NoSuchElementException, ClassCastException;
+    <V> V getValueUnsafe(String key) throws NoSuchElementException, ClassCastException;
 
     /**
      * @param key          the key
@@ -50,7 +50,7 @@ public interface ArbitraryDataHolder {
      * @throws ClassCastException if the value type is incorrect
      */
 
-    <V> V getMetadataValue(String key, V defaultValue) throws ClassCastException;
+    <V> V getValue(String key, V defaultValue) throws ClassCastException;
 
     /**
      * Adds an additional metadata value stored under the key
@@ -73,4 +73,16 @@ public interface ArbitraryDataHolder {
      * @return Whether a value is stored under the key.
      */
     boolean hasMetadataKey(String key);
+
+    /**
+     * Removes a metadata under the given key
+     *
+     * @param key the key
+     */
+    void removeMetadata(String key);
+
+    /**
+     * Clears the metadata
+     */
+    void clearMetadata();
 }

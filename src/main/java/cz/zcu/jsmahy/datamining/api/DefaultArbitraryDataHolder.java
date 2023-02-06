@@ -5,14 +5,14 @@ import lombok.EqualsAndHashCode;
 import java.util.*;
 
 /**
- * TODO: javadocs
+ * The default implementation of {@link ArbitraryDataHolder}. This implementation is thread-safe, i.e. a synchronized {@link Map} is used under the hood.
  *
  * @author Jakub Smrha
  * @since 1.0
  */
 @EqualsAndHashCode
 class DefaultArbitraryDataHolder implements ArbitraryDataHolder {
-    protected final Map<String, Object> metadata = new HashMap<>();
+    protected final Map<String, Object> metadata = Collections.synchronizedMap(new HashMap<>());
 
     @Override
     public Map<String, Object> getMetadata() {
@@ -21,19 +21,19 @@ class DefaultArbitraryDataHolder implements ArbitraryDataHolder {
 
     @SuppressWarnings("unchecked")
     @Override
-    public <V> Optional<V> getMetadataValue(final String key) throws ClassCastException {
+    public <V> Optional<V> getValue(final String key) throws ClassCastException {
         return (Optional<V>) Optional.ofNullable(metadata.get(key));
     }
 
     @Override
-    public <V> V getMetadataValueUnsafe(final String key) throws NoSuchElementException, ClassCastException {
-        final Optional<V> opt = getMetadataValue(key);
+    public <V> V getValueUnsafe(final String key) throws NoSuchElementException, ClassCastException {
+        final Optional<V> opt = getValue(key);
         return opt.orElseThrow(() -> new NoSuchElementException(key));
     }
 
     @Override
-    public <V> V getMetadataValue(final String key, final V defaultValue) throws NoSuchElementException, ClassCastException {
-        final Optional<V> opt = getMetadataValue(key);
+    public <V> V getValue(final String key, final V defaultValue) throws NoSuchElementException, ClassCastException {
+        final Optional<V> opt = getValue(key);
         return opt.orElse(defaultValue);
     }
 
@@ -50,5 +50,15 @@ class DefaultArbitraryDataHolder implements ArbitraryDataHolder {
     @Override
     public boolean hasMetadataKey(final String key) {
         return metadata.containsKey(key);
+    }
+
+    @Override
+    public void removeMetadata(final String key) {
+        this.metadata.remove(key);
+    }
+
+    @Override
+    public void clearMetadata() {
+        this.metadata.clear();
     }
 }

@@ -4,17 +4,18 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NonNull;
 import lombok.ToString;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 
 
 @Data
-@EqualsAndHashCode(callSuper = false, doNotUseGetters = true)
+@EqualsAndHashCode(callSuper = false,
+                   doNotUseGetters = true)
 @ToString(doNotUseGetters = true,
           exclude = "parent")
 class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
@@ -44,7 +45,7 @@ class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
      *
      * @throws NullPointerException if the child is {@code null}
      */
-    void addChild(@NonNull DataNode child) throws NullPointerException {
+    void addChild(DataNode child) throws NullPointerException {
         assert !child.isRoot();
         this.children.add(child);
     }

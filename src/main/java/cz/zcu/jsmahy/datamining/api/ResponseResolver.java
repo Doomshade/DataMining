@@ -1,23 +1,18 @@
 package cz.zcu.jsmahy.datamining.api;
 
 import javafx.application.Platform;
-import org.apache.jena.rdf.model.RDFNode;
-
-import java.util.List;
+import javafx.beans.property.ReadOnlyBooleanProperty;
 
 /**
  * <p>Solves ambiguities of nodes where a list of them occurs.</p>
  * <p>An example would be a monarch having multiple descendents.</p>
  *
- * @param <R>     The generic type of {@link SparqlEndpointTask}
- * @param <DNRef> The {@link DataNodeReferenceHolder} (this allows us to return any implementation, see {@link BlockingResponseResolver})
+ * @param <D> The data input
  *
  * @author Jakub Šmrha
- * @see BlockingResponseResolver
- * @see BlockingDataNodeReferenceHolder
  * @since 1.0
  */
-public interface ResponseResolver<R, DNRef extends DataNodeReferenceHolder> {
+public interface ResponseResolver<D> {
     /**
      * <p>WARNING: the program waits until {@link BlockingDataNodeReferenceHolder#isFinished()} returns true</p>
      * <p>The reference can be set any time. Once the reference is set, you are obliged to resolveRequest {@link BlockingDataNodeReferenceHolder#finish()} to mark the reference as set followed by
@@ -66,11 +61,36 @@ public interface ResponseResolver<R, DNRef extends DataNodeReferenceHolder> {
      *     }
      * </pre>
      *
-     * @param ambiguousInput The list of {@link RDFNode}s to choose the result from
      * @param inputMetadata  The query input metadata
      * @param requestHandler The request handler
      *
-     * @return A list of {@link DataNode} references
+     * @throws IllegalStateException if another thread attempts to resolve a request by this resolver while it's running
      */
-    DNRef resolveRequest(List<RDFNode> ambiguousInput, final QueryData inputMetadata, final SparqlEndpointTask<R> requestHandler);
+    void resolve(final D inputMetadata, final SparqlEndpointTask<?> requestHandler) throws IllegalStateException;
+
+    /**
+     * @return the result of the {@link ResponseResolver#resolve(D, SparqlEndpointTask)}
+     *
+     * @throws IllegalStateException if the {@link ResponseResolver#resolve(D, SparqlEndpointTask)} was not called prior to this method
+     */
+    ArbitraryDataHolder getResponse() throws IllegalStateException;
+
+    /**
+     * @return the response property
+     *
+     * @see ResponseResolver#hasResponseReady()
+     */
+    ReadOnlyBooleanProperty hasResponseReadyProperty();
+
+    /**
+     * This boolean should <b>always</b> be {@code true} if this resolver is not blocking
+     *
+     * @return {@code true} if the response is ready {@code false} otherwise
+     */
+    boolean hasResponseReady();
+
+    /**
+     * Marks this reference as finished -- the reference has been set.
+     */
+    void markResponseReady();
 }

@@ -3,6 +3,8 @@ package cz.zcu.jsmahy.datamining.api;
 import javafx.concurrent.Task;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.Statement;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -25,33 +27,57 @@ public class DefaultSparqlEndpointTask<R> extends SparqlEndpointTask<R> {
     protected final Collection<String> ignoredPathPredicates = new HashSet<>();
     protected final Collection<String> validDateFormats = new HashSet<>();
     protected final ApplicationConfiguration<R> config;
+    protected final RequestProgressListener progressListener;
+    protected final DataNodeFactory dataNodeFactory;
+    protected final ResponseResolver<Collection<RDFNode>> ambiguousResultResolver;
+    protected final ResponseResolver<Collection<Statement>> ontologyPathPredicateResolver;
+    protected final ResponseResolver<Collection<Statement>> startAndEndDateResolver;
     protected final String query;
     protected final DataNode dataNodeRoot;
 
-    public DefaultSparqlEndpointTask(final ApplicationConfiguration<R> config, String query, final DataNode dataNodeRoot) {
+    @SuppressWarnings("unchecked, rawtypes")
+    public DefaultSparqlEndpointTask(final String query,
+                                     final DataNode dataNodeRoot,
+                                     final ApplicationConfiguration config,
+                                     final RequestProgressListener progressListener,
+                                     final DataNodeFactory dataNodeFactory,
+                                     final ResponseResolver ambiguousResultResolver,
+                                     final ResponseResolver ontologyPathPredicateResolver,
+                                     final ResponseResolver startAndEndDateResolver) {
         this.config = requireNonNull(config);
         this.dataNodeRoot = requireNonNull(dataNodeRoot);
+        this.progressListener = requireNonNull(progressListener);
+        this.dataNodeFactory = requireNonNull(dataNodeFactory);
+        this.ambiguousResultResolver = requireNonNull(ambiguousResultResolver);
+        this.ontologyPathPredicateResolver = requireNonNull(ontologyPathPredicateResolver);
+        this.startAndEndDateResolver = requireNonNull(startAndEndDateResolver);
 
-        query = requireNonNull(query);
-        final String baseUrl = config.getMetadataValueUnsafe(CFG_KEY_BASE_URL);
-        final boolean hasBaseUrl = query.startsWith(baseUrl);
-        if (!hasBaseUrl) {
-            this.query = baseUrl.concat(query);
-        } else {
-            this.query = query;
-        }
+        this.query = transformQuery(query, config.getValueUnsafe(CFG_KEY_BASE_URL));
 
-        final List<String> ignoredPathPredicates = config.getMetadataValueUnsafe(CFG_KEY_IGNORE_PATH_PREDICATES);
+        final List<String> ignoredPathPredicates = config.getValueUnsafe(CFG_KEY_IGNORE_PATH_PREDICATES);
         this.ignoredPathPredicates.addAll(ignoredPathPredicates);
-        final List<String> validDateFormats = config.getMetadataValueUnsafe(CFG_KEY_VALID_DATE_FORMATS);
 
+        final List<String> validDateFormats = config.getValueUnsafe(CFG_KEY_VALID_DATE_FORMATS);
+        this.validDateFormats.addAll(transformValidDateFormats(validDateFormats));
+    }
+
+    public static Collection<String> transformValidDateFormats(Collection<String> validDateFormats) {
         final Set<String> validDateFormatsSet = validDateFormats.stream()
                                                                 .map(String::toLowerCase)
                                                                 .collect(Collectors.toSet());
         if (validDateFormatsSet.contains(CFG_DATE_FORMAT_ANY)) {
-            this.validDateFormats.addAll(ApplicationConfiguration.CollectionConstants.getAllValidDateFormats());
+            return ApplicationConfiguration.CollectionConstants.getAllValidDateFormats();
         } else {
-            this.validDateFormats.addAll(validDateFormatsSet);
+            return validDateFormatsSet;
+        }
+    }
+
+    public static String transformQuery(final String query, final String baseUrl) {
+        final boolean hasBaseUrl = query.startsWith(baseUrl);
+        if (!hasBaseUrl) {
+            return baseUrl.concat(query);
+        } else {
+            return query;
         }
     }
 

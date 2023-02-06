@@ -37,9 +37,9 @@ class APISpecification extends Specification {
 
     void setupSpec() {
         def config = Mock(ApplicationConfiguration)
-        config.getMetadataValueUnsafe(CFG_KEY_BASE_URL) >> "https://baseurltest.com/"
-        config.getMetadataValueUnsafe(CFG_KEY_IGNORE_PATH_PREDICATES) >> new ArrayList<>()
-        config.getMetadataValueUnsafe(CFG_KEY_VALID_DATE_FORMATS) >> new ArrayList<>()
+        config.getValueUnsafe(CFG_KEY_BASE_URL) >> "https://baseurltest.com/"
+        config.getValueUnsafe(CFG_KEY_IGNORE_PATH_PREDICATES) >> new ArrayList<>()
+        config.getValueUnsafe(CFG_KEY_VALID_DATE_FORMATS) >> new ArrayList<>()
         def mocks = new Mocks()
         def taskProvider = Mock(SparqlEndpointTaskProvider)
         def task = Mock(SparqlEndpointTask)
@@ -52,7 +52,7 @@ class APISpecification extends Specification {
         def dispatchChain = Mock(EventDispatchChain)
         dispatchChain.dispatchEvent(_) >> new Event(EventType.ROOT)
         task.buildEventDispatchChain(_) >> dispatchChain
-        taskProvider.createTask(_, _, _) >> task
+        taskProvider.newTask(_, _, _) >> task
 
         injector = Guice.createInjector(mocks.module(config, taskProvider))
         nodeFactory = Spy(injector.getInstance(DataNodeFactory))
@@ -60,7 +60,7 @@ class APISpecification extends Specification {
 
     void setup() {
         this.config = injector.getInstance(ApplicationConfiguration)
-        this.defaultTask = new DefaultSparqlEndpointTask(config, "queryTest", nodeFactory.newRoot("Root"))
+        this.defaultTask = new DefaultSparqlEndpointTask("queryTest", nodeFactory.newRoot("Root"), config, Mock(RequestProgressListener), nodeFactory, Mock(ResponseResolver), Mock(ResponseResolver), Mock(ResponseResolver))
         this.endpointAgent = injector.getInstance(SparqlEndpointAgent.class)
     }
 
@@ -100,28 +100,9 @@ class APISpecification extends Specification {
         root.findRoot().isEmpty()
     }
 
-    def "Should throw NPE when passing null parameters to SparqlEndpointTask ctor"() {
-        when:
-        new DefaultSparqlEndpointTask(appConfig, query, dataNodeRoot)
-        then:
-        thrown(NullPointerException)
-
-        where:
-        appConfig | query   | dataNodeRoot
-        null      | "Query" | nodeFactory.newRoot("Root")
-        config    | null    | nodeFactory.newRoot("Root")
-        config    | "Query" | null
-    }
-
     def "Should return correct query given any URL"() {
-        given:
-        def root = nodeFactory.newRoot("Root")
-
-        when:
-        def task = new DefaultSparqlEndpointTask(config, query, root)
-
-        then:
-        task.query == "https://baseurltest.com/queryTest"
+        expect:
+        DefaultSparqlEndpointTask.transformQuery(query, "https://baseurltest.com/") == "https://baseurltest.com/queryTest"
 
         where:
         query << ["https://baseurltest.com/queryTest", "queryTest"]
@@ -141,17 +122,14 @@ class APISpecification extends Specification {
 
     def "Should return all valid date types if the type in the collection is \"any\""() {
         given:
-        def root = nodeFactory.newRoot("Root")
-
-        List<String> validDates = config.getMetadataValueUnsafe(ApplicationConfiguration.CFG_KEY_VALID_DATE_FORMATS)
+        def validDates = new ArrayList<>()
         validDates.add(CFG_DATE_FORMAT_ANY)
 
         when:
-        // create a new task because we are testing the constructor
-        def task = new DefaultSparqlEndpointTask(config, "queryTest", root)
+        def result = DefaultSparqlEndpointTask.transformValidDateFormats(validDates)
 
         then:
-        task.validDateFormats.containsAll(CollectionConstants.getAllValidDateFormats())
+        result.containsAll(CollectionConstants.getAllValidDateFormats())
     }
 
     def "Should throw an exception when passing in invalid YAML reader"() {
@@ -178,21 +156,21 @@ class APISpecification extends Specification {
         // test whether methods return correct values
         then:
         config.hasMetadataKey("base-url")
-        config.getMetadataValue("base-url").isPresent()
+        config.getValue("base-url").isPresent()
 
         config.hasMetadataKey("valid-date-formats")
-        config.getMetadataValue("valid-date-formats").isPresent()
+        config.getValue("valid-date-formats").isPresent()
 
         // we need to do this because "only one exception condition is allowed per 'then' block"
         // check for base url
         when:
-        config.getMetadataValueUnsafe("base-url")
+        config.getValueUnsafe("base-url")
 
         then:
         noExceptionThrown()
 
         when:
-        config.getMetadataValueUnsafe("valid-date-formats")
+        config.getValueUnsafe("valid-date-formats")
 
         then:
         noExceptionThrown()
@@ -240,11 +218,11 @@ class APISpecification extends Specification {
         def node = nodeFactory.newNode(root, Map.of("name", "Test name"))
 
         then:
-        node.getMetadataValue("name").isPresent()
-        node.getMetadataValue("name").get() == "Test name"
+        node.getValue("name").isPresent()
+        node.getValue("name").get() == "Test name"
 
         when:
-        node.getMetadataValueUnsafe("name")
+        node.getValueUnsafe("name")
 
         then:
         noExceptionThrown()
@@ -258,7 +236,7 @@ class APISpecification extends Specification {
         def node = nodeFactory.newNode(root)
 
         then:
-        node.getMetadataValue("testKey", "defaultValue") == "defaultValue"
+        node.getValue("testKey", "defaultValue") == "defaultValue"
     }
 
     def "Should iterate through children of root with correct order"() {

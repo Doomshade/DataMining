@@ -7,7 +7,7 @@ import java.util.Collections;
 import java.util.HashSet;
 
 /**
- * <p>Responsible for loading configuration and other</p>
+ * <p>Responsible for loading data from a configuration file via {@link ApplicationConfiguration#reload(Reader)}.</p>
  *
  * @param <R> The generic type of {@link SparqlEndpointTask}
  */
@@ -39,17 +39,17 @@ public interface ApplicationConfiguration<R> extends ArbitraryDataHolder {
     /**
      * @return The resolver that should be called when the program does not know which path to choose.
      */
-    ResponseResolver<R, ?> getAmbiguousResultResolver();
+    ResponseResolver<R> getAmbiguousResultResolver();
 
     /**
      * @return The resolver that should be called when asking for the path predicate.
      */
-    ResponseResolver<R, ?> getOntologyPathPredicateResolver();
+    ResponseResolver<R> getOntologyPathPredicateResolver();
 
     /**
      * @return The resolver that should be called when asking for the start and end points in time.
      */
-    ResponseResolver<R, ?> getStartAndEndDateResolver();
+    ResponseResolver<R> getStartAndEndDateResolver();
 
     /**
      * List of {@link Collection} constants (just to make them unmodifiable).

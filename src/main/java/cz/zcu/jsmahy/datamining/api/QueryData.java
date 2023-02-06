@@ -6,10 +6,8 @@ import lombok.NoArgsConstructor;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.rdf.model.Statement;
 
 import java.util.Collection;
-import java.util.List;
 
 /**
  * Bean for the query progression. Used in {@link ResponseResolver}s to help them distinguish what the problem is.
@@ -30,14 +28,6 @@ public class QueryData {
      * The subject for the very first search.
      */
     private Resource initialSubject;
-    /**
-     * Candidates for ontology path predicates -- i.e. the path the user wants to search under, such as successor, predecessor, doctoral advisor, ...
-     */
-    private List<Statement> candidatesForOntologyPathPredicate;
-    /**
-     * Candidates for start and end dates -- i.e. the time interval.
-     */
-    private List<Statement> candidatesForStartAndEndDates;
     /**
      * The path the user chose to search under, such as successor, predecessor, doctoral advisor, ...
      */

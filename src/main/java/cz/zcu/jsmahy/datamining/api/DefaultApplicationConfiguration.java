@@ -12,7 +12,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * Default implementation of the application configuration.
@@ -31,11 +33,10 @@ public class DefaultApplicationConfiguration<R> extends DefaultArbitraryDataHold
 
     private final RequestProgressListener progressListener;
     private final DataNodeFactory dataNodeFactory;
-    private final ResponseResolver<R, ?> ambiguousResultResolver;
-    private final ResponseResolver<R, ?> ontologyPathPredicateResolver;
-    private final ResponseResolver<R, ?> startAndEndDateResolver;
+    private final ResponseResolver<R> ambiguousResultResolver;
+    private final ResponseResolver<R> ontologyPathPredicateResolver;
+    private final ResponseResolver<R> startAndEndDateResolver;
     private final Object lock = new Object();
-    private final Map<String, Object> configVariables = new HashMap<>();
 
     @Inject
     @SuppressWarnings("unchecked, rawtypes")

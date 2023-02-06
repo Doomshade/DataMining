@@ -72,6 +72,8 @@ public class FialaBPExport {
 
     public static class FialaBPSerializer extends DataNodeSerializer<Void> {
 
+        private int processedNodes = 0;
+
         public FialaBPSerializer(final OutputStream out, final DataNode root) {
             super(out, root);
         }
@@ -82,8 +84,6 @@ public class FialaBPExport {
             mapper.setDateFormat(new StdDateFormat().withColonInTimeZone(true));
             mapper.writeValue(out, root);
         }
-
-        private int processedNodes = 0;
 
         private void processNode(final long max) {
             processedNodes++;
@@ -97,7 +97,7 @@ public class FialaBPExport {
             final List<DataNodeExportNodeFormat> nodes = getNodes(dataNodes);
             final List<DataNodeExportEdgeFormat> edges = getEdges(dataNodes);
             final boolean allProcessed = processedNodes == dataNodes.size() * 2L;
-            LOGGER.debug("Processed all: {}", allProcessed);
+            LOGGER.debug("Processed {}/{}", processedNodes, dataNodes.size() * 2L);
             assert allProcessed;
             final DataNodeExportFormatRoot root = new DataNodeExportFormatRoot(nodes, edges);
             serialize(root);
@@ -108,15 +108,16 @@ public class FialaBPExport {
             final List<DataNodeExportEdgeFormat> edges = new ArrayList<>();
             long id = 1;
             for (DataNode dataNode : dataNodes) {
-                final Optional<List<Relationship>> opt = dataNode.getMetadataValue(METADATA_KEY_RELATIONSHIPS);
+                final Optional<List<Relationship>> opt = dataNode.getValue(METADATA_KEY_RELATIONSHIPS);
                 if (opt.isEmpty()) {
+                    processNode(dataNodes.size() * 2L);
                     continue;
                 }
                 for (final Relationship relationship : opt.get()) {
-                    final String stereotype = relationship.getMetadataValue(METADATA_KEY_STEREOTYPE, "");
+                    final String stereotype = relationship.getValue(METADATA_KEY_STEREOTYPE, "");
                     final long from = relationship.getFrom();
                     final long to = relationship.getTo();
-                    final String name = relationship.getMetadataValue(METADATA_KEY_NAME, "");
+                    final String name = relationship.getValue(METADATA_KEY_NAME, "");
                     edges.add(new DataNodeExportEdgeFormat(id++, stereotype, from, to, name));
                     processNode(dataNodes.size() * 2L);
                 }

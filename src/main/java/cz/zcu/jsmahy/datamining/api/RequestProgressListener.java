@@ -1,14 +1,15 @@
 package cz.zcu.jsmahy.datamining.api;
 
-import cz.zcu.jsmahy.datamining.dbpedia.DBPediaEndpointTask;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 /**
  * <p>A listener for request callbacks. For example when a {@link DataNode} is created the front end would want to handle that fact and update the UI.</p>
- * <p>NOTE: The methods are not necessarily called on the FX UI thread! Make sure to update UI on the UI thread via {@link javafx.application.Platform#runLater(Runnable)}.</p>
+ * <p>NOTE: The methods are not necessarily called on the FX UI thread! Make sure to update UI on the UI thread via {@link javafx.application.Platform#runLater(Runnable)}. Also note that if you
+ * want to be 100% thread safe do make the methods {@code synchronized}.</p>
  *
  * @author Jakub Šmrha
  * @version 1.0
@@ -48,7 +49,7 @@ public interface RequestProgressListener {
      * @param query  the query
      * @param result the initial search result
      */
-    void onInvalidQuery(String query, final DBPediaEndpointTask.InitialSearchResult result);
+    void onInvalidQuery(String query, final InitialSearchResult result);
 
     /**
      * Called when the search is finished.
@@ -61,5 +62,5 @@ public interface RequestProgressListener {
      * @param startDateProperty the start date property
      * @param endDateProperty   the end date property
      */
-    void setStartAndDateProperty(Property startDateProperty, Property endDateProperty);
+    void setStartAndDateProperty(Property startDateProperty, @Nullable Property endDateProperty);
 }

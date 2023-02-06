@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import com.jfoenix.controls.JFXSpinner?>
 <?import com.jfoenix.controls.JFXTreeView?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.web.WebView?>
@@ -33,5 +33,5 @@
             </JFXTreeView>
         </left>
     </BorderPane>
-    <JFXSpinner fx:id="progressIndicator" radius="10" visible="false"/>
+    <ProgressIndicator fx:id="progressIndicator" visible="false"/>
 </StackPane>
