@@ -163,7 +163,6 @@ public class FialaBPRequestProgressListener implements RequestProgressListener {
     public void onInvalidQuery(final String invalidQuery, final InitialSearchResult result) {
         Platform.runLater(() -> {
             // TODO: resource bundle
-            // TODO: different alerts for different results
             assert result != InitialSearchResult.OK;
             final Alert alert = new Alert(Alert.AlertType.ERROR);
             switch (result) {
@@ -175,8 +174,8 @@ public class FialaBPRequestProgressListener implements RequestProgressListener {
                     final String exampleWikiUrl = wikiUrl + "Charles_IV,_Holy_Roman_Emperor";
                     final String exampleUri = "Charles IV, Holy Roman Emperor";
                     alert.setContentText(String.format(
-                            "No results were found querying '%s'. The query must correspond to the wikipedia URL:%n%n%s%n%nYour query corresponds to an unknown URL:%n%n%s%n%nIn this example '%s' is" +
-                            " a valid query. Spaces instead of underscores are allowed.",
+                            "No results were found querying '%s'. The query must be a valid query to the wikipedia URL, such as:%n%n%s%n%nYour query corresponds to an unknown URL:%n%n%s%n%nIn this " +
+                            "example '%s' is a valid query. Spaces instead of underscores are allowed.",
                             invalidQuery,
                             exampleWikiUrl,
                             queryWikiUrl,

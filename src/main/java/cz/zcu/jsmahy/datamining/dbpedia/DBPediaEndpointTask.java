@@ -85,28 +85,24 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
             } else {
                 throw new ClassCastException("Inner date type is of unknown value: " + innerDateType);
             }
-            LOGGER.debug("Setting {} date (inner type: {}, actual date: {}) to {}", isStartDate ? "start" : "end", innerDateType, calendar, curr.getValue(METADATA_KEY_NAME, "<no name>"));
+            LOGGER.trace("Setting {} date (inner type: {}, actual date: {}) to {}", isStartDate ? "start" : "end", innerDateType, calendar, curr.getValue(METADATA_KEY_NAME, "<no name>"));
             if (isStartDate) {
                 curr.addMetadata(DataNode.METADATA_KEY_START_DATE, calendar);
             } else {
                 curr.addMetadata(DataNode.METADATA_KEY_END_DATE, calendar);
             }
         } else {
-            // TODO: solve this
-            LOGGER.warn("No {} date found for {}!", isStartDate ? "start" : "end", subject);
-            // if the end date was not found, default it to the start date
-            if (!isStartDate) {
-                curr.getValue(DataNode.METADATA_KEY_START_DATE)
-                    .ifPresent(startDate -> {
-                        LOGGER.debug("Setting end date to match start date ({}) because no end date was found.", startDate);
-                        curr.addMetadata(DataNode.METADATA_KEY_END_DATE, startDate);
-                    });
+            if (isStartDate) {
+                LOGGER.error("No start date found for {}!", subject);
+            } else {
+                LOGGER.debug("No end date found for {}. This will be considered a 'moment'", subject);
             }
         }
     }
 
     @Override
     public synchronized R call() throws InvalidQueryException {
+        this.usedURIs.clear();
         final Model model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
         final QueryData inputMetadata = new QueryData();
         try {
@@ -119,25 +115,33 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
             throw new InvalidQueryException(e);
         }
 
-        final Resource subject = model.getResource(query);
-        inputMetadata.setInitialSubject(subject);
-        inputMetadata.setRestrictions(new ArrayList<>());
-        this.usedURIs.clear();
-
-        LOGGER.info("Start searching");
-        final InitialSearchResult result = initialSearch(inputMetadata);
-        if (result == InitialSearchResult.OK) {
-            progressListener.queryDataProperty()
-                            .set(inputMetadata);
-            final Selector selector = new SimpleSelector(subject, inputMetadata.getOntologyPathPredicate(), (RDFNode) null);
-            search(inputMetadata, selector, null);
-            LOGGER.info("Done searching");
-//            dataNodeRoot.iterate(((dataNode, integer) -> System.out.println(dataNode)));
-            progressListener.onSearchDone();
+        final InitialSearchResult result;
+        final boolean subjectFound = model.listStatements()
+                                          .hasNext();
+        if (!subjectFound) {
+            result = InitialSearchResult.SUBJECT_NOT_FOUND;
         } else {
-            LOGGER.info("Invalid createBackgroundSparqlRequest '{}' - no results were found. Initial search result: {}", query, result);
-            progressListener.onInvalidQuery(query, result);
+            // get the initial data such as start date, end date etc
+            final Resource subject = model.createResource(query);
+            inputMetadata.setInitialSubject(subject);
+            inputMetadata.setRestrictions(new ArrayList<>());
+            result = initialSearch(inputMetadata);
         }
+        if (result != InitialSearchResult.OK) {
+            LOGGER.info("Invalid createBackgroundSparqlRequest '{}' - no results were found. Initial search result: {}", query, result);
+            progressListener.onInvalidQuery(originalQuery, result);
+            return null;
+        }
+
+        progressListener.queryDataProperty()
+                        .set(inputMetadata);
+        final Selector selector = new SimpleSelector(inputMetadata.getInitialSubject(), inputMetadata.getOntologyPathPredicate(), (RDFNode) null);
+        LOGGER.info("Start searching");
+        search(inputMetadata, selector, null);
+        LOGGER.info("Done searching");
+//            dataNodeRoot.iterate(((dataNode, integer) -> System.out.println(dataNode)));
+        progressListener.onSearchDone();
+
         return null;
     }
 
@@ -196,7 +200,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         final StmtIterator statements = model.listStatements(selector);
         if (!statements.hasNext()) {
             LOGGER.info("No date found for input {}", inputMetadata);
-            return InitialSearchResult.NO_DATE_FOUND;
+            return InitialSearchResult.SUBJECT_NOT_FOUND;
         }
 
         startAndEndDateResolver.resolve(Collections.unmodifiableCollection(statements.toList()), this);
@@ -306,7 +310,6 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
      * @param selector the selector
      */
     private void search(final QueryData inputMetadata, final Selector selector, final DataNode prev) {
-        LOGGER.debug("Search");
         final Model model = inputMetadata.getCurrentModel();
         final DataNode curr = dataNodeFactory.newNode(dataNodeRoot);
         final Resource currRDFNode = selector.getSubject();

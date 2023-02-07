@@ -28,6 +28,7 @@ public class DefaultSparqlEndpointTask<R> extends SparqlEndpointTask<R> {
     protected final RequestProgressListener progressListener;
 
     protected final String query;
+    protected final String originalQuery;
     protected final DataNode dataNodeRoot;
 
     public DefaultSparqlEndpointTask(final String query, final DataNode dataNodeRoot, final ApplicationConfiguration config, final RequestProgressListener progressListener) {
@@ -35,7 +36,8 @@ public class DefaultSparqlEndpointTask<R> extends SparqlEndpointTask<R> {
         this.dataNodeRoot = requireNonNull(dataNodeRoot);
         this.progressListener = requireNonNull(progressListener);
 
-        this.query = transformQuery(query, config.getValueUnsafe(CFG_KEY_BASE_URL));
+        this.originalQuery = requireNonNull(query);
+        this.query = transformQuery(originalQuery, config.getValueUnsafe(CFG_KEY_BASE_URL));
 
         final List<String> ignoredPathPredicates = config.getValueUnsafe(CFG_KEY_IGNORE_PATH_PREDICATES);
         this.ignoredPathPredicates.addAll(ignoredPathPredicates);

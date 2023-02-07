@@ -2,11 +2,11 @@ package cz.zcu.jsmahy.datamining.app.controller;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Module;
 import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
 import cz.zcu.jsmahy.datamining.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.export.FialaBPModule;
-import cz.zcu.jsmahy.datamining.export.FialaBPSerializer;
 import cz.zcu.jsmahy.datamining.util.DialogHelper;
 import cz.zcu.jsmahy.datamining.util.RDFNodeUtil;
 import javafx.application.Platform;
@@ -50,21 +50,14 @@ import java.util.ResourceBundle;
  */
 public class MainController implements Initializable {
     public static final String FILE_NAME_FORMAT = "%s.%s";
-    /*
-    PREFIX rdf: <https://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    PREFIX r: <http://dbpedia.org/resource/>
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-    PREFIX dbp: <http://dbpedia.org/property/>
-    select distinct ?name
-    {
-    ?pred dbp:predecessor <http://dbpedia.org/resource/Charles_IV,_Holy_Roman_Emperor> .
-    ?pred dbp:predecessor+ ?name
-    }
-    order by ?pred
-         */
+    // TODO: this could be loaded as a service someday :)
+    // we'll basically ask for a module implementation to provide
+    // this is VERY not needed
+    private static final Module[] MODULES = new Module[] {
+            new DataMiningModule(), new DBPediaModule(), new FialaBPModule()
+    };
     private static final String WIKI_URL = "https://wikipedia.org/wiki/%s";
     private static final Logger LOGGER = LogManager.getLogger(MainController.class);
-    private static MainController instance = null;
     //<editor-fold desc="Attributes for query building">
     //<editor-fold desc="UI related attributes">
     @FXML
@@ -100,21 +93,12 @@ public class MainController implements Initializable {
 
     };
     private SparqlEndpointAgent<Void> requestHandler;
-
-    public static MainController getInstance() {
-        return instance;
-    }
-
+    private Injector injector;
 
     @Override
     @SuppressWarnings("unchecked")
     public void initialize(final URL location, final ResourceBundle resources) {
-        instance = this;
-        final DataMiningModule dataMiningModule = new DataMiningModule();
-        final DBPediaModule dbPediaModule = new DBPediaModule();
-        final FialaBPModule fialaBPModule = new FialaBPModule();
-
-        final Injector injector = Guice.createInjector(dataMiningModule, dbPediaModule, fialaBPModule);
+        this.injector = Guice.createInjector(MODULES);
         this.nodeFactory = injector.getInstance(DataNodeFactory.class);
         this.requestHandler = injector.getInstance(SparqlEndpointAgent.class);
         this.dialogHelper = injector.getInstance(DialogHelper.class);
@@ -207,7 +191,7 @@ public class MainController implements Initializable {
                                                            .greaterThan(0);
             bindProperties(runningProperty, progressProperty);
 
-            final FialaBPSerializer serializer = new FialaBPSerializer();
+            final DataNodeSerializer serializer = injector.getInstance(DataNodeSerializer.class);
             for (final TreeItem<DataNode> root : dataNodeRoots) {
                 final DataNode dataNodeRoot = root.getValue();
                 final OutputStream out;
@@ -258,37 +242,7 @@ public class MainController implements Initializable {
         return menuItem;
     }
 
-    /**
-     * Handler for mouse press on the search button.
-     *
-     * @param root        the tree root
-     * @param searchValue the search value
-     */
-    public void search(final DataNode root, final String searchValue) {
-        if (searchValue.isBlank()) {
-            LOGGER.trace("Search field is blank, not searching for anything.");
-            final Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setTitle("Invalid search");
-            alert.setContentText("Please enter some text to search.");
-            return;
-        }
-
-        final Service<Void> query = createSearchService(root, searchValue);
-        bindQueryService(query);
-        query.restart();
-    }
-
-    @SuppressWarnings("ThrowableNotThrown")
-    private Service<Void> createSearchService(final DataNode root, final String searchValue) {
-        final Service<Void> query = requestHandler.createBackgroundService(searchValue, root);
-        query.setOnSucceeded(x -> ontologyTreeView.getSelectionModel()
-                                                  .selectFirst());
-        query.setOnFailed(x -> query.getException()
-                                    .printStackTrace());
-        return query;
-    }
-
-    public synchronized void bindQueryService(final Service<?> service) {
+    public void bindQueryService(final Service<?> service) {
         bindProperties(service.runningProperty(), service.progressProperty());
     }
 

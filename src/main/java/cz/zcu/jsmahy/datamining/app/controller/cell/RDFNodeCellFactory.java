@@ -13,11 +13,15 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
 import org.apache.jena.rdf.model.RDFNode;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
+
+import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_URI;
 
 /**
  * <p>Factory for {@link RDFNode} nodes in a {@link ListView}</p>
@@ -28,6 +32,7 @@ import java.util.ResourceBundle;
  * @since 1.0
  */
 public class RDFNodeCellFactory extends TreeCell<DataNode> {
+    private static final Logger LOGGER = LogManager.getLogger(RDFNodeCellFactory.class);
     private TextField textField;
 
     public RDFNodeCellFactory(final TreeView<DataNode> treeView,
@@ -81,7 +86,8 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
         final MenuItem menuItem = new MenuItem(resources.getString("create-new-line"));
         menuItem.setOnAction(event -> {
             final TreeItem<DataNode> root = treeView.getRoot();
-            final Optional<DataNode> dataNodeRootOpt = getItem().findRoot();
+            final DataNode item = getItem();
+            final Optional<DataNode> dataNodeRootOpt = item.findRoot();
             assert dataNodeRootOpt.isPresent(); // the item should not be a root, thus the item's root should be present
             final String name = dataNodeRootOpt.get()
                                                .getValue("name")
@@ -89,8 +95,12 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
             final DataNode newDataNodeRoot = nodeFactory.newRoot(name);
             root.getChildren()
                 .add(new TreeItem<>(newDataNodeRoot));
-            final String query = getItem().getValueUnsafe("uri");
-            final Service<?> service = requestHandler.createBackgroundService(query, newDataNodeRoot);
+            final Optional<String> query = item.getValue(METADATA_KEY_URI);
+            if (query.isEmpty()) {
+                LOGGER.error("Could not create new line. Reason: Selected item '{}' does not have URI stored under the key '{}'", item, METADATA_KEY_URI);
+                return;
+            }
+            final Service<?> service = requestHandler.createBackgroundService(query.get(), newDataNodeRoot);
             mainController.bindQueryService(service);
             service.restart();
         });
@@ -102,7 +112,12 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
         menuItem.setOnAction(event -> dialogHelper.textInputDialog(resources.getString("item-to-search"), searchValue -> {
             getTreeItem().setExpanded(true);
             assert getItem().isRoot();
-            final Service<?> service = sparqlEndpointAgent.createBackgroundService(searchValue.replaceAll(" ", "_"), getItem());
+            final String query = searchValue.replaceAll(" ", "_");
+            if (query.isBlank()) {
+                // TODO: show an alert
+                return;
+            }
+            final Service<?> service = sparqlEndpointAgent.createBackgroundService(query, getItem());
             mainController.bindQueryService(service);
             service.restart();
         }, "Title"));
