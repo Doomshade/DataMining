@@ -29,7 +29,7 @@ class APISpecification extends Specification {
     static Injector injector
 
     @Shared
-    private ApplicationConfiguration<?> config
+    private ApplicationConfiguration config
     @Shared
     private DefaultSparqlEndpointTask<?> defaultTask
     @Shared
@@ -60,7 +60,7 @@ class APISpecification extends Specification {
 
     void setup() {
         this.config = injector.getInstance(ApplicationConfiguration)
-        this.defaultTask = new DefaultSparqlEndpointTask("queryTest", nodeFactory.newRoot("Root"), config, Mock(RequestProgressListener), nodeFactory, Mock(ResponseResolver), Mock(ResponseResolver), Mock(ResponseResolver))
+        this.defaultTask = new DefaultSparqlEndpointTask("queryTest", nodeFactory.newRoot("Root"), config, Mock(RequestProgressListener))
         this.endpointAgent = injector.getInstance(SparqlEndpointAgent.class)
     }
 
@@ -122,19 +122,19 @@ class APISpecification extends Specification {
 
     def "Should return all valid date types if the type in the collection is \"any\""() {
         given:
-        def validDates = new ArrayList<>()
+        List<String> validDates = new ArrayList<>()
         validDates.add(CFG_DATE_FORMAT_ANY)
 
         when:
         def result = DefaultSparqlEndpointTask.transformValidDateFormats(validDates)
 
         then:
-        result.containsAll(CollectionConstants.getAllValidDateFormats())
+        result.containsAll(ApplicationConfiguration.ALL_VALID_DATE_FORMATS)
     }
 
     def "Should throw an exception when passing in invalid YAML reader"() {
         // we don't need any of the parameters as they serve as getters/members of class only
-        def config = new DefaultApplicationConfiguration(Mock(RequestProgressListener), Mock(DataNodeFactory), Mock(ResponseResolver), Mock(ResponseResolver), Mock(ResponseResolver))
+        def config = new DefaultApplicationConfiguration()
         def reader = new StringReader("{ \"Why am I putting JSON here?!\": \"Because you are a moron :)\" }\nWhatAmIDoing: \"Following it up with YAML!\"")
 
         when:
@@ -147,7 +147,7 @@ class APISpecification extends Specification {
     def "Should return variables that were passed in as reader"() {
         given:
         // we don't need any of the parameters as they serve as getters/members of class only
-        def config = new DefaultApplicationConfiguration(Mock(RequestProgressListener), Mock(DataNodeFactory), Mock(ResponseResolver), Mock(ResponseResolver), Mock(ResponseResolver))
+        def config = new DefaultApplicationConfiguration()
         def reader = new StringReader(YAML_SAMPLE)
 
         when:

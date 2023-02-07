@@ -14,11 +14,13 @@ public abstract class SparqlEndpointTask<R> extends Task<R> {
 
     public abstract void unlockDialogPane();
 
-    public abstract ApplicationConfiguration<R> getConfig();
+    public abstract ApplicationConfiguration getConfig();
 
     public abstract String getQuery();
 
     public abstract DataNode getDataNodeRoot();
+
+    public abstract RequestProgressListener getProgressListener();
 
     // public for testing purposes
     @Override

@@ -12,7 +12,7 @@ class Mocks {
         module(config, taskProvider)
     }
 
-    Module module(ApplicationConfiguration<?> config, SparqlEndpointTaskProvider<?> taskProvider) {
+    Module module(ApplicationConfiguration config, SparqlEndpointTaskProvider<?> taskProvider) {
         new DataMiningModule() {
             @Override
             protected void configure() {

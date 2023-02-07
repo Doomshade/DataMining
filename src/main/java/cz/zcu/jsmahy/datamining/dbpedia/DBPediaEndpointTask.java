@@ -23,6 +23,7 @@ import static cz.zcu.jsmahy.datamining.resolvers.MultipleItemChoiceResolver.RESU
 import static cz.zcu.jsmahy.datamining.resolvers.StartAndEndDateResolver.RESULT_KEY_END_DATE_PREDICATE;
 import static cz.zcu.jsmahy.datamining.resolvers.StartAndEndDateResolver.RESULT_KEY_START_DATE_PREDICATE;
 import static cz.zcu.jsmahy.datamining.util.RDFNodeUtil.setDataNodeNameFromRDFNode;
+import static java.util.Objects.requireNonNull;
 
 /**
  * The DBPedia {@link SparqlEndpointTask}.
@@ -41,10 +42,14 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
                                                                                                 y.getObject()
                                                                                                  .isURIResource());
     private static final Property PROPERTY_DBO_ABSTRACT = ResourceFactory.createProperty("https://dbpedia.org/ontology/abstract");
+    private final DataNodeFactory dataNodeFactory;
+    private final ResponseResolver<Collection<RDFNode>> ambiguousResultResolver;
+    private final ResponseResolver<Collection<Statement>> ontologyPathPredicateResolver;
+    private final ResponseResolver<Collection<Statement>> startAndEndDateResolver;
     private final Collection<String> usedURIs = new HashSet<>();
 
     @Inject
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings("unchecked, rawtypes")
     public DBPediaEndpointTask(final String query,
                                final DataNode dataNodeRoot,
                                final ApplicationConfiguration config,
@@ -53,7 +58,11 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
                                final @Named("userAssisted") ResponseResolver ambiguousResultResolver,
                                final @Named("ontologyPathPredicate") ResponseResolver ontologyPathPredicateResolver,
                                final @Named("date") ResponseResolver startAndEndDateResolver) {
-        super(query, dataNodeRoot, config, progressListener, dataNodeFactory, ambiguousResultResolver, ontologyPathPredicateResolver, startAndEndDateResolver);
+        super(query, dataNodeRoot, config, progressListener);
+        this.dataNodeFactory = requireNonNull(dataNodeFactory);
+        this.ambiguousResultResolver = requireNonNull(ambiguousResultResolver);
+        this.ontologyPathPredicateResolver = requireNonNull(ontologyPathPredicateResolver);
+        this.startAndEndDateResolver = requireNonNull(startAndEndDateResolver);
     }
 
     private void addDatesToNode(final Model model, final DataNode curr, final Property dateProperty, final Resource subject, final boolean isStartDate) {
@@ -98,7 +107,6 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
 
     @Override
     public synchronized R call() throws InvalidQueryException {
-        final RequestProgressListener progressListener = config.getProgressListener();
         final Model model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
         final QueryData inputMetadata = new QueryData();
         try {
@@ -262,9 +270,8 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         }
 
         inputMetadata.setOntologyPathPredicate(ontologyPathPredicateOpt.get());
-        config.getProgressListener()
-              .ontologyPathPredicateProperty()
-              .set(ontologyPathPredicateOpt.get());
+        progressListener.ontologyPathPredicateProperty()
+                        .set(ontologyPathPredicateOpt.get());
         return InitialSearchResult.OK;
     }
 
@@ -301,10 +308,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
     private void search(final QueryData inputMetadata, final Selector selector, final DataNode prev) {
         LOGGER.debug("Search");
         final Model model = inputMetadata.getCurrentModel();
-        final RequestProgressListener progressListener = config.getProgressListener();
-
-        final DataNodeFactory nodeFactory = config.getDataNodeFactory();
-        final DataNode curr = nodeFactory.newNode(dataNodeRoot);
+        final DataNode curr = dataNodeFactory.newNode(dataNodeRoot);
         final Resource currRDFNode = selector.getSubject();
         initializeDataNode(curr, currRDFNode, inputMetadata);
 
@@ -380,7 +384,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         final List<DataNode> currDataNodeChildren = new ArrayList<>();
         // WARN: Deleted handling for multiple references as it might not even be in the final version.
         for (final RDFNode rdfNode : foundDataList) {
-            final DataNode child = nodeFactory.newNode(curr);
+            final DataNode child = dataNodeFactory.newNode(curr);
             child.addMetadata(DataNode.METADATA_KEY_RDF_NODE, rdfNode);
             setDataNodeNameFromRDFNode(child, rdfNode);
             currDataNodeChildren.add(child);

@@ -1,11 +1,6 @@
 package cz.zcu.jsmahy.datamining.api;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.name.Names;
-import cz.zcu.jsmahy.datamining.resolvers.MultipleItemChoiceResolver;
-import cz.zcu.jsmahy.datamining.resolvers.OntologyPathPredicateResolver;
-import cz.zcu.jsmahy.datamining.resolvers.StartAndEndDateResolver;
-import cz.zcu.jsmahy.datamining.util.DialogHelper;
 
 import static com.google.inject.Scopes.SINGLETON;
 
@@ -51,19 +46,7 @@ public class DataMiningModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        bind(DialogHelper.class).in(SINGLETON);
         bind(DataNodeFactory.class).in(SINGLETON);
         bind(ApplicationConfiguration.class).to(DefaultApplicationConfiguration.class);
-
-        // ambiguous input resolvers
-        bind(ResponseResolver.class).annotatedWith(Names.named("userAssisted"))
-                                    .to(MultipleItemChoiceResolver.class)
-                                    .in(SINGLETON);
-        bind(ResponseResolver.class).annotatedWith(Names.named("ontologyPathPredicate"))
-                                    .to(OntologyPathPredicateResolver.class)
-                                    .in(SINGLETON);
-        bind(ResponseResolver.class).annotatedWith(Names.named("date"))
-                                    .to(StartAndEndDateResolver.class)
-                                    .in(SINGLETON);
     }
 }

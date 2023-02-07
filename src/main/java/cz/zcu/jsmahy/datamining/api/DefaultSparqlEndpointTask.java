@@ -3,8 +3,6 @@ package cz.zcu.jsmahy.datamining.api;
 import javafx.concurrent.Task;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.Statement;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -26,31 +24,16 @@ import static java.util.Objects.requireNonNull;
 public class DefaultSparqlEndpointTask<R> extends SparqlEndpointTask<R> {
     protected final Collection<String> ignoredPathPredicates = new HashSet<>();
     protected final Collection<String> validDateFormats = new HashSet<>();
-    protected final ApplicationConfiguration<R> config;
+    protected final ApplicationConfiguration config;
     protected final RequestProgressListener progressListener;
-    protected final DataNodeFactory dataNodeFactory;
-    protected final ResponseResolver<Collection<RDFNode>> ambiguousResultResolver;
-    protected final ResponseResolver<Collection<Statement>> ontologyPathPredicateResolver;
-    protected final ResponseResolver<Collection<Statement>> startAndEndDateResolver;
+
     protected final String query;
     protected final DataNode dataNodeRoot;
 
-    @SuppressWarnings("unchecked, rawtypes")
-    public DefaultSparqlEndpointTask(final String query,
-                                     final DataNode dataNodeRoot,
-                                     final ApplicationConfiguration config,
-                                     final RequestProgressListener progressListener,
-                                     final DataNodeFactory dataNodeFactory,
-                                     final ResponseResolver ambiguousResultResolver,
-                                     final ResponseResolver ontologyPathPredicateResolver,
-                                     final ResponseResolver startAndEndDateResolver) {
+    public DefaultSparqlEndpointTask(final String query, final DataNode dataNodeRoot, final ApplicationConfiguration config, final RequestProgressListener progressListener) {
         this.config = requireNonNull(config);
         this.dataNodeRoot = requireNonNull(dataNodeRoot);
         this.progressListener = requireNonNull(progressListener);
-        this.dataNodeFactory = requireNonNull(dataNodeFactory);
-        this.ambiguousResultResolver = requireNonNull(ambiguousResultResolver);
-        this.ontologyPathPredicateResolver = requireNonNull(ontologyPathPredicateResolver);
-        this.startAndEndDateResolver = requireNonNull(startAndEndDateResolver);
 
         this.query = transformQuery(query, config.getValueUnsafe(CFG_KEY_BASE_URL));
 
@@ -66,7 +49,7 @@ public class DefaultSparqlEndpointTask<R> extends SparqlEndpointTask<R> {
                                                                 .map(String::toLowerCase)
                                                                 .collect(Collectors.toSet());
         if (validDateFormatsSet.contains(CFG_DATE_FORMAT_ANY)) {
-            return ApplicationConfiguration.CollectionConstants.getAllValidDateFormats();
+            return ALL_VALID_DATE_FORMATS;
         } else {
             return validDateFormatsSet;
         }

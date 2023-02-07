@@ -13,7 +13,7 @@ import static java.util.Objects.requireNonNull;
 public class DBPediaEndpointTaskProvider<R> implements SparqlEndpointTaskProvider<R> {
     private static final Logger LOGGER = LogManager.getLogger(DBPediaEndpointTaskProvider.class);
 
-    private final ApplicationConfiguration<R> config;
+    private final ApplicationConfiguration config;
     private final RequestProgressListener progressListener;
     private final DataNodeFactory dataNodeFactory;
     private final ResponseResolver<?> ambiguousResultResolver;
