@@ -22,6 +22,8 @@ public class FialaBPRequestProgressListener implements RequestProgressListener {
     public static final Map<String, String> METADATA_DEFAULT_PROPERTIES = Map.of("startPrecision", "day", "endPrecision", "day");
     public static final String METADATA_DEFAULT_STEREOTYPE = "person";
     private static final Logger LOGGER = LogManager.getLogger(FialaBPRequestProgressListener.class);
+    // valid values: "part_of", "creation", "participation", "cause", "takes_place", "interaction", "relationship"
+    private static final String DEFAULT_STEREOTYPE = "relationship";
     private final ObjectProperty<Property> ontologyPathPredicate = new SimpleObjectProperty<>();
     private final ObjectProperty<Property> startDate = new SimpleObjectProperty<>();
     private final ObjectProperty<Property> endDate = new SimpleObjectProperty<>();
@@ -132,7 +134,7 @@ public class FialaBPRequestProgressListener implements RequestProgressListener {
                                               .getLocalName());
 
             // TODO: User input
-            relationship.addMetadata(METADATA_KEY_STEREOTYPE, "relationship");
+            relationship.addMetadata(METADATA_KEY_STEREOTYPE, DEFAULT_STEREOTYPE);
             relationships.add(relationship);
             if (!prev.hasMetadataKey(METADATA_KEY_RELATIONSHIPS)) {
                 prev.addMetadata(METADATA_KEY_RELATIONSHIPS, relationships);
