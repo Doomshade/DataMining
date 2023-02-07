@@ -37,6 +37,7 @@ public class DefaultSparqlEndpointTask<R> extends SparqlEndpointTask<R> {
         this.progressListener = requireNonNull(progressListener);
 
         this.originalQuery = requireNonNull(query);
+//        final String baseUrl = "http://cs.dbpedia.org/resource/";
         this.query = transformQuery(originalQuery, config.getValueUnsafe(CFG_KEY_BASE_URL));
 
         final List<String> ignoredPathPredicates = config.getValueUnsafe(CFG_KEY_IGNORE_PATH_PREDICATES);

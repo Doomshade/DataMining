@@ -26,6 +26,7 @@ public class StartAndEndDateResolver extends DefaultResponseResolver<Collection<
                                             .getValue();
                 return new ReadOnlyObjectWrapper<>(date.toString());
             };
+            // TODO: this should be separate
             final RDFNodeChooserDialog startDateDialog = new RDFNodeChooserDialog(candidatesForStartAndEndDates, RDFNodeChooserDialog.IS_DBPEDIA_SITE, cellValueCallback);
             startDateDialog.showDialogueAndWait(statement -> result.addMetadata(RESULT_KEY_START_DATE_PREDICATE, statement.getPredicate()));
 

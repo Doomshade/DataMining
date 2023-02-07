@@ -32,6 +32,7 @@ import static java.util.Objects.requireNonNull;
  * @version 1.0
  */
 public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
+    public static final int MAX_REDIRECTS = 20;
     private static final Logger LOGGER = LogManager.getLogger(DBPediaEndpointTask.class);
     /**
      * <p>This comparator ensures the URI resources are placed first over literal resources.</p>
@@ -42,6 +43,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
                                                                                                 y.getObject()
                                                                                                  .isURIResource());
     private static final Property PROPERTY_DBO_ABSTRACT = ResourceFactory.createProperty("https://dbpedia.org/ontology/abstract");
+    private static final Property PROPERTY_REDIRECT = ResourceFactory.createProperty("http://dbpedia.org/ontology/wikiPageRedirects");
     private final DataNodeFactory dataNodeFactory;
     private final ResponseResolver<Collection<RDFNode>> ambiguousResultResolver;
     private final ResponseResolver<Collection<Statement>> ontologyPathPredicateResolver;
@@ -123,7 +125,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         } else {
             // get the initial data such as start date, end date etc
             final Resource subject = model.createResource(query);
-            inputMetadata.setInitialSubject(subject);
+            inputMetadata.setInitialSubject(redirectIfPossible(subject, model));
             inputMetadata.setRestrictions(new ArrayList<>());
             result = initialSearch(inputMetadata);
         }
@@ -143,6 +145,34 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         progressListener.onSearchDone();
 
         return null;
+
+    }
+
+    private Resource redirectIfPossible(final Resource subject, final Model model) {
+        return redirectIfPossible(subject, model, MAX_REDIRECTS);
+    }
+
+    private Resource redirectIfPossible(final Resource subject, final Model model, final int maxRedirects) {
+        if (maxRedirects <= 0 || maxRedirects > MAX_REDIRECTS) {
+            return subject;
+        }
+        // DBPEDIA SPECIFIC
+        final StmtIterator stmts = model.listStatements(subject, PROPERTY_REDIRECT, (RDFNode) null);
+        if (!stmts.hasNext()) {
+            LOGGER.debug("No redirects found for {}.", subject);
+            return subject;
+        }
+        final RDFNode object = stmts.next()
+                                    .getObject();
+        if (!object.isURIResource()) {
+            LOGGER.debug("Found a redirect {}, but it's not a URI resource.", object);
+            return subject;
+        }
+        // continue redirecting
+        final Resource newSubject = object.asResource();
+        LOGGER.debug("Redirecting to {}.", newSubject);
+        model.read(newSubject.getURI());
+        return redirectIfPossible(newSubject, model, maxRedirects - 1);
     }
 
     /**
@@ -310,36 +340,36 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
      * @param selector the selector
      */
     private void search(final QueryData inputMetadata, final Selector selector, final DataNode prev) {
+        // create a new node and add it to the model
         final Model model = inputMetadata.getCurrentModel();
         final DataNode curr = dataNodeFactory.newNode(dataNodeRoot);
-        final Resource currRDFNode = selector.getSubject();
-        initializeDataNode(curr, currRDFNode, inputMetadata);
-
+        final Resource subject = selector.getSubject();
+        initializeDataNode(curr, subject, inputMetadata);
         progressListener.onAddNewDataNode(dataNodeRoot, prev, curr);
 
+        // list possible child nodes
         final List<Statement> statements = model.listStatements(selector)
                                                 .toList();
         statements.sort(STATEMENT_COMPARATOR);
-
         final List<RDFNode> foundDataList = new ArrayList<>();
-        RDFNode previous = null;
+        // for each child: read the child into the model if it's a URI
+        // redirect if possible
+        // check for requirements of the child
+        // if the requirements are ok, continue to the next child
         for (final Statement stmt : statements) {
-            final RDFNode next = stmt.getObject();
-            final boolean meetsRequirements;
-            try {
-                meetsRequirements = meetsRequirements(inputMetadata, previous, next);
-                previous = next;
-
-                if (!meetsRequirements) {
-                    return;
-                }
-            } catch (AssertionError e) {
-                LOGGER.error("An internal error occurred when trying to check for the requirements of the node {}.", next, e);
-                return;
+            RDFNode object = stmt.getObject();
+            if (object.isURIResource()) {
+                model.read(object.asResource()
+                                 .getURI());
+                object = redirectIfPossible(object.asResource(), model);
             }
 
-            LOGGER.debug("Found {}", next);
-            foundDataList.add(next);
+            if (!meetsRequirements(inputMetadata, object)) {
+                continue;
+            }
+
+            LOGGER.debug("Found {}", object);
+            foundDataList.add(object);
         }
 
         // no nodes found, stop searching
@@ -382,7 +412,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
             return;
         }
         final RDFNode chosenNextRDFNode = chosenNextRDFNodeOpt.get();
-        LOGGER.debug("Received next node: {}", chosenNextRDFNode);
+        LOGGER.debug("User chosen node: {}", chosenNextRDFNode);
 
         final List<DataNode> currDataNodeChildren = new ArrayList<>();
         // WARN: Deleted handling for multiple references as it might not even be in the final version.
@@ -410,7 +440,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         }
         final Model model = inputMetadata.getCurrentModel();
         final Resource resource = (Resource) next;
-        readResource(model, resource);
+        model.read(resource.getURI());
         final boolean hasBeenVisited = !usedURIs.add(resource.getURI());
         if (!hasBeenVisited) {
             final Selector sel = new SimpleSelector(resource, inputMetadata.getOntologyPathPredicate(), (RDFNode) null);
@@ -426,42 +456,30 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
      *     <li><b>ROLLS BACK</b> to the {@code previous} node if this method returns <b>{@code false}</b>.</li>
      * </ul>
      *
-     * @param previous the previous node
-     * @param curr     the current node
+     * @param curr the current node
      *
      * @return Whether the current node meets requirements. Read this method's javadoc for more information regarding the changes this method potentially makes to the model.
      *
      * @throws IllegalStateException if the previous is not a URI resource
      */
-    private boolean meetsRequirements(final QueryData inputMetadata, final RDFNode previous, final RDFNode curr) throws IllegalArgumentException {
+    private boolean meetsRequirements(final QueryData inputMetadata, final RDFNode curr) throws IllegalArgumentException {
         if (!curr.isURIResource()) {
             return true;
         }
 
         final Model model = inputMetadata.getCurrentModel();
         final Resource resource = curr.asResource();
-        readResource(model, resource);
-
         // check for the restrictions on the given request
+        // TODO: this does nothing at the moment! this means this method ALWAYS returns true
         for (final Restriction restriction : inputMetadata.getRestrictions()) {
             final Property predicate = model.getProperty(restriction.getNamespace(), restriction.getLink());
             final Selector sel = new SimpleSelector(resource, predicate, (RDFNode) null);
             final boolean foundSomething = model.listStatements(sel)
                                                 .hasNext();
             if (!foundSomething) {
-                // NOTE: previous HAS to be a resource because it's the curr's parent, so we don't need to check whether it's a resource
-                // the only way to get to curr is for its parent to be a resource
-                if (previous != null) {
-                    readResource(model, previous.asResource());
-                }
                 return false;
             }
         }
         return true;
-    }
-
-    private void readResource(final Model model, final Resource resource) {
-        String uri = resource.getURI();
-        model.read(uri);
     }
 }
