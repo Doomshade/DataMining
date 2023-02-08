@@ -21,7 +21,7 @@ public class FialaBPSerializer implements DataNodeSerializer {
 
     @Override
     public String getFileExtension() {
-        return "json";
+        return "js";
     }
 
 

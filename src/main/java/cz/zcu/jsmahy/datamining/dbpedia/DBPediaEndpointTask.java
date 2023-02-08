@@ -158,7 +158,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         // DBPEDIA SPECIFIC
         final StmtIterator stmts = model.listStatements(subject, PROPERTY_REDIRECT, (RDFNode) null);
         if (!stmts.hasNext()) {
-            LOGGER.debug("No redirects found for {}.", subject);
+            LOGGER.trace("No redirects found for {}.", subject);
             return subject;
         }
         final RDFNode object = stmts.next()

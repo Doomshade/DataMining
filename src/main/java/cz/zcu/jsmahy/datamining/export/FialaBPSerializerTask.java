@@ -1,5 +1,6 @@
 package cz.zcu.jsmahy.datamining.export;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.StdDateFormat;
@@ -9,7 +10,9 @@ import cz.zcu.jsmahy.datamining.api.DataNodeSerializerTask;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
@@ -17,13 +20,15 @@ import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_RELATIONSHIPS;
 import static cz.zcu.jsmahy.datamining.export.FialaBPMetadataKeys.*;
 
 class FialaBPSerializerTask extends DataNodeSerializerTask {
+    public static final String PREFIX = "define([],function(){return";
+    public static final String SUFFIX = ";});";
     private static final ObjectMapper JSON_OBJECT_MAPPER = new ObjectMapper();
 
     static {
         JSON_OBJECT_MAPPER.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        JSON_OBJECT_MAPPER.disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
         JSON_OBJECT_MAPPER.enable(SerializationFeature.WRITE_DATES_WITH_CONTEXT_TIME_ZONE);
         JSON_OBJECT_MAPPER.setDateFormat(new StdDateFormat());
-//        JSON_OBJECT_MAPPER.enable(SerializationFeature.CLOSE_CLOSEABLE);
     }
 
     private int processedNodes = 0;
@@ -41,9 +46,12 @@ class FialaBPSerializerTask extends DataNodeSerializerTask {
     }
 
     // method for testing purposes
-    void serialize(FialaBPExportFormatRoot root) throws IOException {
-        JSON_OBJECT_MAPPER.writeValue(out, root);
-        out.close();
+    synchronized void serialize(FialaBPExportFormatRoot root) throws IOException {
+        try (final PrintWriter pw = new PrintWriter(out, true, StandardCharsets.UTF_8)) {
+            pw.print(PREFIX);
+            JSON_OBJECT_MAPPER.writeValue(pw, root);
+            pw.print(SUFFIX);
+        }
     }
 
     private void processNode(final long max) {
