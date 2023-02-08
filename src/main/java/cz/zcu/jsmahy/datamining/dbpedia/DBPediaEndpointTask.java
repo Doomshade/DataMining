@@ -71,7 +71,6 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         final Selector startDateSelector = new SimpleSelector(subject, dateProperty, (Object) null);
         final StmtIterator startDates = model.listStatements(startDateSelector);
         if (startDates.hasNext()) {
-            // TODO: account for multiple values
             final AbstractDateTime innerDateType = (AbstractDateTime) startDates.next()
                                                                                 .getObject()
                                                                                 .asLiteral()
@@ -250,8 +249,6 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
 
         final Optional<Property> startDatePropertyOpt = ref.getValue(RESULT_KEY_START_DATE_PREDICATE);
         final Property endDateProperty = ref.getValue(RESULT_KEY_END_DATE_PREDICATE, null);
-
-        // TODO: this should be handled somewhere else
         if (startDatePropertyOpt.isEmpty()) {
             return InitialSearchResult.START_DATE_NOT_SELECTED;
         }
@@ -470,7 +467,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         final Model model = inputMetadata.getCurrentModel();
         final Resource resource = curr.asResource();
         // check for the restrictions on the given request
-        // TODO: this does nothing at the moment! this means this method ALWAYS returns true
+        // NOTE: this does nothing at the moment! this means this method ALWAYS returns true
         for (final Restriction restriction : inputMetadata.getRestrictions()) {
             final Property predicate = model.getProperty(restriction.getNamespace(), restriction.getLink());
             final Selector sel = new SimpleSelector(resource, predicate, (RDFNode) null);

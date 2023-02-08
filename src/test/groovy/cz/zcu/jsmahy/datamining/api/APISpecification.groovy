@@ -79,7 +79,6 @@ class APISpecification extends Specification {
         expect:
         root.getChildren().isEmpty()
     }
-// TODO: test throws UnsupportedOperationException
 
     def "Data node should find root"() {
         when:
@@ -278,7 +277,6 @@ class APISpecification extends Specification {
         1 * consumer.accept(fourthNode, 0)
     }
 
-    // TODO: rename
     def "Should throw IAE if either query (#query) and tree item (#treeItem) is null"() {
         when:
         endpointAgent.createBackgroundService(query, treeItem)
@@ -313,9 +311,22 @@ class APISpecification extends Specification {
         thrown(IllegalArgumentException)
     }
 
-    def "Should return a valid service"() {
+    def "Should throw IAE if data node is not root"() {
+        def node = Mock(DataNode)
+        node.isRoot() >> false
         when:
-        endpointAgent.createBackgroundService("queryTest", _ as DataNode)
+        endpointAgent.createBackgroundService("queryTest", node)
+        then:
+        thrown(IllegalArgumentException)
+    }
+
+
+    def "Should return a valid service"() {
+        given:
+        def root = Mock(DataNode)
+        root.isRoot() >> true
+        when:
+        endpointAgent.createBackgroundService("queryTest", root)
         then:
         noExceptionThrown()
     }
@@ -330,7 +341,7 @@ class APISpecification extends Specification {
 
         then:
         noExceptionThrown()
-        // TODO: this does not seem to work for some reason :(
+        // this does not seem to work for some reason :(
         // just check no exception is thrown for now
 //        1 * endpointAgent.sparqlEndpointTaskProvider.createTask(_, _, _)
 //        1 * endpointAgent.sparqlEndpointTaskProvider.createTask(*_, *_, *_)

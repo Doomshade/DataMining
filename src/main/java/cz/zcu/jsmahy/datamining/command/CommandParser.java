@@ -66,7 +66,6 @@ public final class CommandParser {
         }
     }
 
-    // TODO: implement handlers
     private static void handleAppRun(String[] args) {
 //        throw new UnsupportedOperationException("Not yet implemented");
     }

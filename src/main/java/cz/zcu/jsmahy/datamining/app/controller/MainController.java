@@ -50,7 +50,7 @@ import java.util.ResourceBundle;
  */
 public class MainController implements Initializable {
     public static final String FILE_NAME_FORMAT = "%s.%s";
-    // TODO: this could be loaded as a service someday :)
+    // this could be loaded as a service someday :)
     // we'll basically ask for a module implementation to provide
     // this is VERY not needed
     private static final Module[] MODULES = new Module[] {
@@ -114,7 +114,6 @@ public class MainController implements Initializable {
         final MultipleSelectionModel<TreeItem<DataNode>> selectionModel = this.ontologyTreeView.getSelectionModel();
         selectionModel.setSelectionMode(SelectionMode.SINGLE);
 
-        // TODO: this will likely be a popup
         selectionModel.selectedItemProperty()
                       .addListener(this::onSelection);
 
@@ -177,7 +176,6 @@ public class MainController implements Initializable {
         final MenuItem exportToFile = new MenuItem(resources.getString("export"));
         exportToFile.setOnAction(e -> {
 
-            // TODO: This could be parallel
             final ObservableList<TreeItem<DataNode>> dataNodeRoots = ontologyTreeView.getRoot()
                                                                                      .getChildren();
             if (dataNodeRoots.size() == 0) {
@@ -202,7 +200,6 @@ public class MainController implements Initializable {
                 } catch (FileNotFoundException ex) {
                     throw new UncheckedIOException(ex);
                 }
-                // TODO: add option for different exporters
                 final Service<Void> dataNodeExporter = new Service<>() {
                     @Override
                     protected Task<Void> createTask() {

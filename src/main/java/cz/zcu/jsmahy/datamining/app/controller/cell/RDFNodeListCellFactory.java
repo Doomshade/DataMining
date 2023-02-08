@@ -1,5 +1,6 @@
 package cz.zcu.jsmahy.datamining.app.controller.cell;
 
+import cz.zcu.jsmahy.datamining.resolvers.MultipleItemChoiceResolver;
 import cz.zcu.jsmahy.datamining.util.RDFNodeUtil;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
@@ -9,7 +10,7 @@ import static cz.zcu.jsmahy.datamining.util.RDFNodeUtil.SPECIAL_CHARACTERS;
 import static cz.zcu.jsmahy.datamining.util.RDFNodeUtil.formatRDFNode;
 
 /**
- * TODO
+ * A {@link ListCell} factory for {@link MultipleItemChoiceResolver}. This class might get deleted someday.
  *
  * @author Jakub Šmrha
  * @since 1.0

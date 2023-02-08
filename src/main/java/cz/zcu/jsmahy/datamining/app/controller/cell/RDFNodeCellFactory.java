@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
+import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_URI;
 
 /**
@@ -47,7 +48,6 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
                 return;
             }
 
-            // TODO: context menu for "add/continue line"
             final ContextMenu contextMenu = new ContextMenu();
 
             final MenuItem searchItem = buildSearchItem(resources, dialogHelper, requestHandler, mainController);
@@ -149,10 +149,9 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
         textField.setMinWidth(this.getWidth() - this.getGraphicTextGap() * 2);
         textField.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ENTER) {
-                // TODO: rename
                 final DataNode root = getItem();
                 if (root.isRoot()) {
-                    root.addMetadata("name", textField.getText());
+                    root.addMetadata(METADATA_KEY_NAME, textField.getText());
                     commitEdit(root);
                     event.consume();
                 }
