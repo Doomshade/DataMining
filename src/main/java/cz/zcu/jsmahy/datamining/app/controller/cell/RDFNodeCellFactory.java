@@ -18,11 +18,9 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.ResourceBundle;
 
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
-import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_URI;
 
 /**
  * <p>Factory for {@link RDFNode} nodes in a {@link ListView}</p>
@@ -85,24 +83,28 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
                                       final MainController mainController) {
         final MenuItem menuItem = new MenuItem(resources.getString("create-new-line"));
         menuItem.setOnAction(event -> {
-            final TreeItem<DataNode> root = treeView.getRoot();
-            final DataNode item = getItem();
-            final Optional<DataNode> dataNodeRootOpt = item.findRoot();
-            assert dataNodeRootOpt.isPresent(); // the item should not be a root, thus the item's root should be present
-            final String name = dataNodeRootOpt.get()
-                                               .getValue("name")
-                                               .orElse("<no name>") + " - copy";
-            final DataNode newDataNodeRoot = nodeFactory.newRoot(name);
-            root.getChildren()
-                .add(new TreeItem<>(newDataNodeRoot));
-            final Optional<String> query = item.getValue(METADATA_KEY_URI);
-            if (query.isEmpty()) {
-                LOGGER.error("Could not create new line. Reason: Selected item '{}' does not have URI stored under the key '{}'", item, METADATA_KEY_URI);
-                return;
-            }
-            final Service<?> service = requestHandler.createBackgroundService(query.get(), newDataNodeRoot);
-            mainController.bindQueryService(service);
-            service.restart();
+            // TODO: we no longer have a direct link to the parent
+            // we instead have an ID to the parent
+            // this is due to serialization
+            // there is still a way to find
+//            final TreeItem<DataNode> root = treeView.getRoot();
+//            final DataNode item = getItem();
+//            final Optional<DataNode> dataNodeRootOpt = item.findRoot();
+//            assert dataNodeRootOpt.isPresent(); // the item should not be a root, thus the item's root should be present
+//            final String name = dataNodeRootOpt.get()
+//                                               .getValue("name")
+//                                               .orElse("<no name>") + " - copy";
+//            final DataNode newDataNodeRoot = nodeFactory.newRoot(name);
+//            root.getChildren()
+//                .add(new TreeItem<>(newDataNodeRoot));
+//            final Optional<String> query = item.getValue(METADATA_KEY_URI);
+//            if (query.isEmpty()) {
+//                LOGGER.error("Could not create new line. Reason: Selected item '{}' does not have URI stored under the key '{}'", item, METADATA_KEY_URI);
+//                return;
+//            }
+//            final Service<?> service = requestHandler.createBackgroundService(query.get(), newDataNodeRoot);
+//            mainController.bindQueryService(service);
+//            service.restart();
         });
         return menuItem;
     }

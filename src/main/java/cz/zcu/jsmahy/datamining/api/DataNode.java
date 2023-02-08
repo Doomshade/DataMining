@@ -47,7 +47,7 @@ public interface DataNode extends Iterable<DataNode>, ArbitraryDataHolder {
     /**
      * @return The children of this node.
      */
-    ObservableList<DataNode> getChildren();
+    ObservableList<? extends DataNode> getChildren();
 
     /**
      * @return The ID of this data node.
@@ -64,7 +64,7 @@ public interface DataNode extends Iterable<DataNode>, ArbitraryDataHolder {
      *
      * @return The root of this node.
      */
-    Optional<DataNode> findRoot();
+    Optional<? extends DataNode> findRoot();
 
     /**
      * @return {@code true} whether this node is root.
@@ -101,4 +101,6 @@ public interface DataNode extends Iterable<DataNode>, ArbitraryDataHolder {
      * @param biConsumer the first parameter is the data node, the second one is the depth
      */
     void iterate(BiConsumer<DataNode, Integer> biConsumer);
+
+    Optional<? extends DataNode> findChildWithId(long id);
 }

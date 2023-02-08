@@ -346,4 +346,74 @@ class APISpecification extends Specification {
 //        1 * endpointAgent.sparqlEndpointTaskProvider.createTask(_, _, _)
 //        1 * endpointAgent.sparqlEndpointTaskProvider.createTask(*_, *_, *_)
     }
+
+    def getStubRoot() {
+        def root = nodeFactory.newRoot("Doctoral Advisors")
+        addNode(root,
+                "Albert Einstein",
+                "person",
+                new GregorianCalendar(1879, Calendar.MARCH, 14, 1, 0, 0),
+                new GregorianCalendar(1955, Calendar.APRIL, 18, 1, 0, 0))
+        addNode(root,
+                "Alfred Kleiner",
+                "person",
+                new GregorianCalendar(1849, Calendar.APRIL, 24, 1, 0, 0),
+                new GregorianCalendar(1916, Calendar.JULY, 3, 2, 0, 0))
+        addNode(root,
+                "Johan Jakob Muller",
+                "person",
+                new GregorianCalendar(1846, Calendar.APRIL, 4, 1, 0, 0),
+                new GregorianCalendar(1875, Calendar.JANUARY, 14, 1, 0, 0))
+        addNode(root,
+                "Adolf Fick",
+                "person",
+                new GregorianCalendar(1829, Calendar.SEPTEMBER, 3, 1, 0, 0),
+                new GregorianCalendar(1901, Calendar.AUGUST, 21, 1, 0, 0))
+        root
+    }
+
+    def addNode(DataNode root, String name, String stereotype, Calendar begin, Calendar end) {
+        def p1 = nodeFactory.newNode(root)
+        p1.addMetadata("name", name)
+        p1.addMetadata("stereotype", stereotype)
+        p1.addMetadata("begin", begin)
+        p1.addMetadata("end", end)
+        p1.addMetadata("properties", Map.of("startPrecision", "day", "endPrecision", "day"))
+        p1
+    }
+
+    def "Serializer Test"() {
+        given:
+        def outFile = new File("test.json")
+        outFile.createNewFile()
+        def serializer = new JSONDataNodeSerializer.JSONDataNodeSerializerTask(new FileOutputStream(outFile), getStubRoot())
+
+        when:
+        serializer.call()
+
+        then:
+        noExceptionThrown()
+    }
+
+    def "Deserializer test"() {
+        given:
+        nodeFactory.newRoot("")
+        nodeFactory.newRoot("")
+        nodeFactory.newRoot("")
+        nodeFactory.newRoot("")
+        nodeFactory.newRoot("")
+        nodeFactory.newRoot("")
+        nodeFactory.newRoot("")
+        nodeFactory.newRoot("")
+
+        def inFile = new File("test.json")
+        def deserializer = new JSONDataNodeSerializer.JSONDataNodeDeserializerTask(new FileInputStream(inFile), nodeFactory)
+
+        when:
+        def node = deserializer.call()
+        println node
+
+        then:
+        noExceptionThrown()
+    }
 }

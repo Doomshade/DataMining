@@ -7,12 +7,12 @@ import java.io.OutputStream;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A {@link Task} for serializing the whole {@link DataNode} tree.
+ * <p>A {@link Task} for serializing the whole {@link DataNode} tree.</p>
  *
  * @author Jakub Šmrha
  * @since 1.0
  */
-public abstract class DataNodeSerializerTask extends DataNodeExportTask<Void> {
+public abstract class DataNodeSerializerTask extends Task<Void> {
     protected final OutputStream out;
     protected final DataNode root;
 

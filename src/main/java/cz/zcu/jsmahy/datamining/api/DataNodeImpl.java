@@ -1,5 +1,6 @@
 package cz.zcu.jsmahy.datamining.api;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import lombok.Data;
@@ -22,9 +23,11 @@ class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
     private static final Logger LOGGER = LogManager.getLogger(DataNodeImpl.class);
     private static long ID_SEQ = 0;
 
-    private final DataNode parent;
-    private final long id;
-    private final ObservableList<DataNode> children = FXCollections.observableArrayList();
+    @JsonIgnore
+    private final transient DataNode parent;
+    // ISTG if I ever see the dude who made up the generics system in Java I'll eat his cookies
+    private final ObservableListWrapperWrapper<DataNodeImpl> children = new ObservableListWrapperWrapper<>(FXCollections.observableArrayList());
+    private long id;
 
     {
         this.id = ID_SEQ++;
@@ -45,18 +48,18 @@ class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
      *
      * @throws NullPointerException if the child is {@code null}
      */
-    void addChild(DataNode child) throws NullPointerException {
+    void addChild(DataNodeImpl child) throws NullPointerException {
         assert !child.isRoot();
         this.children.add(child);
     }
 
     @Override
-    public ObservableList<DataNode> getChildren() {
+    public ObservableList<? extends DataNode> getChildren() {
         return children;
     }
 
     @Override
-    public Optional<DataNode> findRoot() {
+    public Optional<? extends DataNode> findRoot() {
         DataNode prev = parent;
         while (prev != null && prev.getParent() != null) {
             prev = prev.getParent();
@@ -69,16 +72,24 @@ class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
     }
 
     @Override
+    @JsonIgnore
     public boolean isRoot() {
         return parent == null;
     }
 
     @Override
     public void iterate(BiConsumer<DataNode, Integer> biConsumer) {
-        final ObservableList<DataNode> children = this.getChildren();
+        final ObservableList<? extends DataNode> children = this.getChildren();
         if (!children.isEmpty()) {
             iterate(biConsumer, -1, this);
         }
+    }
+
+    @Override
+    public Optional<? extends DataNode> findChildWithId(final long id) {
+        return children.stream()
+                       .filter(x -> x.getId() == id)
+                       .findAny();
     }
 
     private void iterate(BiConsumer<DataNode, Integer> biConsumer, int depth, DataNode dataNode) {
@@ -90,7 +101,7 @@ class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
             biConsumer.accept(dataNode, depth);
         }
 
-        final ObservableList<DataNode> children = dataNode.getChildren();
+        final ObservableList<? extends DataNode> children = dataNode.getChildren();
         if (!children.isEmpty()) {
             depth++;
             for (final DataNode node : children) {
@@ -101,6 +112,7 @@ class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
 
     @Override
     public Iterator<DataNode> iterator() {
-        return children.iterator();
+        // holy ****ing **** why does Java have to be so bad
+        return (Iterator<DataNode>) ((Iterator<? extends DataNode>) children.iterator());
     }
 }

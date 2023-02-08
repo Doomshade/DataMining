@@ -38,7 +38,6 @@ public class DefaultSparqlEndpointTask<R> extends SparqlEndpointTask<R> {
             throw new IllegalArgumentException("Data node must be root.");
         }
         this.progressListener = requireNonNull(progressListener);
-
         this.originalQuery = requireNonNull(query);
         if (query.isBlank()) {
             throw new IllegalArgumentException("Query must not be blank");

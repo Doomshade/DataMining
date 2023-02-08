@@ -46,7 +46,7 @@ public class DataNodeFactory {
      * @return the new node
      */
     public DataNode newNode(final DataNode parent, boolean addChild) {
-        final DataNode dataNode = new DataNodeImpl(parent);
+        final DataNodeImpl dataNode = new DataNodeImpl(parent);
         if (addChild) {
             ((DataNodeImpl) parent).addChild(dataNode);
         }

@@ -21,18 +21,7 @@ class FialaBPExportSpecification extends Specification {
 
     void cleanup() {}
 
-    def addNode(DataNode root, String name, String stereotype, Calendar begin, Calendar end) {
-        def p1 = nodeFactory.newNode(root)
-        p1.addMetadata("name", name)
-        p1.addMetadata("stereotype", stereotype)
-        p1.addMetadata("begin", begin)
-        p1.addMetadata("end", end)
-        p1.addMetadata("properties", Map.of("startPrecision", "day", "endPrecision", "day"))
-        p1
-    }
-
-    def "Test"() {
-        given:
+    def getStubRoot() {
         def root = nodeFactory.newRoot("Doctoral Advisors")
         addNode(root,
                 "Albert Einstein",
@@ -54,6 +43,22 @@ class FialaBPExportSpecification extends Specification {
                 "person",
                 new GregorianCalendar(1829, Calendar.SEPTEMBER, 3, 1, 0, 0),
                 new GregorianCalendar(1901, Calendar.AUGUST, 21, 1, 0, 0))
+        root
+    }
+
+    def addNode(DataNode root, String name, String stereotype, Calendar begin, Calendar end) {
+        def p1 = nodeFactory.newNode(root)
+        p1.addMetadata("name", name)
+        p1.addMetadata("stereotype", stereotype)
+        p1.addMetadata("begin", begin)
+        p1.addMetadata("end", end)
+        p1.addMetadata("properties", Map.of("startPrecision", "day", "endPrecision", "day"))
+        p1
+    }
+
+    def "Test"() {
+        given:
+        def root = getStubRoot()
 
         def out = System.out
         final Field[] declaredFields = FialaBPExportNodeFormat.class.getDeclaredFields()

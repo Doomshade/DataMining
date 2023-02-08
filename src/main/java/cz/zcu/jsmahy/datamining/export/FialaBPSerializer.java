@@ -1,14 +1,24 @@
 package cz.zcu.jsmahy.datamining.export;
 
-import cz.zcu.jsmahy.datamining.api.DataNode;
-import cz.zcu.jsmahy.datamining.api.DataNodeDeserializerTask;
-import cz.zcu.jsmahy.datamining.api.DataNodeSerializer;
-import cz.zcu.jsmahy.datamining.api.DataNodeSerializerTask;
+import com.google.inject.Inject;
+import cz.zcu.jsmahy.datamining.api.*;
 
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import static java.util.Objects.requireNonNull;
+
 public class FialaBPSerializer implements DataNodeSerializer {
+    public static final String PREFIX = "define([],function(){return";
+    public static final String SUFFIX = ";});";
+
+    private final DataNodeFactory dataNodeFactory;
+
+    @Inject
+    public FialaBPSerializer(final DataNodeFactory dataNodeFactory) {
+        this.dataNodeFactory = dataNodeFactory;
+    }
+
     @Override
     public DataNodeSerializerTask createSerializerTask(final OutputStream out, final DataNode root) {
         return new FialaBPSerializerTask(out, root);
@@ -16,7 +26,7 @@ public class FialaBPSerializer implements DataNodeSerializer {
 
     @Override
     public DataNodeDeserializerTask createDeserializerTask(final InputStream in) {
-        return new FialaBPDeserializerTask(in);
+        return new FialaBPDeserializerTask(requireNonNull(in), dataNodeFactory);
     }
 
     @Override

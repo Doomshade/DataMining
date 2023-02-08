@@ -1,12 +1,9 @@
 package cz.zcu.jsmahy.datamining.export;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.util.StdDateFormat;
 import cz.zcu.jsmahy.datamining.api.ArbitraryDataHolder;
 import cz.zcu.jsmahy.datamining.api.DataNode;
 import cz.zcu.jsmahy.datamining.api.DataNodeSerializerTask;
+import cz.zcu.jsmahy.datamining.api.JSONDataNodeSerializer;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -18,18 +15,10 @@ import java.util.*;
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_RELATIONSHIPS;
 import static cz.zcu.jsmahy.datamining.export.FialaBPMetadataKeys.*;
+import static cz.zcu.jsmahy.datamining.export.FialaBPSerializer.PREFIX;
+import static cz.zcu.jsmahy.datamining.export.FialaBPSerializer.SUFFIX;
 
 class FialaBPSerializerTask extends DataNodeSerializerTask {
-    public static final String PREFIX = "define([],function(){return";
-    public static final String SUFFIX = ";});";
-    private static final ObjectMapper JSON_OBJECT_MAPPER = new ObjectMapper();
-
-    static {
-        JSON_OBJECT_MAPPER.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        JSON_OBJECT_MAPPER.disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
-        JSON_OBJECT_MAPPER.enable(SerializationFeature.WRITE_DATES_WITH_CONTEXT_TIME_ZONE);
-        JSON_OBJECT_MAPPER.setDateFormat(new StdDateFormat());
-    }
 
     private int processedNodes = 0;
 
@@ -49,7 +38,7 @@ class FialaBPSerializerTask extends DataNodeSerializerTask {
     synchronized void serialize(FialaBPExportFormatRoot root) throws IOException {
         try (final PrintWriter pw = new PrintWriter(out, true, StandardCharsets.UTF_8)) {
             pw.print(PREFIX);
-            JSON_OBJECT_MAPPER.writeValue(pw, root);
+            JSONDataNodeSerializer.JSON_OBJECT_MAPPER.writeValue(pw, root);
             pw.print(SUFFIX);
         }
     }
@@ -62,7 +51,7 @@ class FialaBPSerializerTask extends DataNodeSerializerTask {
     @Override
     protected Void call() throws Exception {
         this.processedNodes = 0;
-        final List<DataNode> dataNodes = root.getChildren();
+        final List<? extends DataNode> dataNodes = root.getChildren();
         final List<FialaBPExportNodeFormat> nodes = getNodes(dataNodes);
         final List<FialaBPExportEdgeFormat> edges = getEdges(dataNodes);
         final boolean allProcessed = this.processedNodes == dataNodes.size() * 2L;
@@ -72,7 +61,7 @@ class FialaBPSerializerTask extends DataNodeSerializerTask {
         return null;
     }
 
-    private List<FialaBPExportEdgeFormat> getEdges(final List<DataNode> dataNodes) {
+    private List<FialaBPExportEdgeFormat> getEdges(final List<? extends DataNode> dataNodes) {
         final List<FialaBPExportEdgeFormat> edges = new ArrayList<>();
         long id = 1;
         for (DataNode dataNode : dataNodes) {
@@ -93,7 +82,7 @@ class FialaBPSerializerTask extends DataNodeSerializerTask {
         return edges;
     }
 
-    private List<FialaBPExportNodeFormat> getNodes(final List<DataNode> dataNodes) throws IllegalAccessException {
+    private List<FialaBPExportNodeFormat> getNodes(final List<? extends DataNode> dataNodes) throws IllegalAccessException {
         final Field[] declaredFields = FialaBPExportNodeFormat.class.getDeclaredFields();
         for (Field field : declaredFields) {
             field.trySetAccessible();
