@@ -34,9 +34,15 @@ public class DefaultSparqlEndpointTask<R> extends SparqlEndpointTask<R> {
     public DefaultSparqlEndpointTask(final String query, final DataNode dataNodeRoot, final ApplicationConfiguration config, final RequestProgressListener progressListener) {
         this.config = requireNonNull(config);
         this.dataNodeRoot = requireNonNull(dataNodeRoot);
+        if (!dataNodeRoot.isRoot()) {
+            throw new IllegalArgumentException("Data node must be root.");
+        }
         this.progressListener = requireNonNull(progressListener);
 
         this.originalQuery = requireNonNull(query);
+        if (query.isBlank()) {
+            throw new IllegalArgumentException("Query must not be blank");
+        }
 //        final String baseUrl = "http://cs.dbpedia.org/resource/";
         this.query = transformQuery(originalQuery, config.getValueUnsafe(CFG_KEY_BASE_URL));
 
