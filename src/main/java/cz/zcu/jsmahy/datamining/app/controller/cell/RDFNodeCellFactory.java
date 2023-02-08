@@ -108,7 +108,14 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
     }
 
     private MenuItem buildSearchItem(final ResourceBundle resources, final DialogHelper dialogHelper, final SparqlEndpointAgent<?> sparqlEndpointAgent, final MainController mainController) {
-        final MenuItem menuItem = new MenuItem(resources.getString("search"));
+        final MenuItem menuItem = new MenuItem();
+        if (getItem() != null && getItem().isRoot() && !getItem().getChildren()
+                                                                 .isEmpty()) {
+            menuItem.textProperty()
+                    .bind(Bindings.format(resources.getString("continue-search"), textProperty()));
+        } else {
+            menuItem.setText(resources.getString("search"));
+        }
         menuItem.setOnAction(event -> dialogHelper.textInputDialog(resources.getString("item-to-search"), searchValue -> {
             getTreeItem().setExpanded(true);
             assert getItem().isRoot();
