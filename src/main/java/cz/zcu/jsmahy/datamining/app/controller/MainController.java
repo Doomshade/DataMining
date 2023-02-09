@@ -219,6 +219,7 @@ public class MainController implements Initializable {
                     services.remove(dataNodeExporter);
                 });
                 dataNodeExporter.setOnFailed(ev -> {
+                    LOGGER.throwing(dataNodeExporter.getException());
                     removedServices.add(dataNodeExporter);
                     services.remove(dataNodeExporter);
                 });

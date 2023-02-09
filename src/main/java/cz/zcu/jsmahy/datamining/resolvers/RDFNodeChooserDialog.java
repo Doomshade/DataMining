@@ -160,6 +160,7 @@ class RDFNodeChooserDialog {
         bgService.setOnFailed(e -> {
             services.remove(bgService);
             observableValue.setValue("");
+            LOGGER.throwing(bgService.getException());
         });
         bgService.start();
         services.add(bgService);

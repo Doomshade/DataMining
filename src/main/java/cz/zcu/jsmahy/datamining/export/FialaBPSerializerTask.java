@@ -28,6 +28,10 @@ class FialaBPSerializerTask extends DataNodeSerializerTask {
     }
 
     static synchronized void stripTimezone(final Calendar calendar) {
+        if (calendar == null) {
+            return;
+        }
+
         final TimeZone tz = calendar.getTimeZone();
         // add the offset value of the timezone and set the timezone to 0
         // the calendar class will automatically remove the offset once we set the timezone (or rather once we get the value after setting the timezone)

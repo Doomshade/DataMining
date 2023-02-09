@@ -128,6 +128,7 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
             }
             final Service<?> service = sparqlEndpointAgent.createBackgroundService(query, getItem());
             mainController.bindQueryService(service);
+            service.setOnFailed(e -> LOGGER.throwing(service.getException()));
             service.restart();
         }, "Title"));
         menuItem.setAccelerator(KeyCombination.keyCombination("CTRL + H"));
