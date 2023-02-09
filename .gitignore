@@ -8,6 +8,7 @@ pom.xml
 !src/**/build/
 *.json
 *.js
+!src/**/resources/**
 # Ignore Gradle GUI config
 gradle-app.setting
 

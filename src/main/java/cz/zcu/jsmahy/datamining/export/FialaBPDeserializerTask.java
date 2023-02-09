@@ -10,8 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_RELATIONSHIPS;
-import static cz.zcu.jsmahy.datamining.export.FialaBPSerializer.PREFIX;
-import static cz.zcu.jsmahy.datamining.export.FialaBPSerializer.SUFFIX;
+import static cz.zcu.jsmahy.datamining.export.FialaBPSerializer.*;
 
 class FialaBPDeserializerTask extends DataNodeDeserializerTask {
     public FialaBPDeserializerTask(final InputStream in, final DataNodeFactory dataNodeFactory) {
@@ -32,7 +31,7 @@ class FialaBPDeserializerTask extends DataNodeDeserializerTask {
         }
         // body is the json
         final String body = bodyAndSuffix.substring(0, bodyAndSuffix.length() - SUFFIX.length());
-        final FialaBPExportFormatRoot bpFormatRoot = JSONDataNodeSerializer.JSON_OBJECT_MAPPER.readValue(body, FialaBPExportFormatRoot.class);
+        final FialaBPExportFormatRoot bpFormatRoot = OBJECT_MAPPER.readValue(body, FialaBPExportFormatRoot.class);
         final Field[] nodeFields = FialaBPExportNodeFormat.class.getDeclaredFields();
         for (Field field : nodeFields) {
             field.trySetAccessible();

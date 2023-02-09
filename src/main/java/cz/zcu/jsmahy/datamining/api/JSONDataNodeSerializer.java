@@ -12,7 +12,7 @@ import java.io.OutputStream;
 
 public class JSONDataNodeSerializer implements DataNodeSerializer {
 
-    public static final ObjectMapper JSON_OBJECT_MAPPER = new ObjectMapper();
+    private static final ObjectMapper JSON_OBJECT_MAPPER = new ObjectMapper();
 
     static {
         JSON_OBJECT_MAPPER.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -27,6 +27,13 @@ public class JSONDataNodeSerializer implements DataNodeSerializer {
     @Inject
     public JSONDataNodeSerializer(final DataNodeFactory dataNodeFactory) {
         this.dataNodeFactory = dataNodeFactory;
+    }
+
+    /**
+     * @return A copy of the {@link ObjectMapper} instance.
+     */
+    public static ObjectMapper getJsonObjectMapper() {
+        return JSON_OBJECT_MAPPER.copy();
     }
 
     @Override
@@ -56,7 +63,8 @@ public class JSONDataNodeSerializer implements DataNodeSerializer {
 
         @Override
         protected DataNode call() throws Exception {
-            return JSON_OBJECT_MAPPER.readValue(new InputStreamReader(in), DataNodeImpl.class);
+            final DataNode dataNode = JSON_OBJECT_MAPPER.readValue(new InputStreamReader(in), DataNode.class);
+            return dataNode;
         }
     }
 

@@ -1,5 +1,6 @@
 package cz.zcu.jsmahy.datamining.api;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import javafx.collections.ObservableList;
 import org.apache.jena.rdf.model.RDFNode;
 
@@ -14,6 +15,7 @@ import java.util.function.BiConsumer;
  * @author Jakub Šmrha
  * @since 1.0
  */
+@JsonDeserialize(as = DataNodeImpl.class)
 public interface DataNode extends Iterable<DataNode>, ArbitraryDataHolder {
     /**
      * Corresponding value should be {@link String}
@@ -101,6 +103,4 @@ public interface DataNode extends Iterable<DataNode>, ArbitraryDataHolder {
      * @param biConsumer the first parameter is the data node, the second one is the depth
      */
     void iterate(BiConsumer<DataNode, Integer> biConsumer);
-
-    Optional<? extends DataNode> findChildWithId(long id);
 }

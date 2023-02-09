@@ -1,5 +1,6 @@
 package cz.zcu.jsmahy.datamining.export
 
+
 import com.google.inject.Guice
 import cz.zcu.jsmahy.datamining.api.DataNode
 import cz.zcu.jsmahy.datamining.api.DataNodeFactory
@@ -7,8 +8,12 @@ import cz.zcu.jsmahy.datamining.api.Mocks
 import spock.lang.Specification
 
 import java.lang.reflect.Field
+import java.nio.charset.StandardCharsets
+
+import static cz.zcu.jsmahy.datamining.export.FialaBPSerializerTask.stripTimezone
 
 class FialaBPExportSpecification extends Specification {
+    def final lock = new Object()
     static DataNodeFactory nodeFactory
 
     void setupSpec() {
@@ -26,23 +31,23 @@ class FialaBPExportSpecification extends Specification {
         addNode(root,
                 "Albert Einstein",
                 "person",
-                new GregorianCalendar(1879, Calendar.MARCH, 14, 1, 0, 0),
-                new GregorianCalendar(1955, Calendar.APRIL, 18, 1, 0, 0))
+                new GregorianCalendar(1879, Calendar.MARCH, 14, 0, 0, 0),
+                new GregorianCalendar(1955, Calendar.APRIL, 18, 0, 0, 0))
         addNode(root,
                 "Alfred Kleiner",
                 "person",
-                new GregorianCalendar(1849, Calendar.APRIL, 24, 1, 0, 0),
-                new GregorianCalendar(1916, Calendar.JULY, 3, 2, 0, 0))
+                new GregorianCalendar(1849, Calendar.APRIL, 24, 0, 0, 0),
+                new GregorianCalendar(1916, Calendar.JULY, 3, 0, 0, 0))
         addNode(root,
                 "Johan Jakob Muller",
                 "person",
-                new GregorianCalendar(1846, Calendar.APRIL, 4, 1, 0, 0),
-                new GregorianCalendar(1875, Calendar.JANUARY, 14, 1, 0, 0))
+                new GregorianCalendar(1846, Calendar.APRIL, 4, 0, 0, 0),
+                new GregorianCalendar(1875, Calendar.JANUARY, 14, 0, 0, 0))
         addNode(root,
                 "Adolf Fick",
                 "person",
-                new GregorianCalendar(1829, Calendar.SEPTEMBER, 3, 1, 0, 0),
-                new GregorianCalendar(1901, Calendar.AUGUST, 21, 1, 0, 0))
+                new GregorianCalendar(1829, Calendar.SEPTEMBER, 3, 0, 0, 0),
+                new GregorianCalendar(1901, Calendar.AUGUST, 21, 0, 0, 0))
         root
     }
 
@@ -50,17 +55,17 @@ class FialaBPExportSpecification extends Specification {
         def p1 = nodeFactory.newNode(root)
         p1.addMetadata("name", name)
         p1.addMetadata("stereotype", stereotype)
-        p1.addMetadata("begin", begin)
-        p1.addMetadata("end", end)
+        p1.addMetadata("begin", stripTimezone(begin))
+        p1.addMetadata("end", stripTimezone(end))
         p1.addMetadata("properties", Map.of("startPrecision", "day", "endPrecision", "day"))
         p1
     }
 
-    def "Test"() {
+    def "Serialization test"() {
         given:
         def root = getStubRoot()
 
-        def out = System.out
+        def out = new ByteArrayOutputStream()
         final Field[] declaredFields = FialaBPExportNodeFormat.class.getDeclaredFields()
         for (Field field : declaredFields) {
             field.trySetAccessible()
@@ -90,6 +95,16 @@ class FialaBPExportSpecification extends Specification {
 
         then:
         noExceptionThrown()
+
+        // need to synchronize this because there's some race going on with the strings
+        // sometimes the string just don't equal for whatever reason, so just put this under a lock
+        synchronized (lock) {
+            try (def stream = getClass().getResourceAsStream("serialization-test.js")) {
+                def expected = new String(stream.readAllBytes(), StandardCharsets.UTF_8)
+                def created = out.toString(StandardCharsets.UTF_8)
+                expected == created
+            }
+        }
     }
 
 }

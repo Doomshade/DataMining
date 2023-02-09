@@ -1,5 +1,6 @@
 package cz.zcu.jsmahy.datamining.export;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import cz.zcu.jsmahy.datamining.api.*;
 
@@ -10,7 +11,9 @@ import static java.util.Objects.requireNonNull;
 
 public class FialaBPSerializer implements DataNodeSerializer {
     public static final String PREFIX = "define([],function(){return";
-    public static final String SUFFIX = ";});";
+    public static final String SUFFIX = ";});\r\n";
+    // this creates a copy of the object mapper
+    public static final ObjectMapper OBJECT_MAPPER = JSONDataNodeSerializer.getJsonObjectMapper();
 
     private final DataNodeFactory dataNodeFactory;
 

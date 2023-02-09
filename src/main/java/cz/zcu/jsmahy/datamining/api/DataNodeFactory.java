@@ -3,6 +3,7 @@ package cz.zcu.jsmahy.datamining.api;
 import java.util.Map;
 
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A factory for {@link DataNode}s.
@@ -46,9 +47,9 @@ public class DataNodeFactory {
      * @return the new node
      */
     public DataNode newNode(final DataNode parent, boolean addChild) {
-        final DataNodeImpl dataNode = new DataNodeImpl(parent);
-        if (addChild) {
-            ((DataNodeImpl) parent).addChild(dataNode);
+        final DataNode dataNode = new DataNodeImpl(requireNonNull(parent));
+        if (addChild && parent instanceof DataNodeImpl parentImpl) {
+            parentImpl.addChild(dataNode);
         }
         return dataNode;
     }

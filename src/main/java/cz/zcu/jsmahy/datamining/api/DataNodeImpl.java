@@ -26,7 +26,10 @@ class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
     @JsonIgnore
     private final transient DataNode parent;
     // ISTG if I ever see the dude who made up the generics system in Java I'll eat his cookies
-    private final ObservableListWrapperWrapper<DataNodeImpl> children = new ObservableListWrapperWrapper<>(FXCollections.observableArrayList());
+    /**
+     * Using implementation because
+     */
+    private final ObservableListWrapperWrapper<DataNode> children = new ObservableListWrapperWrapper<>(FXCollections.observableArrayList());
     private long id;
 
     {
@@ -48,7 +51,7 @@ class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
      *
      * @throws NullPointerException if the child is {@code null}
      */
-    void addChild(DataNodeImpl child) throws NullPointerException {
+    void addChild(DataNode child) throws NullPointerException {
         assert !child.isRoot();
         this.children.add(child);
     }
@@ -85,13 +88,6 @@ class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
         }
     }
 
-    @Override
-    public Optional<? extends DataNode> findChildWithId(final long id) {
-        return children.stream()
-                       .filter(x -> x.getId() == id)
-                       .findAny();
-    }
-
     private void iterate(BiConsumer<DataNode, Integer> biConsumer, int depth, DataNode dataNode) {
         if (dataNode == null) {
             return;
@@ -113,6 +109,6 @@ class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
     @Override
     public Iterator<DataNode> iterator() {
         // holy ****ing **** why does Java have to be so bad
-        return (Iterator<DataNode>) ((Iterator<? extends DataNode>) children.iterator());
+        return children.iterator();
     }
 }

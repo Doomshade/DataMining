@@ -3,7 +3,8 @@ package cz.zcu.jsmahy.datamining.export;
 import cz.zcu.jsmahy.datamining.api.ArbitraryDataHolder;
 import cz.zcu.jsmahy.datamining.api.DataNode;
 import cz.zcu.jsmahy.datamining.api.DataNodeSerializerTask;
-import cz.zcu.jsmahy.datamining.api.JSONDataNodeSerializer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -15,10 +16,10 @@ import java.util.*;
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_RELATIONSHIPS;
 import static cz.zcu.jsmahy.datamining.export.FialaBPMetadataKeys.*;
-import static cz.zcu.jsmahy.datamining.export.FialaBPSerializer.PREFIX;
-import static cz.zcu.jsmahy.datamining.export.FialaBPSerializer.SUFFIX;
+import static cz.zcu.jsmahy.datamining.export.FialaBPSerializer.*;
 
 class FialaBPSerializerTask extends DataNodeSerializerTask {
+    private static final Logger LOGGER = LogManager.getLogger(FialaBPSerializerTask.class);
 
     private int processedNodes = 0;
 
@@ -26,19 +27,19 @@ class FialaBPSerializerTask extends DataNodeSerializerTask {
         super(out, root);
     }
 
-    private static void stripTimezone(final Calendar calendar, final FialaBPExportNodeFormat node) {
+    static synchronized void stripTimezone(final Calendar calendar) {
         final TimeZone tz = calendar.getTimeZone();
-        // add the offset value of the timezone
+        // add the offset value of the timezone and set the timezone to 0
+        // the calendar class will automatically remove the offset once we set the timezone (or rather once we get the value after setting the timezone)
         calendar.add(Calendar.MILLISECOND, tz.getOffset(calendar.getTimeInMillis()));
-        calendar.setTimeZone(TimeZone.getTimeZone(TimeZone.getAvailableIDs(0)[0]));
-        // TODO: implement
+        calendar.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
 
     // method for testing purposes
     synchronized void serialize(FialaBPExportFormatRoot root) throws IOException {
         try (final PrintWriter pw = new PrintWriter(out, true, StandardCharsets.UTF_8)) {
             pw.print(PREFIX);
-            JSONDataNodeSerializer.JSON_OBJECT_MAPPER.writeValue(pw, root);
+            OBJECT_MAPPER.writeValue(pw, root);
             pw.print(SUFFIX);
         }
     }
@@ -103,17 +104,15 @@ class FialaBPSerializerTask extends DataNodeSerializerTask {
             processNode(dataNodes.size() * 2L);
         }
 
-        // we need to remove the timezone from the value and keep the date before setting it
-        // if the date precision is "day"
-        // this is due to Jackson removing the timezone and adding/subtracting the amount of hours,
-        // for example, if the time was 00:00 and the timezone was +1hr or more, then the date gets rolled back to the previous one with 23:00 on the clock
-        // this is very likely unwanted because for birthdays we usually know the date, but not the exact hour, and so we default the time of birth to 00:00
-        // in the timezone of the state the person was born in
+        // we need to remove the timezone from the value and keep the date before setting it if the date precision is "day"
+        // this is due to Jackson removing the timezone and adding/subtracting the amount of hours
+        // for example, if the time was 00:00 and the timezone was +1hr (i.e. 00:00:+01:00) or more, then the date gets rolled back to the previous one with 23:00 on the clock (23:00:+00:00)
+        // this is very likely unwanted because for birthdays we usually know the date, but not the exact hour, and so we default
+        // the time of birth to 00:00 in the timezone of the state the person was born in
         // to solve this we basically add the time zone value and remove the timezone. the date is then recalculated internally in Calendar
         for (final FialaBPExportNodeFormat node : nodes) {
-            final Map<String, String> props = node.getProperties();
-            final Calendar calendar = node.getBegin();
-            stripTimezone(calendar, node);
+            stripTimezone(node.getBegin());
+            stripTimezone(node.getEnd());
         }
         return nodes;
     }
