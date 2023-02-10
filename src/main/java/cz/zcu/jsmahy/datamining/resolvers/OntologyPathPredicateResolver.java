@@ -8,6 +8,7 @@ import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Statement;
 
 import java.util.Collection;
+import java.util.ResourceBundle;
 
 public class OntologyPathPredicateResolver extends DefaultResponseResolver<Collection<Statement>> {
     public static final String RESULT_KEY_ONTOLOGY_PATH_PREDICATE = "ontologyPathPredicate";
@@ -15,15 +16,19 @@ public class OntologyPathPredicateResolver extends DefaultResponseResolver<Colle
     @Override
     public void resolve(final Collection<Statement> candidatesForOntologyPathPredicate, final SparqlEndpointTask<?> requestHandler) {
         Platform.runLater(() -> {
-            final RDFNodeChooserDialog dialog = new RDFNodeChooserDialog(candidatesForOntologyPathPredicate, RDFNodeChooserDialog.IS_DBPEDIA_SITE, features -> {
-                final RDFNode object = features.getValue()
-                                               .getObject();
-                assert object.isURIResource(); // should be URI resource because we are looking for a path predicate
-                final String localName = object.asResource()
-                                               .getLocalName()
-                                               .replaceAll("_", " ");
-                return new ReadOnlyObjectWrapper<>(localName);
-            });
+            final RDFNodeChooserDialog dialog = new RDFNodeChooserDialog(candidatesForOntologyPathPredicate,
+                                                                         RDFNodeChooserDialog.IS_DBPEDIA_SITE,
+                                                                         features -> {
+                                                                             final RDFNode object = features.getValue()
+                                                                                                            .getObject();
+                                                                             assert object.isURIResource(); // should be URI resource because we are looking for a path predicate
+                                                                             final String localName = object.asResource()
+                                                                                                            .getLocalName()
+                                                                                                            .replaceAll("_", " ");
+                                                                             return new ReadOnlyObjectWrapper<>(localName);
+                                                                         },
+                                                                         ResourceBundle.getBundle("lang")
+                                                                                       .getString("ontology-path-predicate-dialog-title"));
             dialog.showDialogueAndWait(stmt -> result.addMetadata(RESULT_KEY_ONTOLOGY_PATH_PREDICATE, stmt.getPredicate()));
 
             // once we receive the response notify the thread under the request handler's monitor

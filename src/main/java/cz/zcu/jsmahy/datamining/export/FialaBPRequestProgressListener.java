@@ -122,12 +122,12 @@ public class FialaBPRequestProgressListener implements RequestProgressListener {
         curr.addMetadata(METADATA_KEY_PROPERTIES, METADATA_DEFAULT_PROPERTIES);
         // add relationships
         if (prev != null) {
-            final List<ArbitraryDataHolder> relationships = prev.getValue(METADATA_KEY_RELATIONSHIPS, new ArrayList<>());
+            final List<ArbitraryDataHolder> relationships = curr.getValue(METADATA_KEY_RELATIONSHIPS, new ArrayList<>());
             // TODO: Relationship can go the opposite way
             // for now leave it like this because we are testing doctoral advisors
             final ArbitraryDataHolder relationship = new DefaultArbitraryDataHolder();
-            relationship.addMetadata(METADATA_KEY_FROM, prev.getId());
-            relationship.addMetadata(METADATA_KEY_TO, curr.getId());
+            relationship.addMetadata(METADATA_KEY_FROM, curr.getId());
+            relationship.addMetadata(METADATA_KEY_TO, prev.getId());
             relationship.addMetadata(METADATA_KEY_NAME,
                                      queryData.get()
                                               .getOntologyPathPredicate()
@@ -136,8 +136,8 @@ public class FialaBPRequestProgressListener implements RequestProgressListener {
             // TODO: User input
             relationship.addMetadata(METADATA_KEY_STEREOTYPE, DEFAULT_STEREOTYPE);
             relationships.add(relationship);
-            if (!prev.hasMetadataKey(METADATA_KEY_RELATIONSHIPS)) {
-                prev.addMetadata(METADATA_KEY_RELATIONSHIPS, relationships);
+            if (!curr.hasMetadataKey(METADATA_KEY_RELATIONSHIPS)) {
+                curr.addMetadata(METADATA_KEY_RELATIONSHIPS, relationships);
             }
         }
         Platform.runLater(() -> {
@@ -145,6 +145,39 @@ public class FialaBPRequestProgressListener implements RequestProgressListener {
             final TreeItem<DataNode> child = new TreeItem<>(curr);
             parent.getChildren()
                   .add(child);
+        });
+    }
+
+    @Override
+    public void onDeleteDataNode(final DataNode dataNode) {
+        // delete all relationships pointing to this datanode
+        // we start from root and then check for all the data nodes
+        // TODO: this could definitely be optimized, but it should not be that expensive anyways
+        // also yes, we could use the ifPresent(Consumer) methods, but I found that unreadable
+        final long id = dataNode.getId();
+        final Optional<? extends DataNode> rootOpt = dataNode.findRoot();
+        if (rootOpt.isEmpty()) {
+            return;
+        }
+        // now iterate through all the items of the root, and for each check if it has a relationship
+        // if it has a relationship, check if the "to" value points to this data node
+        // if it does, remove the relationship
+        final DataNode root = rootOpt.get();
+        root.iterate((child, depth) -> {
+            if (!child.hasMetadataKey(METADATA_KEY_RELATIONSHIPS)) {
+                return;
+            }
+            if (child.getValueUnsafe(METADATA_KEY_RELATIONSHIPS) instanceof List<?> relationships) {
+                final Iterator<?> it = relationships.iterator();
+                while (it.hasNext()) {
+                    Object obj = it.next();
+                    if (obj instanceof ArbitraryDataHolder relationship) {
+                        if (relationship.getValue(METADATA_KEY_TO, Long.MIN_VALUE) == id) {
+                            it.remove();
+                        }
+                    }
+                }
+            }
         });
     }
 

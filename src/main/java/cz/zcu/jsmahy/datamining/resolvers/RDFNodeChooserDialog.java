@@ -49,9 +49,10 @@ class RDFNodeChooserDialog {
      * @param uriPredicate           The predicate for the given URI in each cell. The predicate gets called for each cell in the {@code propertyColumn} (the first column) and if
      *                               {@link Predicate#test(Object)} returns {@code true} it will attempt to look for the label of the property.
      * @param valueColumnCellFactory the value column cell value vactory
+     * @param title
      */
     RDFNodeChooserDialog(final Collection<Statement> statements, final Predicate<String> uriPredicate,
-                         final Callback<TableColumn.CellDataFeatures<Statement, String>, ObservableValue<String>> valueColumnCellFactory) {
+                         final Callback<TableColumn.CellDataFeatures<Statement, String>, ObservableValue<String>> valueColumnCellFactory, final String title) {
         this.uriPredicate = uriPredicate;
         this.content = new TableView<>();
         this.content.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
@@ -59,10 +60,11 @@ class RDFNodeChooserDialog {
                     .addAll(statements);
         this.dialog.initOwner(Main.getPrimaryStage());
         this.dialog.setResizable(true);
-        final TableColumn<Statement, String> propertyColumn = new TableColumn<>();
+        this.dialog.setTitle(title);
+        final TableColumn<Statement, String> propertyColumn = new TableColumn<>("Přísudek");
         propertyColumn.setCellValueFactory(this::cellValueFactoryCallback);
 
-        final TableColumn<Statement, String> valueColumn = new TableColumn<>();
+        final TableColumn<Statement, String> valueColumn = new TableColumn<>("Předmět");
         valueColumn.setCellValueFactory(valueColumnCellFactory);
         final ObservableList<TableColumn<Statement, ?>> columns = this.content.getColumns();
         columns.add(propertyColumn);

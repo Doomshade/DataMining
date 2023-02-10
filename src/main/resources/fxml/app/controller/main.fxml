@@ -3,8 +3,8 @@
 <?import com.jfoenix.controls.JFXTreeView?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.ProgressIndicator?>
-<?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.*?>
 <?import javafx.scene.web.WebView?>
 <StackPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="810" prefWidth="1440" xmlns="http://javafx.com/javafx/11.0.2"
            fx:controller="cz.zcu.jsmahy.datamining.app.controller.MainController">
@@ -26,11 +26,18 @@
             </WebView>
         </center>
         <left>
-            <JFXTreeView fx:id="ontologyTreeView">
-                <BorderPane.margin>
-                    <Insets top="5" bottom="5" left="5" right="5"/>
-                </BorderPane.margin>
-            </JFXTreeView>
+            <HBox>
+                <JFXTreeView fx:id="ontologyTreeView">
+                    <BorderPane.margin>
+                        <Insets top="5" bottom="5" left="5" right="5"/>
+                    </BorderPane.margin>
+                </JFXTreeView>
+                <TableView fx:id="metadataTableView">
+                    <BorderPane.margin>
+                        <Insets top="5" bottom="5" left="5" right="5"/>
+                    </BorderPane.margin>
+                </TableView>
+            </HBox>
         </left>
     </BorderPane>
     <ProgressIndicator fx:id="progressIndicator" visible="false"/>

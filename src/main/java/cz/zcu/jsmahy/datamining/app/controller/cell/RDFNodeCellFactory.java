@@ -2,6 +2,7 @@ package cz.zcu.jsmahy.datamining.app.controller.cell;
 
 import cz.zcu.jsmahy.datamining.api.DataNode;
 import cz.zcu.jsmahy.datamining.api.DataNodeFactory;
+import cz.zcu.jsmahy.datamining.api.RequestProgressListener;
 import cz.zcu.jsmahy.datamining.api.SparqlEndpointAgent;
 import cz.zcu.jsmahy.datamining.app.controller.MainController;
 import cz.zcu.jsmahy.datamining.util.DialogHelper;
@@ -39,7 +40,8 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
                               final MainController mainController,
                               final DialogHelper dialogHelper,
                               final DataNodeFactory nodeFactory,
-                              final SparqlEndpointAgent<?> requestHandler) {
+                              final SparqlEndpointAgent<?> requestHandler,
+                              final RequestProgressListener progressListener) {
         emptyProperty().addListener((obs, wasEmpty, isNowEmpty) -> {
             if (isNowEmpty) {
                 setContextMenu(null);
@@ -52,7 +54,7 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
             final MenuItem addRestrictionItem = buildAddRestrictionItem(resources);
             final MenuItem addItem = buildAddItem(resources);
             final MenuItem editItem = buildEditItem(resources);
-            final MenuItem deleteItem = buildDeleteItem(resources, treeView);
+            final MenuItem deleteItem = buildDeleteItem(resources, treeView, progressListener);
             final MenuItem newLineItem = buildNewLineItem(resources, nodeFactory, requestHandler, treeView, mainController);
             final MenuItem continueLineItem = buildContinueLineItem(resources);
             final ObservableList<MenuItem> items = contextMenu.getItems();
@@ -130,7 +132,7 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
             mainController.bindQueryService(service);
             service.setOnFailed(e -> LOGGER.throwing(service.getException()));
             service.restart();
-        }, "Title"));
+        }, "Hledat"));
         menuItem.setAccelerator(KeyCombination.keyCombination("CTRL + H"));
         return menuItem;
     }
@@ -199,22 +201,57 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
         setContentDisplay(ContentDisplay.TEXT_ONLY);
     }
 
-    private MenuItem buildDeleteItem(final ResourceBundle resources, final TreeView<DataNode> treeView) {
+    private MenuItem buildDeleteItem(final ResourceBundle resources, final TreeView<DataNode> treeView, final RequestProgressListener progressListener) {
         final MenuItem menuItem = new MenuItem();
         menuItem.textProperty()
                 .bind(Bindings.format(resources.getString("ontology-prompt-delete"), textProperty()));
         menuItem.setOnAction(event -> {
             final ObservableList<TreeItem<DataNode>> selectedItems = treeView.getSelectionModel()
                                                                              .getSelectedItems();
-            // create a copy because we modify the inner list which would throw an exception otherwise
+            final Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.getButtonTypes()
+                 .clear();
+            alert.setTitle("Potvrdit smazání");
+            alert.setHeaderText("Jste si opravdu jisti, že chcete smazat tyto předměty?");
+            alert.getButtonTypes()
+                 .addAll(ButtonType.YES, ButtonType.NO);
+//            alert.initOwner(Main.getPrimaryStage());
+            final ListView<DataNode> nodes = new ListView<>();
+            nodes.getItems()
+                 .addAll(selectedItems.stream()
+                                      .map(TreeItem::getValue)
+                                      .toList());
+            nodes.setCellFactory(x -> new ListCell<>() {
+                @Override
+                protected void updateItem(final DataNode item, final boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(item == null || empty ? null : item.getValue(METADATA_KEY_NAME, "<no name>"));
+                }
+            });
+            alert.getDialogPane()
+                 .setContent(nodes);
+            if (alert.showAndWait()
+                     .orElse(ButtonType.NO) == ButtonType.NO) {
+                return;
+            }
+            // create a copy because we modify the inner list which would throw an IOOBE otherwise
+            // we iterate through the children of the root, and at the same time we delete
+            // some children
             final List<TreeItem<DataNode>> temp = new ArrayList<>(selectedItems);
             for (final TreeItem<DataNode> selectedItem : temp) {
                 final TreeItem<DataNode> parent = selectedItem.getParent();
                 parent.getChildren()
                       .remove(selectedItem);
+                final DataNode deletedDataNode = selectedItem.getValue();
                 parent.getValue()
                       .getChildren()
-                      .remove(selectedItem.getValue());
+                      .remove(deletedDataNode);
+                progressListener.onDeleteDataNode(deletedDataNode);
+            }
+            final ObservableList<TreeItem<DataNode>> children = treeView.getRoot()
+                                                                        .getChildren();
+            if (!children.isEmpty()) {
+                treeView.requestFocus();
             }
         });
         menuItem.setAccelerator(KeyCombination.keyCombination("delete"));

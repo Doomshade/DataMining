@@ -22,14 +22,13 @@ import java.util.function.BiConsumer;
 class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
     private static final Logger LOGGER = LogManager.getLogger(DataNodeImpl.class);
     private static long ID_SEQ = 0;
-
-    @JsonIgnore
-    private final transient DataNode parent;
-    // ISTG if I ever see the dude who made up the generics system in Java I'll eat his cookies
     /**
      * Using implementation because
      */
     private final ObservableListWrapperWrapper<DataNode> children = new ObservableListWrapperWrapper<>(FXCollections.observableArrayList());
+    // ISTG if I ever see the dude who made up the generics system in Java I'll eat his cookies
+    @JsonIgnore
+    private transient DataNode parent;
     private long id;
 
     {
@@ -41,6 +40,10 @@ class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
     }
 
     DataNodeImpl(final DataNode parent) {
+        this.parent = parent;
+    }
+
+    public void setParent(DataNode parent) {
         this.parent = parent;
     }
 

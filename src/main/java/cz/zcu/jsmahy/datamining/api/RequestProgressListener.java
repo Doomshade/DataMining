@@ -53,6 +53,8 @@ public interface RequestProgressListener {
      */
     void onAddNewDataNode(DataNode root, final DataNode previousDataNode, DataNode newDataNode);
 
+    void onDeleteDataNode(DataNode dataNode);
+
     /**
      * <p>Called when multiple {@link DataNode}s were found and they can be added under a tree item. The {@code treeItem} is not the tree root!</p>
      * <p>An example scenario could be {@code Charles IV, Holy Roman Emperor} having multiple successors (successors from different dynasties) and one would like to see the options under a tree

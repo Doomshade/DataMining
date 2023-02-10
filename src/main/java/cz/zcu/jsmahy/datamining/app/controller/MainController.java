@@ -15,6 +15,9 @@ import javafx.beans.Observable;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.binding.DoubleBinding;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -28,6 +31,8 @@ import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import org.apache.jena.rdf.model.RDFNode;
@@ -39,6 +44,7 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URL;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 /**
@@ -89,9 +95,11 @@ public class MainController implements Initializable {
             ontologyTreeView.getRoot()
                             .getChildren()
                             .add(new TreeItem<>(dataNode));
-        }, "Title");
+        }, "Název linie");
 
     };
+    @FXML
+    private TableView<Map.Entry<String, Object>> metadataTableView;
     private SparqlEndpointAgent<Void> requestHandler;
     private Injector injector;
 
@@ -102,15 +110,17 @@ public class MainController implements Initializable {
         this.nodeFactory = injector.getInstance(DataNodeFactory.class);
         this.requestHandler = injector.getInstance(SparqlEndpointAgent.class);
         this.dialogHelper = injector.getInstance(DialogHelper.class);
-        final TreeItem<DataNode> root = new TreeItem<>(null);
-        this.ontologyTreeView.setRoot(root);
 
+        // sets up menu bar
         final MenuBar menuBar = createMenuBar(resources);
         this.rootPane.setTop(menuBar);
         this.rootPane.setPadding(new Insets(10));
         this.rootPane.disableProperty()
                      .bind(progressIndicator.visibleProperty());
 
+        // sets up the ontology tree view
+        final TreeItem<DataNode> root = new TreeItem<>(null);
+        this.ontologyTreeView.setRoot(root);
         final MultipleSelectionModel<TreeItem<DataNode>> selectionModel = this.ontologyTreeView.getSelectionModel();
         selectionModel.setSelectionMode(SelectionMode.SINGLE);
 
@@ -126,14 +136,43 @@ public class MainController implements Initializable {
                 event.consume();
             }
         });
-        this.ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory(lv, resources, this, dialogHelper, nodeFactory, requestHandler));
+        final RequestProgressListener progressListener = injector.getInstance(RequestProgressListener.class);
+        progressListener.treeRootProperty()
+                        .set(ontologyTreeView.getRoot());
+        this.ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory(lv, resources, this, dialogHelper, nodeFactory, requestHandler, progressListener));
 
 
         final ContextMenu contextMenu = createContextMenu(resources);
         this.ontologyTreeView.setContextMenu(contextMenu);
-        injector.getInstance(RequestProgressListener.class)
-                .treeRootProperty()
-                .set(ontologyTreeView.getRoot());
+
+        // sets up the metadata list view
+        final TableColumn<Map.Entry<String, Object>, String> metadataKeyColumn = new TableColumn<>("Klíč");
+        metadataKeyColumn.setCellValueFactory(features -> new SimpleStringProperty(features.getValue()
+                                                                                           .getKey()));
+        final TableColumn<Map.Entry<String, Object>, Object> metadataValueColumn = new TableColumn<>("Hodnota");
+        // TODO: format date etc.
+        metadataValueColumn.setCellValueFactory(features -> new SimpleObjectProperty<>(features.getValue()
+                                                                                               .getValue()));
+        metadataTableView.setColumnResizePolicy(features -> true);
+        final ObservableList<TableColumn<Map.Entry<String, Object>, ?>> columns = metadataTableView.getColumns();
+        columns.setAll(metadataKeyColumn, metadataValueColumn);
+        VBox.setVgrow(metadataTableView, Priority.ALWAYS);
+        VBox.setVgrow(ontologyTreeView, Priority.ALWAYS);
+        ontologyTreeView.getSelectionModel()
+                        .selectedItemProperty()
+                        .addListener(new ChangeListener<TreeItem<DataNode>>() {
+
+                            @Override
+                            public void changed(final ObservableValue<? extends TreeItem<DataNode>> observable, final TreeItem<DataNode> oldValue, final TreeItem<DataNode> newValue) {
+                                final ObservableList<Map.Entry<String, Object>> items = metadataTableView.getItems();
+                                items.clear();
+                                final DataNode dataNode = newValue.getValue();
+                                if (dataNode != null) {
+                                    items.addAll(dataNode.getMetadata()
+                                                         .entrySet());
+                                }
+                            }
+                        });
     }
 
     private ContextMenu createContextMenu(final ResourceBundle resources) {

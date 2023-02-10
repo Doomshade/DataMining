@@ -63,8 +63,23 @@ public class JSONDataNodeSerializer implements DataNodeSerializer {
 
         @Override
         protected DataNode call() throws Exception {
-            final DataNode dataNode = JSON_OBJECT_MAPPER.readValue(new InputStreamReader(in), DataNode.class);
-            return dataNode;
+            final DataNode root = JSON_OBJECT_MAPPER.readValue(new InputStreamReader(in), DataNode.class);
+            // we don't store the parent in serialization because we would have infinite recursion calls
+            // the data node already stores the children, and when serializing the children
+            // the serializer tries to serialize the parent, and that tries to serialize the children
+            // the serializer tries to serialize the parent of the children, and then it tries to serialize the children of the parent
+            // children (0) -> parent -> children (0) -> parent -> children (0) -> parent -> (...)
+            setupParents(root);
+            return root;
+        }
+
+        private void setupParents(final DataNode parent) {
+            for (DataNode dataNode : parent) {
+                if (dataNode instanceof DataNodeImpl dataNodeImpl) {
+                    dataNodeImpl.setParent(parent);
+                }
+                setupParents(dataNode);
+            }
         }
     }
 
