@@ -10,9 +10,9 @@
 
 ## Tools used
 
-- neo4j
-- JavaFX
-- JFoenix
+- [JavaFX 17](https://openjfx.io/)
+- [JFoenix](https://github.com/sshahine/JFoenix)
+- [Apache Jena](https://jena.apache.org/)
 
 ---
 <div style="text-align: right;"><i>Jakub Šmrha's Bachelor's work</i></div>
