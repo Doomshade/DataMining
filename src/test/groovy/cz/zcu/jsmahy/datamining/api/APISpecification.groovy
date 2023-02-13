@@ -50,9 +50,9 @@ class APISpecification extends Specification {
         // need to mock dispatch chain because some internals use the dispatch event method and it does not expect it
         // nor the event to return null
         def dispatchChain = Mock(EventDispatchChain)
-        dispatchChain.dispatchEvent(_) >> new Event(EventType.ROOT)
-        task.buildEventDispatchChain(_) >> dispatchChain
-        taskProvider.newTask(_, _, _) >> task
+        dispatchChain.dispatchEvent(_ as Event) >> new Event(EventType.ROOT)
+        task.buildEventDispatchChain(_ as EventDispatchChain) >> dispatchChain
+        taskProvider.newTask(_ as String, _ as DataNode) >> task
 
         injector = Guice.createInjector(mocks.module(config, taskProvider))
         nodeFactory = Spy(injector.getInstance(DataNodeFactory))
@@ -189,7 +189,7 @@ class APISpecification extends Specification {
         root.getChildren().size() == nodes.size()
     }
 
-    def "Should have metadata in map when something is added via addMetadata"() {
+    def "Should have metadata in map when something is added via addMetadata and have it removed via removeMetadata"() {
         given:
         def node = nodeFactory.newRoot("Root")
 
@@ -198,6 +198,24 @@ class APISpecification extends Specification {
 
         then:
         node.getMetadata().containsKey("testKey")
+
+        when:
+        node.removeMetadata("testKey")
+
+        then:
+        !node.getMetadata().containsKey("testKey")
+
+        when:
+        node.addMetadata("testKey", "testValue")
+        node.addMetadata("testKey2", "testValue")
+        node.addMetadata("testKey3", "testValue")
+        assert node.hasMetadataKey("testKey")
+        assert node.hasMetadataKey("testKey2")
+        assert node.hasMetadataKey("testKey3")
+        node.clearMetadata()
+
+        then:
+        node.getMetadata().isEmpty()
     }
 
     def "Should return a valid iterator"() {

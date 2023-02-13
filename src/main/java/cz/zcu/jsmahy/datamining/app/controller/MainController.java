@@ -17,7 +17,6 @@ import javafx.beans.binding.BooleanBinding;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -145,32 +144,30 @@ public class MainController implements Initializable {
         final ContextMenu contextMenu = createContextMenu(resources);
         this.ontologyTreeView.setContextMenu(contextMenu);
 
+
         // sets up the metadata list view
-        final TableColumn<Map.Entry<String, Object>, String> metadataKeyColumn = new TableColumn<>("Klíč");
-        metadataKeyColumn.setCellValueFactory(features -> new SimpleStringProperty(features.getValue()
-                                                                                           .getKey()));
-        final TableColumn<Map.Entry<String, Object>, Object> metadataValueColumn = new TableColumn<>("Hodnota");
-        // TODO: format date etc.
-        metadataValueColumn.setCellValueFactory(features -> new SimpleObjectProperty<>(features.getValue()
-                                                                                               .getValue()));
         metadataTableView.setColumnResizePolicy(features -> true);
         final ObservableList<TableColumn<Map.Entry<String, Object>, ?>> columns = metadataTableView.getColumns();
-        columns.setAll(metadataKeyColumn, metadataValueColumn);
+        final TableColumn<Map.Entry<String, Object>, String> keyColumn = new TableColumn<>(resources.getString("key"));
+        keyColumn.setCellValueFactory(features -> new SimpleStringProperty(features.getValue()
+                                                                                   .getKey()));
+        final TableColumn<Map.Entry<String, Object>, Object> valueColumn = new TableColumn<>("Hodnota");
+        // TODO: format date etc.
+        valueColumn.setCellValueFactory(features -> new SimpleObjectProperty<>(features.getValue()
+                                                                                       .getValue()));
+
+        columns.setAll(keyColumn, valueColumn);
         VBox.setVgrow(metadataTableView, Priority.ALWAYS);
         VBox.setVgrow(ontologyTreeView, Priority.ALWAYS);
         ontologyTreeView.getSelectionModel()
                         .selectedItemProperty()
-                        .addListener(new ChangeListener<TreeItem<DataNode>>() {
-
-                            @Override
-                            public void changed(final ObservableValue<? extends TreeItem<DataNode>> observable, final TreeItem<DataNode> oldValue, final TreeItem<DataNode> newValue) {
-                                final ObservableList<Map.Entry<String, Object>> items = metadataTableView.getItems();
-                                items.clear();
-                                final DataNode dataNode = newValue.getValue();
-                                if (dataNode != null) {
-                                    items.addAll(dataNode.getMetadata()
-                                                         .entrySet());
-                                }
+                        .addListener((observable, oldValue, newValue) -> {
+                            final ObservableList<Map.Entry<String, Object>> items = metadataTableView.getItems();
+                            items.clear();
+                            final DataNode dataNode = newValue.getValue();
+                            if (dataNode != null) {
+                                items.addAll(dataNode.getMetadata()
+                                                     .entrySet());
                             }
                         });
     }
@@ -235,6 +232,7 @@ public class MainController implements Initializable {
                 try {
                     final String fileName = dataNodeRoot.getValue("name", "<no name>");
                     final String fileExtension = serializer.getFileExtension();
+                    //noinspection resource
                     out = new FileOutputStream(String.format(FILE_NAME_FORMAT, fileName, fileExtension));
                 } catch (FileNotFoundException ex) {
                     throw new UncheckedIOException(ex);
@@ -245,10 +243,7 @@ public class MainController implements Initializable {
                         return serializer.createSerializerTask(out, dataNodeRoot);
                     }
                 };
-                dataNodeExporter.setOnRunning(ev -> {
-                    services.add(dataNodeExporter);
-
-                });
+                dataNodeExporter.setOnRunning(ev -> services.add(dataNodeExporter));
                 dataNodeExporter.setOnSucceeded(ev -> {
                     removedServices.add(dataNodeExporter);
                     services.remove(dataNodeExporter);
