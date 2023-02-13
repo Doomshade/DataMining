@@ -46,10 +46,7 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URL;
-import java.util.List;
-import java.util.Map;
-import java.util.ResourceBundle;
-import java.util.Set;
+import java.util.*;
 
 /**
  * <p>The controller for main UI where user builds the ontology.</p>
@@ -335,16 +332,28 @@ public class MainController implements Initializable {
             }
             for (final Map.Entry<String, Object> entry : entrySet) {
                 final TreeItem<Map.Entry<String, Object>> treeItem = new TreeItem<>(entry);
+                children.add(treeItem);
                 if (entry.getValue() instanceof Map<?, ?> map) {
                     if (!map.isEmpty() && map.keySet()
                                              .iterator()
                                              .next() instanceof String) {
-                        LOGGER.trace("Adding {} recursively to {}'s children", map, treeItem);
+                        LOGGER.trace("Found map value. Adding {} recursively to {}'s children", map, treeItem);
                         addMapsRecursively(treeItem.getChildren(), ((Map<String, Object>) map).entrySet(), depth + 1);
+                    }
+                } else if (entry.getValue() instanceof List<?> list) {
+                    // TODO: reconsider whether this should be shown
+                    if (!list.isEmpty() && list.get(0) instanceof ArbitraryDataHolder) {
+                        LOGGER.trace("Found list value. Adding {} recursively to {}'s children", list, treeItem);
+                        final Map<String, Object> hugeMap = new HashMap<>();
+                        int index = 0;
+                        for (ArbitraryDataHolder dataHolder : (List<ArbitraryDataHolder>) list) {
+                            hugeMap.put(String.valueOf(index++), dataHolder.getMetadata());
+                        }
+
+                        addMapsRecursively(treeItem.getChildren(), hugeMap.entrySet(), depth + 1);
                     }
                 }
                 LOGGER.trace("Added {} to children {}", treeItem, children);
-                children.add(treeItem);
             }
         }
 
