@@ -68,6 +68,10 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
     }
 
     private void addDatesToNode(final Model model, final DataNode curr, final Property dateProperty, final Resource subject, final boolean isStartDate) {
+        if (dateProperty == null) {
+            LOGGER.debug("No date property set, not adding dates to {}", curr.getId());
+            return;
+        }
         final Selector startDateSelector = new SimpleSelector(subject, dateProperty, (Object) null);
         final StmtIterator startDates = model.listStatements(startDateSelector);
         if (startDates.hasNext()) {

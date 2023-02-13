@@ -4,6 +4,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import cz.zcu.jsmahy.datamining.api.*;
+import cz.zcu.jsmahy.datamining.app.controller.cell.MetadataValueCellFactory;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
 import cz.zcu.jsmahy.datamining.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.export.FialaBPModule;
@@ -17,6 +18,7 @@ import javafx.beans.binding.BooleanBinding;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -30,6 +32,7 @@ import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.web.WebEngine;
@@ -43,8 +46,10 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URL;
+import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.Set;
 
 /**
  * <p>The controller for main UI where user builds the ontology.</p>
@@ -63,8 +68,8 @@ public class MainController implements Initializable {
     };
     private static final String WIKI_URL = "https://wikipedia.org/wiki/%s";
     private static final Logger LOGGER = LogManager.getLogger(MainController.class);
-    //<editor-fold desc="Attributes for query building">
-    //<editor-fold desc="UI related attributes">
+    @FXML
+    private HBox leftPane;
     @FXML
     private BorderPane rootPane;
     @FXML
@@ -73,9 +78,7 @@ public class MainController implements Initializable {
     private WebView wikiPageWebView;
     @FXML
     private ProgressIndicator progressIndicator;
-    //</editor-fold>
     private DataNodeFactory nodeFactory;
-    //</editor-fold>
     private DialogHelper dialogHelper;
     private final EventHandler<ActionEvent> createNewLineAction = e -> {
         final ResourceBundle lang = ResourceBundle.getBundle("lang");
@@ -98,9 +101,16 @@ public class MainController implements Initializable {
 
     };
     @FXML
-    private TableView<Map.Entry<String, Object>> metadataTableView;
+    private TreeTableView<Map.Entry<String, Object>> metadataTableView;
     private SparqlEndpointAgent<Void> requestHandler;
     private Injector injector;
+
+    private static ObservableValue<Object> valueColumnFactory(final TreeTableColumn.CellDataFeatures<Map.Entry<String, Object>, Object> features) {
+        // need to map values better
+        return new SimpleObjectProperty<>(features.getValue()
+                                                  .getValue()
+                                                  .getValue());
+    }
 
     @Override
     @SuppressWarnings("unchecked")
@@ -146,30 +156,26 @@ public class MainController implements Initializable {
 
 
         // sets up the metadata list view
-        metadataTableView.setColumnResizePolicy(features -> true);
-        final ObservableList<TableColumn<Map.Entry<String, Object>, ?>> columns = metadataTableView.getColumns();
-        final TableColumn<Map.Entry<String, Object>, String> keyColumn = new TableColumn<>(resources.getString("key"));
+        metadataTableView.setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
+        metadataTableView.setPrefWidth(400);
+        final ObservableList<TreeTableColumn<Map.Entry<String, Object>, ?>> columns = metadataTableView.getColumns();
+        final TreeTableColumn<Map.Entry<String, Object>, String> keyColumn = new TreeTableColumn<>(resources.getString("key"));
         keyColumn.setCellValueFactory(features -> new SimpleStringProperty(features.getValue()
+                                                                                   .getValue()
                                                                                    .getKey()));
-        final TableColumn<Map.Entry<String, Object>, Object> valueColumn = new TableColumn<>("Hodnota");
+        final TreeTableColumn<Map.Entry<String, Object>, Object> valueColumn = new TreeTableColumn<>("Hodnota");
         // TODO: format date etc.
-        valueColumn.setCellValueFactory(features -> new SimpleObjectProperty<>(features.getValue()
-                                                                                       .getValue()));
+        valueColumn.setCellValueFactory(MainController::valueColumnFactory);
+        valueColumn.setCellFactory(MetadataValueCellFactory::new);
 
         columns.setAll(keyColumn, valueColumn);
         VBox.setVgrow(metadataTableView, Priority.ALWAYS);
         VBox.setVgrow(ontologyTreeView, Priority.ALWAYS);
+        metadataTableView.setRoot(new TreeItem<>());
+        metadataTableView.setShowRoot(false);
         ontologyTreeView.getSelectionModel()
                         .selectedItemProperty()
-                        .addListener((observable, oldValue, newValue) -> {
-                            final ObservableList<Map.Entry<String, Object>> items = metadataTableView.getItems();
-                            items.clear();
-                            final DataNode dataNode = newValue.getValue();
-                            if (dataNode != null) {
-                                items.addAll(dataNode.getMetadata()
-                                                     .entrySet());
-                            }
-                        });
+                        .addListener(new TreeViewAndMetadataBinder());
     }
 
     private ContextMenu createContextMenu(final ResourceBundle resources) {
@@ -211,18 +217,18 @@ public class MainController implements Initializable {
 
         final MenuItem exportToFile = new MenuItem(resources.getString("export"));
         exportToFile.setOnAction(e -> {
-
             final ObservableList<TreeItem<DataNode>> dataNodeRoots = ontologyTreeView.getRoot()
                                                                                      .getChildren();
             if (dataNodeRoots.size() == 0) {
                 return;
             }
+
             final ObservableList<Service<?>> services = FXCollections.observableArrayList();
             final ObservableList<Service<?>> removedServices = FXCollections.observableArrayList();
-            final DoubleBinding progressProperty = Bindings.size(removedServices)
-                                                           .divide((double) dataNodeRoots.size());
             final BooleanBinding runningProperty = Bindings.size(services)
                                                            .greaterThan(0);
+            final DoubleBinding progressProperty = Bindings.size(removedServices)
+                                                           .divide((double) dataNodeRoots.size());
             bindProperties(runningProperty, progressProperty);
 
             final DataNodeSerializer serializer = injector.getInstance(DataNodeSerializer.class);
@@ -313,5 +319,50 @@ public class MainController implements Initializable {
         final String url = String.format(WIKI_URL, formattedItem);
         LOGGER.trace("Loading web page with URL {}", url);
         engine.load(url);
+    }
+
+    private class TreeViewAndMetadataBinder implements ChangeListener<TreeItem<DataNode>> {
+
+        private static final int MAX_DEPTH = 5;
+
+        private void addMapsRecursively(List<TreeItem<Map.Entry<String, Object>>> children, Set<Map.Entry<String, Object>> entrySet) {
+            addMapsRecursively(children, entrySet, 0);
+        }
+
+        private void addMapsRecursively(List<TreeItem<Map.Entry<String, Object>>> children, Set<Map.Entry<String, Object>> entrySet, final int depth) {
+            if (depth < 0 || depth >= MAX_DEPTH) {
+                return;
+            }
+            for (final Map.Entry<String, Object> entry : entrySet) {
+                final TreeItem<Map.Entry<String, Object>> treeItem = new TreeItem<>(entry);
+                if (entry.getValue() instanceof Map<?, ?> map) {
+                    if (!map.isEmpty() && map.keySet()
+                                             .iterator()
+                                             .next() instanceof String) {
+                        LOGGER.trace("Adding {} recursively to {}'s children", map, treeItem);
+                        addMapsRecursively(treeItem.getChildren(), ((Map<String, Object>) map).entrySet(), depth + 1);
+                    }
+                }
+                LOGGER.trace("Added {} to children {}", treeItem, children);
+                children.add(treeItem);
+            }
+        }
+
+        @Override
+        public void changed(final ObservableValue<? extends TreeItem<DataNode>> observable, final TreeItem<DataNode> oldValue, final TreeItem<DataNode> newValue) {
+            if (newValue == null) {
+                return;
+            }
+
+            final ObservableList<TreeItem<Map.Entry<String, Object>>> children = metadataTableView.getRoot()
+                                                                                                  .getChildren();
+            children.clear();
+            final DataNode dataNode = newValue.getValue();
+            if (dataNode != null) {
+                final Set<Map.Entry<String, Object>> entrySet = dataNode.getMetadata()
+                                                                        .entrySet();
+                addMapsRecursively(children, entrySet);
+            }
+        }
     }
 }

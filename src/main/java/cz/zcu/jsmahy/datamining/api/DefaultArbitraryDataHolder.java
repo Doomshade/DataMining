@@ -61,4 +61,9 @@ public class DefaultArbitraryDataHolder implements ArbitraryDataHolder {
     public void clearMetadata() {
         this.metadata.clear();
     }
+
+    @Override
+    public String toString() {
+        return metadata.toString();
+    }
 }
