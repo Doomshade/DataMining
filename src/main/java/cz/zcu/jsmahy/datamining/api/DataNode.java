@@ -10,9 +10,43 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 
 /**
- * This node represents a single node in the tree with a link to next nodes.
+ * <p>This node represents a single node in the tree with a link to next nodes.</p>
+ * <p>To create an instance of this interface's implementation see {@link DataNodeFactory}. To obtain an instance of this factory you could either make your own, or preferably use an existing one
+ * via Guice class as follows:</p>
+ * <pre>{@code
+ * public class YourClass {
+ *   private DataNodeFactory dataNodeFactory;
+ *
+ *   @Inject
+ *   public YourClass(DataNodeFactory dataNodeFactory, ...) {
+ *       this.dataNodeFactory = dataNodeFactory;
+ *   }
+ * }
+ * }</pre>
+ * or
+ * <pre>{@code
+ * public class YourClass {
+ *   @Inject
+ *   private DataNodeFactory dataNodeFactory;
+ *   ...
+ * }
+ * }</pre>
+ * or
+ * <pre>{@code
+ * public class YourClass {
+ *   // your init method or whatever initializes your object (constructor, initialization block, ...)
+ *   // this could be used in any of your controllers in JavaFX
+ *   public void init() {
+ *       // you may add your modules to this injector
+ *       Injector injector = Guice.createInjector(new DataMiningModule());
+ *       DataNodeFactory dataNodeFactory = injector.getInstance(DataNodeFactory.class);
+ *       ...
+ *   }
+ * }
+ * }</pre>
  *
  * @author Jakub Šmrha
+ * @see DataNodeFactory
  * @since 1.0
  */
 @JsonDeserialize(as = DataNodeImpl.class)

@@ -3,7 +3,6 @@ package cz.zcu.jsmahy.datamining.dbpedia;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import cz.zcu.jsmahy.datamining.api.*;
-import cz.zcu.jsmahy.datamining.exception.InvalidQueryException;
 import cz.zcu.jsmahy.datamining.resolvers.OntologyPathPredicateResolver;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.datatypes.RDFDatatype;
@@ -106,7 +105,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
     }
 
     @Override
-    public synchronized R call() throws InvalidQueryException {
+    public synchronized R call() {
         this.usedURIs.clear();
         final Model model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
         final QueryData inputMetadata = new QueryData();
@@ -116,8 +115,6 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
             inputMetadata.setCurrentModel(model);
         } catch (HttpException e) {
             throw LOGGER.throwing(e);
-        } catch (Exception e) {
-            throw new InvalidQueryException(e);
         }
 
         final InitialSearchResult result;

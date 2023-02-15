@@ -12,6 +12,7 @@ import javafx.concurrent.Task;
  */
 public abstract class SparqlEndpointTask<R> extends Task<R> {
 
+    // TODO: docs
     public abstract void unlockDialogPane();
 
     public abstract ApplicationConfiguration getConfig();
