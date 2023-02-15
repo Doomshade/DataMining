@@ -133,7 +133,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
             result = initialSearch(inputMetadata);
         }
         if (result != InitialSearchResult.OK) {
-            LOGGER.info("Invalid createBackgroundSparqlRequest '{}' - no results were found. Initial search result: {}", query, result);
+            LOGGER.info("Search result of '{}' was not OK. Initial search result: {}", query, result);
             progressListener.onInvalidQuery(originalQuery, result);
             return null;
         }

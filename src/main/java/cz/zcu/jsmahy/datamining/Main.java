@@ -7,8 +7,9 @@ import javafx.stage.Stage;
 import org.apache.commons.cli.ParseException;
 
 /**
+ * The entry point of the application.
+ *
  * @author Jakub Šmrha
- * @version 1.0
  * @since 1.0
  */
 public class Main extends Application {
