@@ -8,8 +8,10 @@ import cz.zcu.jsmahy.datamining.app.controller.MainController;
 import cz.zcu.jsmahy.datamining.util.DialogHelper;
 import cz.zcu.jsmahy.datamining.util.RDFNodeUtil;
 import javafx.beans.binding.Bindings;
+import javafx.beans.binding.StringBinding;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Service;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
@@ -17,11 +19,13 @@ import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.function.Supplier;
 
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
+import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_URI;
 
 /**
  * <p>Factory for {@link RDFNode} nodes in a {@link ListView}</p>
@@ -35,13 +39,13 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
     private static final Logger LOGGER = LogManager.getLogger(RDFNodeCellFactory.class);
     private TextField textField;
 
-    public RDFNodeCellFactory(final TreeView<DataNode> treeView,
-                              final ResourceBundle resources,
+    public RDFNodeCellFactory(final ResourceBundle resources,
                               final MainController mainController,
                               final DialogHelper dialogHelper,
                               final DataNodeFactory nodeFactory,
                               final SparqlEndpointAgent<?> requestHandler,
-                              final RequestProgressListener progressListener) {
+                              final RequestProgressListener progressListener,
+                              final Supplier<Collection<DataNode>> selectedItemSupplier) {
         emptyProperty().addListener((obs, wasEmpty, isNowEmpty) -> {
             if (isNowEmpty) {
                 setContextMenu(null);
@@ -52,19 +56,34 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
 
             final MenuItem searchItem = buildSearchItem(resources, dialogHelper, requestHandler, mainController);
             final MenuItem addRestrictionItem = buildAddRestrictionItem(resources);
-            final MenuItem addItem = buildAddItem(resources);
+//            final MenuItem addItem = buildAddItem(resources);
             final MenuItem editItem = buildEditItem(resources);
-            final MenuItem deleteItem = buildDeleteItem(resources, treeView, progressListener);
-            final MenuItem newLineItem = buildNewLineItem(resources, nodeFactory, requestHandler, treeView, mainController);
+            final MenuItem deleteItem = buildDeleteItem(resources, progressListener, selectedItemSupplier);
+            final MenuItem newLineItem = buildNewLineItem(resources, nodeFactory, requestHandler, mainController, progressListener);
             final MenuItem continueLineItem = buildContinueLineItem(resources);
             final ObservableList<MenuItem> items = contextMenu.getItems();
             if (getItem().isRoot()) {
-                items.addAll(searchItem, addRestrictionItem, addItem, editItem, deleteItem);
+                items.addAll(searchItem, addRestrictionItem, editItem, deleteItem);
             } else {
-                items.addAll(newLineItem, continueLineItem, addItem, deleteItem);
+                items.addAll(newLineItem, continueLineItem, deleteItem);
             }
             setContextMenu(contextMenu);
         });
+        final StringBinding stringBinding = Bindings.createStringBinding(() -> getItem() == null ? "" : getItem().getValue(METADATA_KEY_NAME, "<no name>"), itemProperty());
+        textProperty().bind(stringBinding);
+    }
+
+    private static Alert createPromptAlert(final Node content, final ResourceBundle resourceBundle) {
+        final Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.getButtonTypes()
+             .clear();
+        alert.setTitle(resourceBundle.getString("confirm-deletion-dialog-title"));
+        alert.setHeaderText(resourceBundle.getString("confirm-deletion-dialog-header"));
+        alert.getButtonTypes()
+             .addAll(ButtonType.YES, ButtonType.NO);
+        alert.getDialogPane()
+             .setContent(content);
+        return alert;
     }
 
     private MenuItem buildContinueLineItem(final ResourceBundle resources) {
@@ -81,32 +100,29 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
     private MenuItem buildNewLineItem(final ResourceBundle resources,
                                       final DataNodeFactory nodeFactory,
                                       final SparqlEndpointAgent<?> requestHandler,
-                                      final TreeView<DataNode> treeView,
-                                      final MainController mainController) {
+                                      final MainController mainController,
+                                      final RequestProgressListener progressListener) {
         final MenuItem menuItem = new MenuItem(resources.getString("create-new-line"));
         menuItem.setOnAction(event -> {
-            // TODO: we no longer have a direct link to the parent
-            // we instead have an ID to the parent
-            // this is due to serialization
-            // there is still a way to find
-//            final TreeItem<DataNode> root = treeView.getRoot();
-//            final DataNode item = getItem();
-//            final Optional<DataNode> dataNodeRootOpt = item.findRoot();
-//            assert dataNodeRootOpt.isPresent(); // the item should not be a root, thus the item's root should be present
-//            final String name = dataNodeRootOpt.get()
-//                                               .getValue("name")
-//                                               .orElse("<no name>") + " - copy";
-//            final DataNode newDataNodeRoot = nodeFactory.newRoot(name);
-//            root.getChildren()
-//                .add(new TreeItem<>(newDataNodeRoot));
-//            final Optional<String> query = item.getValue(METADATA_KEY_URI);
-//            if (query.isEmpty()) {
-//                LOGGER.error("Could not create new line. Reason: Selected item '{}' does not have URI stored under the key '{}'", item, METADATA_KEY_URI);
-//                return;
-//            }
-//            final Service<?> service = requestHandler.createBackgroundService(query.get(), newDataNodeRoot);
-//            mainController.bindQueryService(service);
-//            service.restart();
+            final DataNode dataNode = getItem();
+            final Optional<? extends DataNode> dataNodeRootOpt = dataNode.findRoot();
+            assert dataNodeRootOpt.isPresent(); // the item should not be a root, thus the item's root should be present
+
+            final String name = dataNodeRootOpt.get()
+                                               .getValue(METADATA_KEY_NAME)
+                                               .orElse("<no name>") + " - copy";
+            final DataNode newDataNodeRoot = nodeFactory.newRoot(name);
+            progressListener.onCreateNewRoot(newDataNodeRoot);
+
+            final Optional<String> query = dataNode.getValue(METADATA_KEY_URI);
+            if (query.isEmpty()) {
+                LOGGER.error("Could not create new line. Reason: Selected item '{}' does not have URI stored under the key '{}'", dataNode, METADATA_KEY_URI);
+                return;
+            }
+
+            final Service<?> service = requestHandler.createBackgroundService(query.get(), newDataNodeRoot);
+            mainController.bindQueryService(service);
+            service.restart();
         });
         return menuItem;
     }
@@ -120,7 +136,7 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
         } else {
             menuItem.setText(resources.getString("search"));
         }
-        menuItem.setOnAction(event -> dialogHelper.textInputDialog(resources.getString("item-to-search"), searchValue -> {
+        menuItem.setOnAction(event -> dialogHelper.textInputDialog(resources.getString("subject-to-search"), resources.getString("search-subject"), searchValue -> {
             getTreeItem().setExpanded(true);
             assert getItem().isRoot();
             final String query = searchValue.replaceAll(" ", "_");
@@ -132,7 +148,7 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
             mainController.bindQueryService(service);
             service.setOnFailed(e -> LOGGER.throwing(service.getException()));
             service.restart();
-        }, "Hledat"));
+        }));
         menuItem.setAccelerator(KeyCombination.keyCombination("CTRL + H"));
         return menuItem;
     }
@@ -174,53 +190,42 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
     @Override
     public void startEdit() {
         super.startEdit();
-        if (!getItem().isRoot()) {
-            return;
-        }
-        if (textField == null) {
-            createTextField();
-        }
-        setGraphic(textField);
-        setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-        textField.requestFocus();
+//        if (!getItem().isRoot()) {
+//            return;
+//        }
+//        if (textField == null) {
+//            createTextField();
+//        }
+//        setGraphic(textField);
+//        setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+//        textField.requestFocus();
     }
 
     @Override
     public void commitEdit(final DataNode newValue) {
         super.commitEdit(newValue);
-        setGraphic(null);
-        setText(prettyFormat(newValue));
-        setContentDisplay(ContentDisplay.TEXT_ONLY);
+//        setGraphic(null);
+//        setText(prettyFormat(newValue));
+//        setContentDisplay(ContentDisplay.TEXT_ONLY);
     }
 
     @Override
     public void cancelEdit() {
         super.cancelEdit();
-        setGraphic(null);
-        setText(prettyFormat(getItem()));
-        setContentDisplay(ContentDisplay.TEXT_ONLY);
+//        setGraphic(null);
+//        setText(prettyFormat(getItem()));
+//        setContentDisplay(ContentDisplay.TEXT_ONLY);
     }
 
-    private MenuItem buildDeleteItem(final ResourceBundle resources, final TreeView<DataNode> treeView, final RequestProgressListener progressListener) {
+    private MenuItem buildDeleteItem(final ResourceBundle resources, final RequestProgressListener progressListener, final Supplier<Collection<DataNode>> selectedItemsSupplier) {
         final MenuItem menuItem = new MenuItem();
         menuItem.textProperty()
                 .bind(Bindings.format(resources.getString("ontology-prompt-delete"), textProperty()));
         menuItem.setOnAction(event -> {
-            final ObservableList<TreeItem<DataNode>> selectedItems = treeView.getSelectionModel()
-                                                                             .getSelectedItems();
-            final Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-            alert.getButtonTypes()
-                 .clear();
-            alert.setTitle("Potvrdit smazání");
-            alert.setHeaderText("Jste si opravdu jisti, že chcete smazat tyto předměty?");
-            alert.getButtonTypes()
-                 .addAll(ButtonType.YES, ButtonType.NO);
-//            alert.initOwner(Main.getPrimaryStage());
             final ListView<DataNode> nodes = new ListView<>();
+            final Collection<DataNode> selectedDataNodes = selectedItemsSupplier.get();
             nodes.getItems()
-                 .addAll(selectedItems.stream()
-                                      .map(TreeItem::getValue)
-                                      .toList());
+                 .addAll(selectedDataNodes);
             nodes.setCellFactory(x -> new ListCell<>() {
                 @Override
                 protected void updateItem(final DataNode item, final boolean empty) {
@@ -228,31 +233,22 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
                     setText(item == null || empty ? null : item.getValue(METADATA_KEY_NAME, "<no name>"));
                 }
             });
-            alert.getDialogPane()
-                 .setContent(nodes);
+
+            // create a dialogue and have the user confirm the deletion
+            final Alert alert = createPromptAlert(nodes, resources);
             if (alert.showAndWait()
                      .orElse(ButtonType.NO) == ButtonType.NO) {
                 return;
             }
-            // create a copy because we modify the inner list which would throw an IOOBE otherwise
-            // we iterate through the children of the root, and at the same time we delete
-            // some children
-            final List<TreeItem<DataNode>> temp = new ArrayList<>(selectedItems);
-            for (final TreeItem<DataNode> selectedItem : temp) {
-                final TreeItem<DataNode> parent = selectedItem.getParent();
-                parent.getChildren()
-                      .remove(selectedItem);
-                final DataNode deletedDataNode = selectedItem.getValue();
-                parent.getValue()
-                      .getChildren()
-                      .remove(deletedDataNode);
-                progressListener.onDeleteDataNode(deletedDataNode);
+
+
+            ////////////////////////////////////////////
+            for (final DataNode selectedItem : selectedDataNodes) {
+                selectedItem.getParent()
+                            .getChildren()
+                            .remove(selectedItem);
             }
-            final ObservableList<TreeItem<DataNode>> children = treeView.getRoot()
-                                                                        .getChildren();
-            if (!children.isEmpty()) {
-                treeView.requestFocus();
-            }
+            progressListener.onDeleteDataNodes(selectedDataNodes);
         });
         menuItem.setAccelerator(KeyCombination.keyCombination("delete"));
         return menuItem;
@@ -283,28 +279,28 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
         if (node == null) {
             return "";
         }
-        return node.getValue("name", "<no name>");
+        return node.getValue(METADATA_KEY_NAME, "<no name>");
     }
 
     @Override
     protected void updateItem(final DataNode item, final boolean empty) {
         super.updateItem(item, empty);
-        if (empty) {
-            setText(null);
-            setGraphic(null);
-        } else {
-            if (isEditing()) {
-                if (textField != null) {
-                    textField.setText(prettyFormat(item));
-                }
-                setText(null);
-                setGraphic(textField);
-                setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-            } else {
-                setGraphic(null);
-                setText(prettyFormat(item));
-                setContentDisplay(ContentDisplay.TEXT_ONLY);
-            }
-        }
+//        if (empty) {
+//            setText(null);
+//            setGraphic(null);
+//        } else {
+//            if (isEditing()) {
+//                if (textField != null) {
+//                    textField.setText(prettyFormat(item));
+//                }
+//                setText(null);
+//                setGraphic(textField);
+//                setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+//            } else {
+//                setGraphic(null);
+//                setText(prettyFormat(item));
+//                setContentDisplay(ContentDisplay.TEXT_ONLY);
+//            }
+//        }
     }
 }

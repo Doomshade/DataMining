@@ -9,6 +9,7 @@ import lombok.ToString;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.lang.ref.WeakReference;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -23,12 +24,35 @@ class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
     private static final Logger LOGGER = LogManager.getLogger(DataNodeImpl.class);
     private static long ID_SEQ = 0;
     /**
-     * Using implementation because
+     * Using implementation because of Jackson. Jackson needs a default empty constructor, so we make a wrapper of... the existing wrapper... because that one does not permit empty lists...
      */
     private final ObservableListWrapperWrapper<DataNode> children = new ObservableListWrapperWrapper<>(FXCollections.observableArrayList());
-    // ISTG if I ever see the dude who made up the generics system in Java I'll eat his cookies
+    // the parent could be removed from its parent's children, thus losing a reference to it
+    //  R
+    //  ├── A
+    //  ├── B
+    //  │   ├── C
+    //  │   ├── D
+    //  │   └── E
+    //  ├── F
+    //  │   └── G
+    //  └── H
+    // for example this node is E, and its parent (B) is removed from its parent (R). the tree then looks as follows:
+    //  R
+    //  ├── A
+    //  │
+    //  │   ┌── C -- B (ref to parent)
+    //  │   ├── D -- B (ref to parent)
+    //  │   └── E -- B (ref to parent)
+    //  │
+    //  ├── F
+    //  │   └── G
+    //  └── H
+    // but this node (as well as nodes C and D) still hold reference to B that's no longer present in the tree, basically (temporarily) leaking memory because
+    // we are unable to delete B
+    // the nodes C, D, E will be deleted in the first GC cycle, whereas the B node will be deleted in the second GC cycle
     @JsonIgnore
-    private transient DataNode parent;
+    private transient WeakReference<DataNode> parent;
     private long id;
 
     {
@@ -40,11 +64,7 @@ class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
     }
 
     DataNodeImpl(final DataNode parent) {
-        this.parent = parent;
-    }
-
-    public void setParent(DataNode parent) {
-        this.parent = parent;
+        this.parent = new WeakReference<>(parent);
     }
 
     /**
@@ -65,8 +85,17 @@ class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
     }
 
     @Override
+    public DataNode getParent() {
+        return parent.get();
+    }
+
+    void setParent(DataNode parent) {
+        this.parent = new WeakReference<>(parent);
+    }
+
+    @Override
     public Optional<? extends DataNode> findRoot() {
-        DataNode prev = parent;
+        DataNode prev = parent.get();
         while (prev != null && prev.getParent() != null) {
             prev = prev.getParent();
         }
@@ -80,7 +109,7 @@ class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
     @Override
     @JsonIgnore
     public boolean isRoot() {
-        return parent == null;
+        return getParent() == null;
     }
 
     @Override

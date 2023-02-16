@@ -16,7 +16,8 @@ public class DefaultArbitraryDataHolder implements ArbitraryDataHolder {
 
     @Override
     public Map<String, Object> getMetadata() {
-        return Collections.unmodifiableMap(metadata);
+        // TODO: temporarily modifiable
+        return metadata;
     }
 
     @SuppressWarnings("unchecked")

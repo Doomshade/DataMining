@@ -10,6 +10,7 @@ import javafx.util.Callback;
 import org.apache.jena.rdf.model.Statement;
 
 import java.util.Collection;
+import java.util.ResourceBundle;
 
 public class StartAndEndDateResolver extends DefaultResponseResolver<Collection<Statement>> {
 
@@ -27,10 +28,19 @@ public class StartAndEndDateResolver extends DefaultResponseResolver<Collection<
                 return new ReadOnlyObjectWrapper<>(date.toString());
             };
             // TODO: this should be separate
-            final RDFNodeChooserDialog startDateDialog = new RDFNodeChooserDialog(candidatesForStartAndEndDates, RDFNodeChooserDialog.IS_DBPEDIA_SITE, cellValueCallback, "Vyberte prosím počátek");
+            final ResourceBundle resourceBundle = ResourceBundle.getBundle("lang");
+            final RDFNodeChooserDialog startDateDialog = new RDFNodeChooserDialog(candidatesForStartAndEndDates,
+                                                                                  RDFNodeChooserDialog.IS_DBPEDIA_SITE,
+                                                                                  resourceBundle.getString("start-date-dialog-title"),
+                                                                                  resourceBundle.getString("start-date-dialog-header"),
+                                                                                  cellValueCallback);
             startDateDialog.showDialogueAndWait(statement -> result.addMetadata(RESULT_KEY_START_DATE_PREDICATE, statement.getPredicate()));
 
-            final RDFNodeChooserDialog endDateDialog = new RDFNodeChooserDialog(candidatesForStartAndEndDates, RDFNodeChooserDialog.IS_DBPEDIA_SITE, cellValueCallback, "Vyberte prosím konec");
+            final RDFNodeChooserDialog endDateDialog = new RDFNodeChooserDialog(candidatesForStartAndEndDates,
+                                                                                RDFNodeChooserDialog.IS_DBPEDIA_SITE,
+                                                                                resourceBundle.getString("end-date-dialog-title"),
+                                                                                resourceBundle.getString("end-date-dialog-header"),
+                                                                                cellValueCallback);
             endDateDialog.showDialogueAndWait(statement -> result.addMetadata(RESULT_KEY_END_DATE_PREDICATE, statement.getPredicate()));
 
             // once we receive the response notify the thread under the request handler's monitor

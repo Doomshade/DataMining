@@ -16,8 +16,11 @@ public class OntologyPathPredicateResolver extends DefaultResponseResolver<Colle
     @Override
     public void resolve(final Collection<Statement> candidatesForOntologyPathPredicate, final SparqlEndpointTask<?> requestHandler) {
         Platform.runLater(() -> {
+            final ResourceBundle resourceBundle = ResourceBundle.getBundle("lang");
             final RDFNodeChooserDialog dialog = new RDFNodeChooserDialog(candidatesForOntologyPathPredicate,
                                                                          RDFNodeChooserDialog.IS_DBPEDIA_SITE,
+                                                                         resourceBundle.getString("ontology-path-predicate-dialog-title"),
+                                                                         resourceBundle.getString("ontology-path-predicate-dialog-header"),
                                                                          features -> {
                                                                              final RDFNode object = features.getValue()
                                                                                                             .getObject();
@@ -26,9 +29,7 @@ public class OntologyPathPredicateResolver extends DefaultResponseResolver<Colle
                                                                                                             .getLocalName()
                                                                                                             .replaceAll("_", " ");
                                                                              return new ReadOnlyObjectWrapper<>(localName);
-                                                                         },
-                                                                         ResourceBundle.getBundle("lang")
-                                                                                       .getString("ontology-path-predicate-dialog-title"));
+                                                                         });
             dialog.showDialogueAndWait(stmt -> result.addMetadata(RESULT_KEY_ONTOLOGY_PATH_PREDICATE, stmt.getPredicate()));
 
             // once we receive the response notify the thread under the request handler's monitor

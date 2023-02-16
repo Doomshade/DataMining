@@ -5,6 +5,8 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.apache.commons.cli.ParseException;
 
+import java.util.ResourceBundle;
+
 /**
  * The entry point of the application.
  *
@@ -25,8 +27,8 @@ public class Main extends Application {
     @Override
     public void start(final Stage stage) throws Exception {
         Main.stage = stage;
-        // use resource bundle
-        stage.setTitle("BP");
+        final ResourceBundle resourceBundle = ResourceBundle.getBundle("lang");
+        stage.setTitle(resourceBundle.getString("stage-title"));
         final Scene scene = SceneManager.getScene(FXMLScene.MAIN);
         stage.setScene(scene);
         stage.setMaximized(true);

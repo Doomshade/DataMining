@@ -6,7 +6,6 @@ import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.resolvers.OntologyPathPredicateResolver;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.datatypes.RDFDatatype;
-import org.apache.jena.datatypes.xsd.AbstractDateTime;
 import org.apache.jena.datatypes.xsd.XSDDateTime;
 import org.apache.jena.datatypes.xsd.XSDDuration;
 import org.apache.jena.ontology.OntModelSpec;
@@ -17,7 +16,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.*;
 import java.util.function.Predicate;
 
-import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
+import static cz.zcu.jsmahy.datamining.api.DataNode.*;
 import static cz.zcu.jsmahy.datamining.resolvers.MultipleItemChoiceResolver.RESULT_KEY_CHOSEN_RDF_NODE;
 import static cz.zcu.jsmahy.datamining.resolvers.StartAndEndDateResolver.RESULT_KEY_END_DATE_PREDICATE;
 import static cz.zcu.jsmahy.datamining.resolvers.StartAndEndDateResolver.RESULT_KEY_START_DATE_PREDICATE;
@@ -68,32 +67,36 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
 
     private void addDatesToNode(final Model model, final DataNode curr, final Property dateProperty, final Resource subject, final boolean isStartDate) {
         if (dateProperty == null) {
-            LOGGER.debug("No date property set, not adding dates to {}", curr.getId());
+            LOGGER.trace("No date property set, not adding dates to {}", curr);
             return;
         }
+
         final Selector startDateSelector = new SimpleSelector(subject, dateProperty, (Object) null);
         final StmtIterator startDates = model.listStatements(startDateSelector);
         if (startDates.hasNext()) {
-            final AbstractDateTime innerDateType = (AbstractDateTime) startDates.next()
-                                                                                .getObject()
-                                                                                .asLiteral()
-                                                                                .getValue();
+            final Object value = startDates.next()
+                                           .getObject()
+                                           .asLiteral()
+                                           .getValue();
             final Calendar calendar;
-            if (innerDateType instanceof XSDDateTime dateTime) {
+            if (value instanceof XSDDateTime dateTime) {
                 calendar = dateTime.asCalendar();
-            } else if (innerDateType instanceof XSDDuration duration) {
+            } else if (value instanceof XSDDuration duration) {
                 final long millis = duration.getFullSeconds() * 1000L;
-                // default duration to gregorian calendar
+                calendar = new GregorianCalendar();
+                calendar.setTimeInMillis(millis);
+            } else if (value instanceof Integer integer) {
+                final long millis = integer * 1000L;
                 calendar = new GregorianCalendar();
                 calendar.setTimeInMillis(millis);
             } else {
-                throw new ClassCastException("Inner date type is of unknown value: " + innerDateType);
+                throw new ClassCastException("Inner date type is of unknown value: " + value);
             }
-            LOGGER.trace("Setting {} date (inner type: {}, actual date: {}) to {}", isStartDate ? "start" : "end", innerDateType, calendar, curr.getValue(METADATA_KEY_NAME, "<no name>"));
+            LOGGER.trace("Setting {} date (inner type: {}, actual date: {}) to {}", isStartDate ? "start" : "end", value, calendar, curr.getValue(METADATA_KEY_NAME, "<no name>"));
             if (isStartDate) {
-                curr.addMetadata(DataNode.METADATA_KEY_START_DATE, calendar);
+                curr.addMetadata(METADATA_KEY_START_DATE, calendar);
             } else {
-                curr.addMetadata(DataNode.METADATA_KEY_END_DATE, calendar);
+                curr.addMetadata(METADATA_KEY_END_DATE, calendar);
             }
         } else {
             if (isStartDate) {
@@ -130,7 +133,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
             result = initialSearch(inputMetadata);
         }
         if (result != InitialSearchResult.OK) {
-            LOGGER.info("Search result of '{}' was not OK. Initial search result: {}", query, result);
+            LOGGER.info("Search result of '{}' was not {}. Initial search result: {}", query, InitialSearchResult.OK, result);
             progressListener.onInvalidQuery(originalQuery, result);
             return null;
         }
@@ -182,17 +185,18 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
      */
     private InitialSearchResult initialSearch(final QueryData inputMetadata) {
         LOGGER.debug("Initiating search on subject {}", inputMetadata.getInitialSubject());
-        final InitialSearchResult startAndEndDateResult = requestStartAndEndDatePredicate(inputMetadata);
-        if (startAndEndDateResult != InitialSearchResult.OK) {
-            return startAndEndDateResult;
-        }
-        LOGGER.debug("Found start and end date.");
 
         final InitialSearchResult pathPredicateResult = requestOntologyPathPredicate(inputMetadata);
         if (pathPredicateResult != InitialSearchResult.OK) {
             return pathPredicateResult;
         }
         LOGGER.debug("Found ontology path predicate.");
+
+        final InitialSearchResult startAndEndDateResult = requestStartAndEndDatePredicate(inputMetadata);
+        if (startAndEndDateResult != InitialSearchResult.OK) {
+            return startAndEndDateResult;
+        }
+        LOGGER.debug("Found start and end date.");
 
         return InitialSearchResult.OK;
     }

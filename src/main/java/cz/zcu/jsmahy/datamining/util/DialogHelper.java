@@ -16,7 +16,7 @@ public class DialogHelper {
     public DialogHelper() {
     }
 
-    public void textInputDialog(final String labelText, final Consumer<String> dialogFinishHandler, final String title) {
+    public void textInputDialog(final String labelText, final String title, final Consumer<String> dialogFinishHandler) {
         final TextField textField = new TextField();
         final Label label = new Label(labelText);
         final HBox hbox = new HBox(label, textField);

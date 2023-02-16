@@ -16,6 +16,7 @@ import javafx.beans.Observable;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.binding.DoubleBinding;
+import javafx.beans.binding.StringExpression;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
@@ -48,6 +49,8 @@ import java.io.UncheckedIOException;
 import java.net.URL;
 import java.util.*;
 
+import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
+
 /**
  * <p>The controller for main UI where user builds the ontology.</p>
  * <p>This controller uses the DBPedia endpoint and Fiala's Bachelor project program as its export.</p>
@@ -79,7 +82,7 @@ public class MainController implements Initializable {
     private DialogHelper dialogHelper;
     private final EventHandler<ActionEvent> createNewLineAction = e -> {
         final ResourceBundle lang = ResourceBundle.getBundle("lang");
-        dialogHelper.textInputDialog(lang.getString("create-new-line"), lineName -> {
+        dialogHelper.textInputDialog(lang.getString("create-new-line"), "Název linie", lineName -> {
             if (lineName.isBlank()) {
                 Platform.runLater(() -> {
                     final Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -94,7 +97,7 @@ public class MainController implements Initializable {
             ontologyTreeView.getRoot()
                             .getChildren()
                             .add(new TreeItem<>(dataNode));
-        }, "Název linie");
+        });
 
     };
     @FXML
@@ -136,7 +139,7 @@ public class MainController implements Initializable {
         this.ontologyTreeView.setShowRoot(false);
         this.ontologyTreeView.getSelectionModel()
                              .setSelectionMode(SelectionMode.MULTIPLE);
-        this.ontologyTreeView.setEditable(true);
+        this.ontologyTreeView.setEditable(false);
         this.ontologyTreeView.setOnMouseClicked(event -> {
             if (event.getClickCount() == 1) {
                 event.consume();
@@ -145,7 +148,17 @@ public class MainController implements Initializable {
         final RequestProgressListener progressListener = injector.getInstance(RequestProgressListener.class);
         progressListener.treeRootProperty()
                         .set(ontologyTreeView.getRoot());
-        this.ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory(lv, resources, this, dialogHelper, nodeFactory, requestHandler, progressListener));
+        this.ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory(resources,
+                                                                          this,
+                                                                          dialogHelper,
+                                                                          nodeFactory,
+                                                                          requestHandler,
+                                                                          progressListener,
+                                                                          () -> ontologyTreeView.getSelectionModel()
+                                                                                                .getSelectedItems()
+                                                                                                .stream()
+                                                                                                .map(TreeItem::getValue)
+                                                                                                .toList()));
 
 
         final ContextMenu contextMenu = createContextMenu(resources);
@@ -153,14 +166,15 @@ public class MainController implements Initializable {
 
 
         // sets up the metadata list view
-        metadataTableView.setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
-        metadataTableView.setPrefWidth(400);
+        this.metadataTableView.setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
+        this.metadataTableView.setPrefWidth(400);
+        this.metadataTableView.setEditable(true);
         final ObservableList<TreeTableColumn<Map.Entry<String, Object>, ?>> columns = metadataTableView.getColumns();
         final TreeTableColumn<Map.Entry<String, Object>, String> keyColumn = new TreeTableColumn<>(resources.getString("key"));
         keyColumn.setCellValueFactory(features -> new SimpleStringProperty(features.getValue()
                                                                                    .getValue()
                                                                                    .getKey()));
-        final TreeTableColumn<Map.Entry<String, Object>, Object> valueColumn = new TreeTableColumn<>("Hodnota");
+        final TreeTableColumn<Map.Entry<String, Object>, Object> valueColumn = new TreeTableColumn<>(resources.getString("value"));
         // TODO: format date etc.
         valueColumn.setCellValueFactory(MainController::valueColumnFactory);
         valueColumn.setCellFactory(MetadataValueCellFactory::new);
@@ -168,11 +182,11 @@ public class MainController implements Initializable {
         columns.setAll(keyColumn, valueColumn);
         VBox.setVgrow(metadataTableView, Priority.ALWAYS);
         VBox.setVgrow(ontologyTreeView, Priority.ALWAYS);
-        metadataTableView.setRoot(new TreeItem<>());
-        metadataTableView.setShowRoot(false);
-        ontologyTreeView.getSelectionModel()
-                        .selectedItemProperty()
-                        .addListener(new TreeViewAndMetadataBinder());
+        this.metadataTableView.setRoot(new TreeItem<>());
+        this.metadataTableView.setShowRoot(false);
+        this.ontologyTreeView.getSelectionModel()
+                             .selectedItemProperty()
+                             .addListener(new TreeViewAndMetadataBinder());
     }
 
     private ContextMenu createContextMenu(final ResourceBundle resources) {
@@ -183,33 +197,17 @@ public class MainController implements Initializable {
 
     private MenuBar createMenuBar(final ResourceBundle resources) {
         final MenuBar menuBar = new MenuBar();
-        final Menu lineMenu = createLineMenu(resources);
-        final Menu fileMenu = createFileMenu(resources);
-        final Menu helpMenu = createHelpMenu(resources);
-
-        menuBar.getMenus()
-               .addAll(lineMenu, fileMenu, helpMenu);
-        return menuBar;
-    }
-
-    private Menu createHelpMenu(final ResourceBundle resources) {
-        final Menu helpMenu = new Menu(resources.getString("help"));
-        final MenuItem tempMenuItem = new MenuItem("Empty :)");
-        helpMenu.getItems()
-                .addAll(tempMenuItem);
-        return helpMenu;
-    }
-
-    private Menu createLineMenu(final ResourceBundle resources) {
-        final Menu lineMenu = new Menu("_" + resources.getString("line"));
-        final MenuItem newLineMenuItem = createAddNewLineMenuItem(resources);
+        final String lineMenuText = resources.getString("line");
+        final Menu lineMenu = new Menu(lineMenuText);
+        final MenuItem newLineMenuItem = new MenuItem();
+        final String newLineMenuText = resources.getString("create-new-line");
+        newLineMenuItem.setText(newLineMenuText);
+        newLineMenuItem.setAccelerator(KeyCombination.keyCombination("CTRL + N"));
+        newLineMenuItem.setOnAction(createNewLineAction);
         lineMenu.getItems()
                 .addAll(newLineMenuItem);
-        return lineMenu;
-    }
 
-    private Menu createFileMenu(final ResourceBundle resources) {
-        final Menu fileMenu = new Menu("_" + resources.getString("file"));
+        final Menu fileMenu = new Menu(resources.getString("file"));
         fileMenu.setMnemonicParsing(true);
 
         final MenuItem exportToFile = new MenuItem(resources.getString("export"));
@@ -217,6 +215,19 @@ public class MainController implements Initializable {
             final ObservableList<TreeItem<DataNode>> dataNodeRoots = ontologyTreeView.getRoot()
                                                                                      .getChildren();
             if (dataNodeRoots.size() == 0) {
+                Platform.runLater(() -> {
+                    final Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setTitle(resources.getString("nothing-to-export-dialog-title"));
+                    alert.setHeaderText(resources.getString("nothing-to-export-dialog-header"));
+                    final StringExpression content = Bindings.format(resources.getString("nothing-to-export-dialog-content"),
+                                                                     newLineMenuItem.getAccelerator()
+                                                                                    .getName(),
+                                                                     lineMenuText,
+                                                                     newLineMenuText);
+                    alert.contentTextProperty()
+                         .bind(content);
+                    alert.show();
+                });
                 return;
             }
 
@@ -233,7 +244,7 @@ public class MainController implements Initializable {
                 final DataNode dataNodeRoot = root.getValue();
                 final OutputStream out;
                 try {
-                    final String fileName = dataNodeRoot.getValue("name", "<no name>");
+                    final String fileName = dataNodeRoot.getValue(METADATA_KEY_NAME, "<no name>");
                     final String fileExtension = serializer.getFileExtension();
                     //noinspection resource
                     out = new FileOutputStream(String.format(FILE_NAME_FORMAT, fileName, fileExtension));
@@ -266,7 +277,41 @@ public class MainController implements Initializable {
         exportToFile.setAccelerator(KeyCombination.keyCombination("ALT + E"));
         fileMenu.getItems()
                 .addAll(exportToFile);
-        return fileMenu;
+
+        final Menu helpMenu = new Menu(resources.getString("help"));
+        final MenuItem usage = new MenuItem(resources.getString("tool-usage"));
+        usage.setOnAction(e -> Platform.runLater(() -> {
+            final Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle(resources.getString("tool-usage"));
+            alert.setHeaderText(resources.getString("tool-usage-header"));
+            final StringExpression expr = Bindings.format(resources.getString("tool-usage-content"),
+                                                          newLineMenuItem.getAccelerator()
+                                                                         .getName(),
+                                                          lineMenuText,
+                                                          newLineMenuText,
+                                                          resources.getString("search"),
+                                                          KeyCombination.keyCombination("CTRL + H") // hard coded key combination, this could change. too bad!
+                                                                        .getName());
+            alert.contentTextProperty()
+                 .bind(expr);
+
+            final int maxLineLength = Arrays.stream(expr.get()
+                                                        .split("\n"))
+                                            .mapToInt(String::length)
+                                            .max()
+                                            .orElse(0);
+            final double extraPadding = 5.55d;
+            alert.getDialogPane()
+                 .setPrefWidth(maxLineLength * extraPadding);
+            alert.setResizable(true);
+            alert.show();
+        }));
+        helpMenu.getItems()
+                .addAll(usage);
+
+        menuBar.getMenus()
+               .addAll(lineMenu, fileMenu, helpMenu);
+        return menuBar;
     }
 
     private MenuItem createAddNewLineMenuItem(final ResourceBundle resources) {
@@ -302,8 +347,8 @@ public class MainController implements Initializable {
         final WebEngine engine = this.wikiPageWebView.getEngine();
 
         // a valid item is a non-root item that's not null
-        final boolean hasSelectedValidItem = selectedItem != null && selectedItem != ontologyTreeView.getRoot() && !(selectedItem.getValue()
-                                                                                                                                 .isRoot());
+        final boolean hasSelectedValidItem = (selectedItem != null) && (selectedItem != ontologyTreeView.getRoot()) && !selectedItem.getValue()
+                                                                                                                                    .isRoot();
         if (!hasSelectedValidItem) {
             LOGGER.trace("Unloading web page because selected item was not valid. Cause: (null = {}, is root = {})", selectedItem == null, selectedItem != null);
             engine.load("");
@@ -320,56 +365,70 @@ public class MainController implements Initializable {
 
     private class TreeViewAndMetadataBinder implements ChangeListener<TreeItem<DataNode>> {
 
+        // values deeper than 5 will be hard to display regardless of the limitation
+        // if anything, an internal error occurred if the depth is >= 5
         private static final int MAX_DEPTH = 5;
 
+        /**
+         * Populates the children with the entry set of the map recursively
+         *
+         * @param children the children
+         * @param entrySet the entry set
+         */
         private void addMapsRecursively(List<TreeItem<Map.Entry<String, Object>>> children, Set<Map.Entry<String, Object>> entrySet) {
             addMapsRecursively(children, entrySet, 0);
         }
 
+        @SuppressWarnings("unchecked")
         private void addMapsRecursively(List<TreeItem<Map.Entry<String, Object>>> children, Set<Map.Entry<String, Object>> entrySet, final int depth) {
             if (depth < 0 || depth >= MAX_DEPTH) {
                 return;
             }
+
             for (final Map.Entry<String, Object> entry : entrySet) {
+                final Object entryValue = entry.getValue();
                 final TreeItem<Map.Entry<String, Object>> treeItem = new TreeItem<>(entry);
                 children.add(treeItem);
-                if (entry.getValue() instanceof Map<?, ?> map) {
-                    if (!map.isEmpty() && map.keySet()
-                                             .iterator()
-                                             .next() instanceof String) {
-                        LOGGER.trace("Found map value. Adding {} recursively to {}'s children", map, treeItem);
-                        addMapsRecursively(treeItem.getChildren(), ((Map<String, Object>) map).entrySet(), depth + 1);
-                    }
-                } else if (entry.getValue() instanceof List<?> list) {
-                    // TODO: reconsider whether this should be shown
-                    if (!list.isEmpty() && list.get(0) instanceof ArbitraryDataHolder) {
-                        LOGGER.trace("Found list value. Adding {} recursively to {}'s children", list, treeItem);
-                        final Map<String, Object> hugeMap = new HashMap<>();
-                        int index = 0;
-                        for (ArbitraryDataHolder dataHolder : (List<ArbitraryDataHolder>) list) {
-                            hugeMap.put(String.valueOf(index++), dataHolder.getMetadata());
-                        }
 
-                        addMapsRecursively(treeItem.getChildren(), hugeMap.entrySet(), depth + 1);
-                    }
+                // the entry is a Map<String, ?>, add the node to the newly created tree item
+                if (entryValue instanceof Map<?, ?> map && !map.isEmpty() && map.keySet()
+                                                                                .iterator()
+                                                                                .next() instanceof String) {
+                    LOGGER.trace("Found map value. Adding {} recursively to {}'s children", map, treeItem);
+                    addMapsRecursively(treeItem.getChildren(), ((Map<String, Object>) map).entrySet(), depth + 1);
                 }
+                // the entry is a List<ArbitraryDataHolder>, add the nodes to the newly created item
+                else if (entryValue instanceof List<?> list && !list.isEmpty() && list.get(0) instanceof ArbitraryDataHolder) {
+                    // TODO: reconsider whether this should be shown
+                    LOGGER.trace("Found list value. Adding {} recursively to {}'s children", list, treeItem);
+
+                    final Map<String, Object> hugeMap = new HashMap<>();
+                    int index = 0;
+                    for (ArbitraryDataHolder dataHolder : (List<ArbitraryDataHolder>) list) {
+                        hugeMap.put(String.valueOf(index++), dataHolder.getMetadata());
+                    }
+
+                    addMapsRecursively(treeItem.getChildren(), hugeMap.entrySet(), depth + 1);
+                }
+
                 LOGGER.trace("Added {} to children {}", treeItem, children);
             }
         }
 
         @Override
         public void changed(final ObservableValue<? extends TreeItem<DataNode>> observable, final TreeItem<DataNode> oldValue, final TreeItem<DataNode> newValue) {
+            final ObservableList<TreeItem<Map.Entry<String, Object>>> children = metadataTableView.getRoot()
+                                                                                                  .getChildren();
+            children.clear();
             if (newValue == null) {
                 return;
             }
 
-            final ObservableList<TreeItem<Map.Entry<String, Object>>> children = metadataTableView.getRoot()
-                                                                                                  .getChildren();
-            children.clear();
             final DataNode dataNode = newValue.getValue();
             if (dataNode != null) {
                 final Set<Map.Entry<String, Object>> entrySet = dataNode.getMetadata()
                                                                         .entrySet();
+                children.add(new TreeItem<>(new AbstractMap.SimpleEntry<>("id", dataNode.getId())));
                 addMapsRecursively(children, entrySet);
             }
         }

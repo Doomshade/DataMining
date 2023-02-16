@@ -2,6 +2,7 @@ package cz.zcu.jsmahy.datamining.export;
 
 import cz.zcu.jsmahy.datamining.api.*;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.control.Alert;
@@ -17,6 +18,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_RELATIONSHIPS;
 import static cz.zcu.jsmahy.datamining.export.FialaBPMetadataKeys.*;
+import static java.util.Objects.requireNonNull;
 
 public class FialaBPRequestProgressListener implements RequestProgressListener {
     public static final Map<String, String> METADATA_DEFAULT_PROPERTIES = Map.of("startPrecision", "day", "endPrecision", "day");
@@ -49,8 +51,8 @@ public class FialaBPRequestProgressListener implements RequestProgressListener {
 
     // TODO: test this method!
     public TreeItem<DataNode> findTreeItem(final DataNode dataNode) {
-        Objects.requireNonNull(dataNode);
-        Objects.requireNonNull(treeRoot.get());
+        requireNonNull(dataNode);
+        requireNonNull(treeRoot.get());
 
         // first iterate over all of root's children, then recursively check for the children of each node
         // if we don't find anything after the last element of the root's children no such tree item was found
@@ -149,36 +151,13 @@ public class FialaBPRequestProgressListener implements RequestProgressListener {
     }
 
     @Override
-    public void onDeleteDataNode(final DataNode dataNode) {
-        // delete all relationships pointing to this datanode
-        // we start from root and then check for all the data nodes
-        // TODO: this could definitely be optimized, but it should not be that expensive anyways
-        // also yes, we could use the ifPresent(Consumer) methods, but I found that unreadable
-        final long id = dataNode.getId();
-        final Optional<? extends DataNode> rootOpt = dataNode.findRoot();
-        if (rootOpt.isEmpty()) {
-            return;
+    public void onDeleteDataNodes(final Collection<DataNode> selectedDataNodes) {
+        // create a copy of the list because we modify the inner list which would throw an IOOBE otherwise
+        // we iterate through the children of the root, and at the same time we delete
+        // some children
+        for (DataNode dataNode : selectedDataNodes) {
+            deleteDataNode(dataNode);
         }
-        // now iterate through all the items of the root, and for each check if it has a relationship
-        // if it has a relationship, check if the "to" value points to this data node
-        // if it does, remove the relationship
-        final DataNode root = rootOpt.get();
-        root.iterate((child, depth) -> {
-            if (!child.hasMetadataKey(METADATA_KEY_RELATIONSHIPS)) {
-                return;
-            }
-            if (child.getValueUnsafe(METADATA_KEY_RELATIONSHIPS) instanceof List<?> relationships) {
-                final Iterator<?> it = relationships.iterator();
-                while (it.hasNext()) {
-                    Object obj = it.next();
-                    if (obj instanceof ArbitraryDataHolder relationship) {
-                        if (relationship.getValue(METADATA_KEY_TO, Long.MIN_VALUE) == id) {
-                            it.remove();
-                        }
-                    }
-                }
-            }
-        });
     }
 
     @Override
@@ -200,41 +179,29 @@ public class FialaBPRequestProgressListener implements RequestProgressListener {
             // TODO: resource bundle
             assert result != InitialSearchResult.OK;
             final Alert alert = new Alert(Alert.AlertType.ERROR);
+            final ResourceBundle resourceBundle = ResourceBundle.getBundle("lang");
             switch (result) {
                 case SUBJECT_NOT_FOUND -> {
-                    alert.setTitle("Invalid query");
-                    alert.setHeaderText("ERROR - Invalid query");
-                    final String wikiUrl = "https://en.wikipedia.org/wiki/";
-                    final String queryWikiUrl = wikiUrl + invalidQuery;
-                    final String exampleWikiUrl = wikiUrl + "Charles_IV,_Holy_Roman_Emperor";
-                    final String exampleUri = "Charles IV, Holy Roman Emperor";
-                    alert.setContentText(String.format(
-                            "No results were found querying '%s'. The query must be a valid query to the wikipedia URL, such as:%n%n%s%n%nYour query corresponds to an unknown URL:%n%n%s%n%nIn this " +
-                            "example '%s' is a valid query. Spaces instead of underscores are allowed.",
-                            invalidQuery,
-                            exampleWikiUrl,
-                            queryWikiUrl,
-                            exampleUri));
+                    alert.setTitle(resourceBundle.getString("alert-invalid-query-subject-not-found-title"));
+                    alert.setHeaderText(resourceBundle.getString("alert-invalid-query-subject-not-found-header"));
+                    alert.contentTextProperty()
+                         .bind(Bindings.format(resourceBundle.getString("alert-invalid-query-subject-not-found-content"), invalidQuery));
                 }
                 case START_DATE_NOT_SELECTED -> {
-                    alert.setTitle("Start date not chosen");
-                    alert.setHeaderText("ERROR - Invalid start date");
-                    alert.setContentText("Please choose a start date");
-                }
-                case END_DATE_NOT_SELECTED -> {
-                    alert.setTitle("End date not chosen");
-                    alert.setHeaderText("ERROR - Invalid end date");
-                    alert.setContentText("Please choose a end date");
+                    alert.setTitle(resourceBundle.getString("alert-start-date-not-selected-title"));
+                    alert.setHeaderText(resourceBundle.getString("alert-start-date-not-selected-header"));
+                    alert.setContentText(resourceBundle.getString("alert-start-date-not-selected-content"));
                 }
                 case PATH_NOT_SELECTED -> {
-                    alert.setTitle("Path not chosen");
-                    alert.setHeaderText("ERROR - Invalid path");
-                    alert.setContentText("Please choose a path");
+                    alert.setTitle(resourceBundle.getString("alert-path-not-selected-title"));
+                    alert.setHeaderText(resourceBundle.getString("alert-path-not-selected-header"));
+                    alert.setContentText(resourceBundle.getString("alert-path-not-selected-content"));
                 }
                 case UNKNOWN -> {
-                    alert.setTitle("Unknown error");
-                    alert.setHeaderText("ERROR - Unknown error occurred");
-                    alert.setContentText(String.format("An unknown error happened with the query '%s'", invalidQuery));
+                    alert.setTitle(resourceBundle.getString("alert-unknown-error-title"));
+                    alert.setHeaderText(resourceBundle.getString("alert-unknown-error-header"));
+                    alert.contentTextProperty()
+                         .bind(Bindings.format(resourceBundle.getString("alert-unknown-error-content"), invalidQuery));
                 }
                 default -> throw new UnsupportedOperationException("Result type not handled: " + result);
             }
@@ -247,4 +214,66 @@ public class FialaBPRequestProgressListener implements RequestProgressListener {
 
     }
 
+    @Override
+    public void onCreateNewRoot(final DataNode newDataNodeRoot) {
+        final TreeItem<DataNode> treeRoot = this.treeRoot.get();
+        assert newDataNodeRoot.isRoot(); // the data node should really be a root
+        assert treeRoot != null;         // and the tree root should be set
+        treeRoot.getChildren()
+                .add(new TreeItem<>(newDataNodeRoot));
+    }
+
+    private void deleteDataNode(final DataNode dataNode) {
+        Platform.runLater(() -> {
+            try {
+                final TreeItem<DataNode> treeItem = findTreeItem(dataNode);
+                treeItem.getParent()
+                        .getChildren()
+                        .remove(treeItem);
+            } catch (NoSuchElementException ignored) {
+                // the tree item could be removed and the link to the data node removed, thus it's possible we fail to find a tree item with that node
+                // graphical representation:
+                //  R
+                //  ├── A
+                //  ├── B
+                //  │   ├── C
+                //  │   ├── D
+                //  │   └── E
+                //  ├── F
+                //  │   └── G
+                //  └── H
+                // if we delete node B or F, the nodes C, D, E or G are no longer reachable by the parent
+            }
+        });
+        // delete all relationships pointing to this datanode
+        // we start from root and then check for all the data nodes
+        // TODO: this could definitely be optimized, but it should not be that expensive anyways
+        // also yes, we could use the ifPresent(Consumer) methods, but I found that unreadable
+        final long id = dataNode.getId();
+        final Optional<? extends DataNode> rootOpt = dataNode.findRoot();
+        if (rootOpt.isEmpty()) {
+            return;
+        }
+
+        // now iterate through all the items of the root, and for each check if it has a relationship
+        // if it has a relationship, check if the "to" value points to this data node
+        // if it does, remove the relationship
+        final DataNode root = rootOpt.get();
+        root.iterate((child, depth) -> {
+            if (!child.hasMetadataKey(METADATA_KEY_RELATIONSHIPS)) {
+                return;
+            }
+            if (child.getValueUnsafe(METADATA_KEY_RELATIONSHIPS) instanceof List<?> relationships) {
+                final Iterator<?> it = relationships.iterator();
+                while (it.hasNext()) {
+                    Object obj = it.next();
+                    if (obj instanceof ArbitraryDataHolder relationship) {
+                        if (relationship.getValue(METADATA_KEY_TO, Long.MIN_VALUE) == id) {
+                            it.remove();
+                        }
+                    }
+                }
+            }
+        });
+    }
 }
