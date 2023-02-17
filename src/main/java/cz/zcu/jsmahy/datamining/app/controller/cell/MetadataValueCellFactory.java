@@ -3,20 +3,66 @@ package cz.zcu.jsmahy.datamining.app.controller.cell;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.Map;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.text.*;
+import java.util.*;
+import java.util.function.Function;
 
 public class MetadataValueCellFactory extends TreeTableCell<Map.Entry<String, Object>, Object> {
     private static final Logger LOGGER = LogManager.getLogger(MetadataValueCellFactory.class);
     private static final DateFormat DTF = new SimpleDateFormat("dd. MM. yyyy");
+    private static final Map<Class<?>, Function<?, String>> OBJ_TO_STR_CONVERSIONS = new HashMap<>();
+    // we need to validate the string format before converting it to the object
+    // an invalid format returns null
+    private static final Map<Class<?>, Function<String, ?>> STR_TO_OBJ_CONVERSIONS = new HashMap<>();
+
+    static {
+        // Calendar
+        OBJ_TO_STR_CONVERSIONS.put(Calendar.class, (Function<Calendar, String>) calendar -> DTF.format(calendar.getTime()));
+        STR_TO_OBJ_CONVERSIONS.put(Calendar.class, (Function<String, Calendar>) str -> {
+            final GregorianCalendar cal = new GregorianCalendar();
+            final Date date;
+            try {
+                date = DTF.parse(str);
+            } catch (ParseException e) {
+                return null;
+            }
+            cal.setTimeInMillis(date.getTime());
+            return cal;
+        });
+
+        // Resource
+        OBJ_TO_STR_CONVERSIONS.put(Resource.class, (Function<Resource, String>) Resource::getLocalName);
+        STR_TO_OBJ_CONVERSIONS.put(Resource.class, (Function<String, Resource>) str -> {
+            try {
+                new URI(str);
+            } catch (URISyntaxException e) {
+                throw new RuntimeException(e);
+            }
+            return ResourceFactory.createResource(str);
+        });
+
+        // String
+        OBJ_TO_STR_CONVERSIONS.put(String.class, (Function<String, String>) String::toString);
+        STR_TO_OBJ_CONVERSIONS.put(String.class, (Function<String, String>) String::toString);
+
+        // Number
+        OBJ_TO_STR_CONVERSIONS.put(Number.class, (Function<Number, String>) Number::toString);
+        STR_TO_OBJ_CONVERSIONS.put(Number.class, (Function<String, Number>) str -> {
+            try {
+                return NumberFormat.getInstance()
+                                   .parse(str);
+            } catch (ParseException e) {
+                return null;
+            }
+        });
+    }
+
     private TextField textField;
 
     public MetadataValueCellFactory(final TreeTableColumn<Map.Entry<String, Object>, Object> x) {
@@ -66,23 +112,14 @@ public class MetadataValueCellFactory extends TreeTableCell<Map.Entry<String, Ob
     }
 
     private Object mapStringToData(final String string) {
-        try {
-            final GregorianCalendar cal = new GregorianCalendar();
-            final Date date = DTF.parse(string);
-            cal.setTimeInMillis(date.getTime());
-            return cal;
-        } catch (ParseException ignored) {
+        for (final Map.Entry<Class<?>, Function<String, ?>> entry : STR_TO_OBJ_CONVERSIONS.entrySet()) {
+            final Object convertedObj = entry.getValue()
+                                             .apply(string);
+            if (convertedObj != null) {
+                return convertedObj;
+            }
         }
-//        if (item instanceof Resource resource) {
-//            return resource.getLocalName();
-//        }
-//        if (item instanceof String string) {
-//            return string;
-//        }
-//        if (item instanceof Number number) {
-//            return number.toString();
-//        }
-        return string;
+        throw new IllegalArgumentException(MessageFormat.format("Failed to convert {0} to string format", string));
     }
 
     @Override
@@ -121,20 +158,15 @@ public class MetadataValueCellFactory extends TreeTableCell<Map.Entry<String, Ob
         if (item == null) {
             return "<no name>";
         }
-        if (item instanceof Calendar calendar) {
-            final DateFormat dtf = new SimpleDateFormat("dd. MM. yyyy");
-            return dtf.format(calendar.getTime());
+        final Class<?> objClass = item.getClass();
+        for (final Map.Entry<Class<?>, Function<?, String>> entry : OBJ_TO_STR_CONVERSIONS.entrySet()) {
+            final Class<?> key = entry.getKey();
+            if (key.isAssignableFrom(objClass)) {
+                final Function<Object, String> value = (Function<Object, String>) entry.getValue();
+                return value.apply(item);
+            }
         }
-        if (item instanceof Resource resource) {
-            return resource.getLocalName();
-        }
-        if (item instanceof String string) {
-            return string;
-        }
-        if (item instanceof Number number) {
-            return number.toString();
-        }
-        LOGGER.error("Unknown value class found: {}", item.getClass());
+        LOGGER.error("Unknown value class found: {}", objClass);
         return item.toString();
     }
 
