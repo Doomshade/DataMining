@@ -2,13 +2,9 @@ package cz.zcu.jsmahy.datamining.app.controller.cell;
 
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
-import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.text.*;
 import java.util.*;
 import java.util.function.Function;
@@ -16,10 +12,11 @@ import java.util.function.Function;
 public class MetadataValueCellFactory extends TreeTableCell<Map.Entry<String, Object>, Object> {
     private static final Logger LOGGER = LogManager.getLogger(MetadataValueCellFactory.class);
     private static final DateFormat DTF = new SimpleDateFormat("dd. MM. yyyy");
-    private static final Map<Class<?>, Function<?, String>> OBJ_TO_STR_CONVERSIONS = new HashMap<>();
+    // we need to preserve the ordering because we want to parse string as last
+    private static final Map<Class<?>, Function<?, String>> OBJ_TO_STR_CONVERSIONS = new LinkedHashMap<>();
     // we need to validate the string format before converting it to the object
     // an invalid format returns null
-    private static final Map<Class<?>, Function<String, ?>> STR_TO_OBJ_CONVERSIONS = new HashMap<>();
+    private static final Map<Class<?>, Function<String, ?>> STR_TO_OBJ_CONVERSIONS = new LinkedHashMap<>();
 
     static {
         // Calendar
@@ -36,21 +33,6 @@ public class MetadataValueCellFactory extends TreeTableCell<Map.Entry<String, Ob
             return cal;
         });
 
-        // Resource
-        OBJ_TO_STR_CONVERSIONS.put(Resource.class, (Function<Resource, String>) Resource::getLocalName);
-        STR_TO_OBJ_CONVERSIONS.put(Resource.class, (Function<String, Resource>) str -> {
-            try {
-                new URI(str);
-            } catch (URISyntaxException e) {
-                throw new RuntimeException(e);
-            }
-            return ResourceFactory.createResource(str);
-        });
-
-        // String
-        OBJ_TO_STR_CONVERSIONS.put(String.class, (Function<String, String>) String::toString);
-        STR_TO_OBJ_CONVERSIONS.put(String.class, (Function<String, String>) String::toString);
-
         // Number
         OBJ_TO_STR_CONVERSIONS.put(Number.class, (Function<Number, String>) Number::toString);
         STR_TO_OBJ_CONVERSIONS.put(Number.class, (Function<String, Number>) str -> {
@@ -61,41 +43,76 @@ public class MetadataValueCellFactory extends TreeTableCell<Map.Entry<String, Ob
                 return null;
             }
         });
+
+        // Resource
+//        OBJ_TO_STR_CONVERSIONS.put(Resource.class, (Function<Resource, String>) Resource::getLocalName);
+//        STR_TO_OBJ_CONVERSIONS.put(Resource.class, (Function<String, Resource>) str -> {
+//            try {
+//                new URI(str);
+//            } catch (URISyntaxException e) {
+//                return null;
+//            }
+//            try {
+//                new URL(str);
+//            } catch (MalformedURLException e) {
+//                return null;
+//            }
+//            return ResourceFactory.createResource(str);
+//        });
+
+        // String
+        OBJ_TO_STR_CONVERSIONS.put(String.class, (Function<String, String>) String::toString);
+        STR_TO_OBJ_CONVERSIONS.put(String.class, (Function<String, String>) String::toString);
     }
 
+    private final Runnable onCommitEdit;
     private TextField textField;
 
-    public MetadataValueCellFactory(final TreeTableColumn<Map.Entry<String, Object>, Object> x) {
+    /**
+     * @param onCommitEdit A runnable that's run once the edit is committed. This could be used to refresh the UI state.
+     */
+    public MetadataValueCellFactory(Runnable onCommitEdit) {
+        this.onCommitEdit = onCommitEdit;
     }
 
     @Override
     public void startEdit() {
         super.startEdit();
-        if (textField == null) {
-            createTextField();
-        }
-        setGraphic(textField);
-        setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-        textField.requestFocus();
-
+        updateTextField();
     }
 
     @Override
     public void commitEdit(final Object newValue) {
         super.commitEdit(newValue);
-        setGraphic(null);
+
         getTableRow().getItem()
                      .setValue(newValue);
         updateTextAndTooltip(newValue);
-        setContentDisplay(ContentDisplay.TEXT_ONLY);
+        onCommitEdit.run();
     }
 
     @Override
     public void cancelEdit() {
         super.cancelEdit();
-        setGraphic(null);
         updateTextAndTooltip(getItem());
-        setContentDisplay(ContentDisplay.TEXT_ONLY);
+    }
+
+    private void updateTextField() {
+        if (textField == null) {
+            createTextField();
+        }
+        setTooltip(null);
+        setGraphic(textField);
+        setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        textField.requestFocus();
+    }
+
+    private void alertInvalidValue() {
+        final Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Invalid value");
+        alert.setHeaderText("Could not convert the value");
+        alert.setContentText("The value you provided could not be converted to the original type. Make sure you follow the pattern");
+        alert.show();
     }
 
     private void createTextField() {
@@ -105,7 +122,21 @@ public class MetadataValueCellFactory extends TreeTableCell<Map.Entry<String, Ob
         textField.setMinWidth(this.getWidth() - this.getGraphicTextGap() * 2);
         textField.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ENTER) {
-                commitEdit(mapStringToData(textField.getText()));
+                final Object originalValue = getItem();
+                final Object newValue = mapStringToData(textField.getText());
+                // now make sure we converted it to the right object
+                // if we converted it to the wrong object (e.g. a string) the data is invalid
+                // as long as the classes are equal we presume the conversion was done right as we can't
+                // assume the equals methods were implemented for each object
+
+                if (originalValue.getClass()
+                                 .isInstance(newValue) || newValue.getClass()
+                                                                  .isInstance(originalValue)) {
+                    commitEdit(newValue);
+                } else {
+                    alertInvalidValue();
+                    cancelEdit();
+                }
                 event.consume();
             }
         });
@@ -129,6 +160,7 @@ public class MetadataValueCellFactory extends TreeTableCell<Map.Entry<String, Ob
             resetState();
             return;
         }
+
         if (isEditing()) {
             if (textField != null) {
                 textField.setText(getCustomText(item));
@@ -172,18 +204,21 @@ public class MetadataValueCellFactory extends TreeTableCell<Map.Entry<String, Ob
 
     private void updateTextAndTooltip(final Object item) {
         final String customText = getCustomText(item);
-        LOGGER.debug("Updating text and tooltip of {} to {}", item, customText);
+        LOGGER.trace("Updating text and tooltip of {} to {}", item, customText);
         setTextAndTooltip(customText);
     }
 
     private void setTextAndTooltip(String text) {
+        setGraphic(null);
         setText(text);
         setTooltip(new Tooltip(text));
+        setContentDisplay(ContentDisplay.TEXT_ONLY);
     }
 
     private void resetState() {
         setTooltip(null);
         setText(null);
+        setTooltip(null);
         setGraphic(null);
     }
 }

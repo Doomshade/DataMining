@@ -26,8 +26,7 @@ public class OntologyPathPredicateResolver extends DefaultResponseResolver<Colle
                                                                                                             .getObject();
                                                                              assert object.isURIResource(); // should be URI resource because we are looking for a path predicate
                                                                              final String localName = object.asResource()
-                                                                                                            .getLocalName()
-                                                                                                            .replaceAll("_", " ");
+                                                                                                            .getURI();
                                                                              return new ReadOnlyObjectWrapper<>(localName);
                                                                          });
             dialog.showDialogueAndWait(stmt -> result.addMetadata(RESULT_KEY_ONTOLOGY_PATH_PREDICATE, stmt.getPredicate()));

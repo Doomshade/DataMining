@@ -164,7 +164,6 @@ public class MainController implements Initializable {
         final ContextMenu contextMenu = createContextMenu(resources);
         this.ontologyTreeView.setContextMenu(contextMenu);
 
-
         // sets up the metadata list view
         this.metadataTableView.setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
         this.metadataTableView.setPrefWidth(400);
@@ -175,9 +174,12 @@ public class MainController implements Initializable {
                                                                                    .getValue()
                                                                                    .getKey()));
         final TreeTableColumn<Map.Entry<String, Object>, Object> valueColumn = new TreeTableColumn<>(resources.getString("value"));
-        // TODO: format date etc.
         valueColumn.setCellValueFactory(MainController::valueColumnFactory);
-        valueColumn.setCellFactory(MetadataValueCellFactory::new);
+        valueColumn.setCellFactory(x -> new MetadataValueCellFactory(() -> {
+            this.ontologyTreeView.refresh();
+            final MultipleSelectionModel<TreeItem<DataNode>> sm = this.ontologyTreeView.getSelectionModel();
+            sm.clearAndSelect(sm.getSelectedIndex());
+        }));
 
         columns.setAll(keyColumn, valueColumn);
         VBox.setVgrow(metadataTableView, Priority.ALWAYS);
@@ -428,7 +430,8 @@ public class MainController implements Initializable {
             if (dataNode != null) {
                 final Set<Map.Entry<String, Object>> entrySet = dataNode.getMetadata()
                                                                         .entrySet();
-                children.add(new TreeItem<>(new AbstractMap.SimpleEntry<>("id", dataNode.getId())));
+                final TreeItem<Map.Entry<String, Object>> idRow = new TreeItem<>(new AbstractMap.SimpleEntry<>("id", dataNode.getId()));
+                children.add(idRow);
                 addMapsRecursively(children, entrySet);
             }
         }

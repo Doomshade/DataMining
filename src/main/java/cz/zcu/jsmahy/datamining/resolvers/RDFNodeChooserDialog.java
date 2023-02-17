@@ -50,10 +50,13 @@ class RDFNodeChooserDialog {
      *                               {@link Predicate#test(Object)} returns {@code true} it will attempt to look for the label of the property.
      * @param title
      * @param headerText
-     * @param valueColumnCellFactory the value column cell value vactory
+     * @param valueColumnCellFactory the value column cell value factory
      */
-    RDFNodeChooserDialog(final Collection<Statement> statements, final Predicate<String> uriPredicate,
-                         final String title, final String headerText, final Callback<TableColumn.CellDataFeatures<Statement, String>, ObservableValue<String>> valueColumnCellFactory) {
+    RDFNodeChooserDialog(final Collection<Statement> statements,
+                         final Predicate<String> uriPredicate,
+                         final String title,
+                         final String headerText,
+                         final Callback<TableColumn.CellDataFeatures<Statement, String>, ObservableValue<String>> valueColumnCellFactory) {
         this.uriPredicate = uriPredicate;
         this.content = new TableView<>();
         this.content.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
@@ -63,11 +66,13 @@ class RDFNodeChooserDialog {
         this.dialog.setResizable(true);
         this.dialog.setTitle(title);
         this.dialog.setHeaderText(headerText);
+        // TODO: perhaps add tooltip with the URI to the property someday :)
         final TableColumn<Statement, String> propertyColumn = new TableColumn<>("Přísudek");
         propertyColumn.setCellValueFactory(this::cellValueFactoryCallback);
 
         final TableColumn<Statement, String> valueColumn = new TableColumn<>("Předmět");
         valueColumn.setCellValueFactory(valueColumnCellFactory);
+
         final ObservableList<TableColumn<Statement, ?>> columns = this.content.getColumns();
         columns.add(propertyColumn);
         columns.add(valueColumn);
@@ -87,7 +92,6 @@ class RDFNodeChooserDialog {
         dialogPane.getButtonTypes()
                   .addAll(ButtonType.OK, ButtonType.CANCEL);
         dialogPane.setContent(content);
-
         dialogPane.disableProperty()
                   .bind(Bindings.size(services)
                                 .greaterThan(0));
@@ -106,11 +110,14 @@ class RDFNodeChooserDialog {
     private ObservableValue<String> cellValueFactoryCallback(TableColumn.CellDataFeatures<Statement, String> features) {
         final Property predicate = features.getValue()
                                            .getPredicate();
+
         final String uri = predicate.getURI();
-        if (!uriPredicate.test(uri)) {
-            return null;
-        }
         final ReadOnlyObjectWrapper<String> observableValue = new ReadOnlyObjectWrapper<>();
+        if (!uriPredicate.test(uri)) {
+            observableValue.set(uri);
+            return observableValue;
+        }
+        
         final String cachedItem = modelCache.getIfPresent(uri);
         if (cachedItem != null) {
             observableValue.set(cachedItem);
@@ -130,6 +137,7 @@ class RDFNodeChooserDialog {
                             }
                             modelCache.put(uri, "");
                         }
+
                         final Model model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
                         try {
                             model.read(uri);
@@ -141,8 +149,9 @@ class RDFNodeChooserDialog {
                         final Statement val = model.getProperty(predicate, labelProperty, "en");
                         if (val == null) {
                             LOGGER.debug("Failed to find " + uri);
-                            return null;
+                            return uri;
                         }
+
                         final String str = val.getString();
                         modelCache.put(uri, str);
                         LOGGER.trace("URI: {}, STR: {}", uri, str);
@@ -151,21 +160,26 @@ class RDFNodeChooserDialog {
                 };
             }
         };
+
         bgService.setOnSucceeded(e -> {
             services.remove(bgService);
             final String value = (String) e.getSource()
                                            .getValue();
             observableValue.setValue(value);
+
             final TableView<Statement> tv = features.getTableView();
             tv.refresh();
             // WARN: this could be expensive
+            // this is there to load all the values
             tv.sort();
         });
+
         bgService.setOnFailed(e -> {
             services.remove(bgService);
             observableValue.setValue("");
             LOGGER.throwing(bgService.getException());
         });
+
         bgService.start();
         services.add(bgService);
 

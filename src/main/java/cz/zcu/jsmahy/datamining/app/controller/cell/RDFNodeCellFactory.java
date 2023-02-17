@@ -69,7 +69,9 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
             }
             setContextMenu(contextMenu);
         });
-        final StringBinding stringBinding = Bindings.createStringBinding(() -> getItem() == null ? "" : getItem().getValue(METADATA_KEY_NAME, "<no name>"), itemProperty());
+        final StringBinding stringBinding = Bindings.createStringBinding(() -> {
+            return getItem() == null ? "" : getItem().getValue(METADATA_KEY_NAME, "<no name>");
+        }, itemProperty());
         textProperty().bind(stringBinding);
     }
 
