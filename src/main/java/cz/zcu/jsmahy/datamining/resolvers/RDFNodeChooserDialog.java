@@ -15,10 +15,7 @@ import javafx.concurrent.Task;
 import javafx.scene.control.*;
 import javafx.util.Callback;
 import org.apache.jena.ontology.OntModelSpec;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.ModelFactory;
-import org.apache.jena.rdf.model.Property;
-import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.rdf.model.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -45,18 +42,34 @@ class RDFNodeChooserDialog {
     private final ObservableSet<Service<String>> services = FXCollections.synchronizedObservableSet(FXCollections.observableSet());
 
     /**
-     * @param statements             The statements to display
-     * @param uriPredicate           The predicate for the given URI in each cell. The predicate gets called for each cell in the {@code propertyColumn} (the first column) and if
-     *                               {@link Predicate#test(Object)} returns {@code true} it will attempt to look for the label of the property.
+     * @param statements              The statements to display
+     * @param uriPredicate            The predicate for the given URI in each cell. The predicate gets called for each cell in the {@code propertyColumn} (the first column) and if
+     *                                {@link Predicate#test(Object)} returns {@code true} it will attempt to look for the label of the property.
      * @param title
      * @param headerText
-     * @param valueColumnCellFactory the value column cell value factory
+     * @param valueColumnValueFactory the value column cell value factory
      */
     RDFNodeChooserDialog(final Collection<Statement> statements,
                          final Predicate<String> uriPredicate,
                          final String title,
                          final String headerText,
-                         final Callback<TableColumn.CellDataFeatures<Statement, String>, ObservableValue<String>> valueColumnCellFactory) {
+                         final Callback<TableColumn.CellDataFeatures<Statement, String>, ObservableValue<String>> valueColumnValueFactory) {
+        this(statements, uriPredicate, title, headerText, valueColumnValueFactory, null);
+    }
+
+    /**
+     * @param statements              The statements to display
+     * @param uriPredicate            The predicate for the given URI in each cell. The predicate gets called for each cell in the {@code propertyColumn} (the first column) and if
+     *                                {@link Predicate#test(Object)} returns {@code true} it will attempt to look for the label of the property.
+     * @param title
+     * @param headerText
+     */
+    RDFNodeChooserDialog(final Collection<Statement> statements,
+                         final Predicate<String> uriPredicate,
+                         final String title,
+                         final String headerText,
+                         final Callback<TableColumn.CellDataFeatures<Statement, String>, ObservableValue<String>> valueColumnValueFactory,
+                         final Callback<TableColumn<Statement, String>, TableCell<Statement, String>> valueColumnCellFactory) {
         this.uriPredicate = uriPredicate;
         this.content = new TableView<>();
         this.content.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
@@ -68,10 +81,15 @@ class RDFNodeChooserDialog {
         this.dialog.setHeaderText(headerText);
         // TODO: perhaps add tooltip with the URI to the property someday :)
         final TableColumn<Statement, String> propertyColumn = new TableColumn<>("Přísudek");
-        propertyColumn.setCellValueFactory(this::cellValueFactoryCallback);
+        propertyColumn.setCellValueFactory(features -> cellValueFactoryCallback(features, features.getValue()
+                                                                                                  .getPredicate()));
 
         final TableColumn<Statement, String> valueColumn = new TableColumn<>("Předmět");
-        valueColumn.setCellValueFactory(valueColumnCellFactory);
+        valueColumn.setCellValueFactory(features -> cellValueFactoryCallback(features, features.getValue()
+                                                                                               .getObject()));
+        if (valueColumnCellFactory != null) {
+            valueColumn.setCellFactory(valueColumnCellFactory);
+        }
 
         final ObservableList<TableColumn<Statement, ?>> columns = this.content.getColumns();
         columns.add(propertyColumn);
@@ -107,17 +125,25 @@ class RDFNodeChooserDialog {
     }
 
 
-    private ObservableValue<String> cellValueFactoryCallback(TableColumn.CellDataFeatures<Statement, String> features) {
-        final Property predicate = features.getValue()
-                                           .getPredicate();
-
-        final String uri = predicate.getURI();
+    private ObservableValue<String> cellValueFactoryCallback(TableColumn.CellDataFeatures<Statement, String> features, final RDFNode rdfNode) {
         final ReadOnlyObjectWrapper<String> observableValue = new ReadOnlyObjectWrapper<>();
+        if (!rdfNode.isURIResource()) {
+            if (!rdfNode.isLiteral()) {
+                observableValue.set(rdfNode.toString());
+            } else {
+                observableValue.set(rdfNode.asLiteral()
+                                           .getValue()
+                                           .toString());
+            }
+            return observableValue;
+        }
+        final Resource resource = rdfNode.asResource();
+        final String uri = resource.getURI();
         if (!uriPredicate.test(uri)) {
             observableValue.set(uri);
             return observableValue;
         }
-        
+
         final String cachedItem = modelCache.getIfPresent(uri);
         if (cachedItem != null) {
             observableValue.set(cachedItem);
@@ -138,7 +164,7 @@ class RDFNodeChooserDialog {
                             modelCache.put(uri, "");
                         }
 
-                        final Model model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
+                        final Model model = ModelFactory.createOntologyModel(OntModelSpec.RDFS_MEM);
                         try {
                             model.read(uri);
                         } catch (Exception e) {
@@ -146,7 +172,7 @@ class RDFNodeChooserDialog {
                             return null;
                         }
                         final Property labelProperty = model.getProperty("http://www.w3.org/2000/01/rdf-schema#", "label");
-                        final Statement val = model.getProperty(predicate, labelProperty, "en");
+                        final Statement val = model.getProperty(resource, labelProperty, "en");
                         if (val == null) {
                             LOGGER.debug("Failed to find " + uri);
                             return uri;
