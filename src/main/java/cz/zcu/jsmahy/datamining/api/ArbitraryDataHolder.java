@@ -5,9 +5,10 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 
 /**
- * Represents a holder of arbitrary data. This is particularly useful for things such as configuration files or general data holders (such as data nodes).
+ * <p>Represents a holder of arbitrary data. This is particularly useful for things such as configuration files or general data holders (such as data nodes).</p>
+ * <p>To implement your own arbitrary data holder: extend {@link DefaultArbitraryDataHolder}</p>
  *
- * @author Jakub Smrha
+ * @author Jakub Šmrha
  * @since 1.0
  */
 public interface ArbitraryDataHolder {
@@ -49,7 +50,6 @@ public interface ArbitraryDataHolder {
      *
      * @throws ClassCastException if the value type is incorrect
      */
-
     <V> V getValue(String key, V defaultValue) throws ClassCastException;
 
     /**

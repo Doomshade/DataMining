@@ -36,9 +36,11 @@ application {
 }
 
 dependencies {
-    annotationProcessor('org.projectlombok:lombok:1.18.24')
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
     compileOnly 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.jetbrains:annotations:23.0.0'
 
+    implementation 'org.jetbrains:annotations:23.0.0'
     implementation 'org.jsoup:jsoup:1.15.3'
     implementation 'com.google.guava:guava:31.1-jre'
     implementation 'org.apache.logging.log4j:log4j-api:2.19.0'

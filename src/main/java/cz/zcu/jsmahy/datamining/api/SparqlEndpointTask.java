@@ -5,10 +5,12 @@ import javafx.concurrent.Task;
 /**
  * <p>A SPARQL endpoint background task.</p>
  * <p>This abstraction exists mainly for testing purposes (it's easy to mock this class)</p>
+ * <p>To implement this task: extend {@link DefaultSparqlEndpointTask}.</p>
  *
  * @param <R> The generic type of {@link Task}
  *
  * @see Task
+ * @see DefaultSparqlEndpointTask
  */
 public abstract class SparqlEndpointTask<R> extends Task<R> {
 

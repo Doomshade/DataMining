@@ -16,12 +16,12 @@ import java.util.ResourceBundle;
  * @author Jakub Šmrha
  * @version 1.0
  */
-public final class SceneManager {
+final class SceneManager {
     public static final String FXML_PATH = "/fxml/";
     private static final Logger LOGGER = LogManager.getLogger(SceneManager.class);
     private static final String FXML_SUFFIX = ".fxml";
 
-    static Scene getScene(final FXMLScene fxmlScene) throws IOException {
+    public Scene getScene(final FXMLScene fxmlScene) throws IOException {
         String fxmlScenePath = fxmlScene.getScenePath();
         final int fxmlSuffixIndex = fxmlScenePath.lastIndexOf(FXML_SUFFIX);
         if (fxmlSuffixIndex >= 0) {

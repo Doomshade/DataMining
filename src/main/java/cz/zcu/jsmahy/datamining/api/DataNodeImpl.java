@@ -8,6 +8,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
 import java.util.Iterator;
@@ -20,7 +21,7 @@ import java.util.function.BiConsumer;
                    doNotUseGetters = true)
 @ToString(doNotUseGetters = true,
           exclude = "parent")
-class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
+final class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
     private static final Logger LOGGER = LogManager.getLogger(DataNodeImpl.class);
     private static long ID_SEQ = 0;
     /**
@@ -53,6 +54,7 @@ class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
     // the nodes C, D, E will be deleted in the first GC cycle, whereas the B node will be deleted in the second GC cycle
     @JsonIgnore
     private transient WeakReference<DataNode> parent;
+    // non-final to have it deserializable
     private long id;
 
     {
@@ -139,8 +141,8 @@ class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
     }
 
     @Override
+    @NotNull
     public Iterator<DataNode> iterator() {
-        // holy ****ing **** why does Java have to be so bad
         return children.iterator();
     }
 }

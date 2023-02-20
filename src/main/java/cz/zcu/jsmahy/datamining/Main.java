@@ -14,6 +14,8 @@ import java.util.ResourceBundle;
  * @since 1.0
  */
 public class Main extends Application {
+    // no need to make this a singleton
+    private static final SceneManager SCENE_MANAGER = new SceneManager();
     private static Stage stage = null;
 
     public static void main(String[] args) throws ParseException {
@@ -29,7 +31,7 @@ public class Main extends Application {
         Main.stage = stage;
         final ResourceBundle resourceBundle = ResourceBundle.getBundle("lang");
         stage.setTitle(resourceBundle.getString("stage-title"));
-        final Scene scene = SceneManager.getScene(FXMLScene.MAIN);
+        final Scene scene = SCENE_MANAGER.getScene(FXMLScene.MAIN);
         stage.setScene(scene);
         stage.setMaximized(true);
         stage.show();
