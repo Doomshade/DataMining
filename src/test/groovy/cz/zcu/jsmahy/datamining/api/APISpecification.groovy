@@ -24,6 +24,8 @@ class APISpecification extends Specification {
 
 
     @Shared
+    static JSONDataNodeSerializationUtils utils
+    @Shared
     static DataNodeFactory nodeFactory
     @Shared
     static Injector injector
@@ -56,6 +58,7 @@ class APISpecification extends Specification {
 
         injector = Guice.createInjector(mocks.module(config, taskProvider))
         nodeFactory = Spy(injector.getInstance(DataNodeFactory))
+        utils = Spy(injector.getInstance(JSONDataNodeSerializationUtils))
     }
 
     void setup() {
@@ -404,10 +407,10 @@ class APISpecification extends Specification {
         given:
         def outFile = new File("test.json")
         outFile.createNewFile()
-        def serializer = new JSONDataNodeSerializer.JSONDataNodeSerializerTask(new FileOutputStream(outFile), getStubRoot())
+        def serializer = new JSONDataNodeSerializer(utils)
 
         when:
-        serializer.call()
+        serializer.serialize(new FileOutputStream(outFile), getStubRoot())
 
         then:
         noExceptionThrown()
@@ -425,10 +428,10 @@ class APISpecification extends Specification {
         nodeFactory.newRoot("")
 
         def inFile = new File("test.json")
-        def deserializer = new JSONDataNodeSerializer.JSONDataNodeDeserializerTask(new FileInputStream(inFile), nodeFactory)
+        def deserializer = new JSONDataNodeDeserializer(utils)
 
         when:
-        def node = deserializer.call()
+        def node = deserializer.deserialize(new FileInputStream(inFile))
         println node
 
         then:

@@ -48,5 +48,6 @@ public class DataMiningModule extends AbstractModule {
     protected void configure() {
         bind(DataNodeFactory.class).in(SINGLETON);
         bind(ApplicationConfiguration.class).to(DefaultApplicationConfiguration.class);
+        bind(JSONDataNodeSerializationUtils.class).in(SINGLETON);
     }
 }

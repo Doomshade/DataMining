@@ -1,37 +1,22 @@
 package cz.zcu.jsmahy.datamining.api;
 
-import java.io.InputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 
-/**
- * This class is responsible for serialization of a {@link DataNode}. It provides two tasks, one for serialization {@link #createSerializerTask(OutputStream, DataNode)}, and one for deserialization
- * {@link #createDeserializerTask(InputStream)}.
- *
- * @author Jakub Šmrha
- * @version 1.0
- */
 public interface DataNodeSerializer {
-    /**
-     * Creates a new serialization task.
-     *
-     * @param out  the output stream of the serialization
-     * @param root the data node root to serialize
-     *
-     * @return a task that performs serialization
-     */
-    DataNodeSerializerTask createSerializerTask(OutputStream out, DataNode root);
+    String DEFAULT_FILE_EXTENSION = "datanode";
 
     /**
-     * Creates a new deserialization task.
+     * <p>Serializes the whole {@link DataNode} tree.</p>
      *
-     * @param in the input stream of the deserialization
-     *
-     * @return a task that performs deserialization
+     * @throws IOException if the {@link DataNode} tree failed to serialize
+     * @author Jakub Šmrha
+     * @since 1.0
      */
-    DataNodeDeserializerTask createDeserializerTask(InputStream in);
+    void serialize(OutputStream out, DataNode root) throws IOException;
 
     /**
-     * @return the file extension of the serialized {@link DataNode}
+     * @return The file extension. If this is {@code null} the extension defaults to {@link DataNodeSerializer#DEFAULT_FILE_EXTENSION}
      */
     String getFileExtension();
 }

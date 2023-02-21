@@ -74,10 +74,15 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         final Selector startDateSelector = new SimpleSelector(subject, dateProperty, (Object) null);
         final StmtIterator startDates = model.listStatements(startDateSelector);
         if (startDates.hasNext()) {
-            final Object value = startDates.next()
-                                           .getObject()
-                                           .asLiteral()
-                                           .getValue();
+            final RDFNode object = startDates.next()
+                                             .getObject();
+            if (!object.isLiteral()) {
+                // TODO: handle this
+                LOGGER.error("The {} date property is a URI. This should be a literal! S: {}, P: {}, O: {}", isStartDate ? "start" : "end", subject, dateProperty, object);
+                return;
+            }
+            final Object value = object.asLiteral()
+                                       .getValue();
             final Calendar calendar;
             if (value instanceof XSDDateTime dateTime) {
                 calendar = dateTime.asCalendar();

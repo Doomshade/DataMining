@@ -4,22 +4,30 @@ package cz.zcu.jsmahy.datamining.export
 import com.google.inject.Guice
 import cz.zcu.jsmahy.datamining.api.DataNode
 import cz.zcu.jsmahy.datamining.api.DataNodeFactory
+import cz.zcu.jsmahy.datamining.api.JSONDataNodeSerializationUtils
 import cz.zcu.jsmahy.datamining.api.Mocks
+import javafx.application.Platform
+import spock.lang.Shared
 import spock.lang.Specification
 
 import java.lang.reflect.Field
 import java.nio.charset.StandardCharsets
 
-import static cz.zcu.jsmahy.datamining.export.FialaBPSerializerTask.stripTimezone
+import static FialaBPSerializer.stripTimezone
 
 class FialaBPExportSpecification extends Specification {
     def final lock = new Object()
+    @Shared
     static DataNodeFactory nodeFactory
+    @Shared
+    static JSONDataNodeSerializationUtils utils
+
 
     void setupSpec() {
         def mocks = new Mocks()
         def injector = Guice.createInjector(mocks.module())
         nodeFactory = Spy(injector.getInstance(DataNodeFactory))
+        utils = Spy(injector.getInstance(JSONDataNodeSerializationUtils))
     }
 
     void setup() {}
@@ -88,10 +96,10 @@ class FialaBPExportSpecification extends Specification {
         edges.add(new FialaBPExportEdgeFormat(1, "relationship", 2, 1, "doctoral advisor"))
         edges.add(new FialaBPExportEdgeFormat(2, "relationship", 3, 2, "doctoral advisor"))
         edges.add(new FialaBPExportEdgeFormat(3, "relationship", 4, 3, "doctoral advisor"))
-        def serializer = new FialaBPSerializerTask(out, root)
+        def serializer = new FialaBPSerializer(utils)
 
         when:
-        serializer.serialize(new FialaBPExportFormatRoot(nodes, edges))
+        serializer.serialize(out, new FialaBPExportFormatRoot(nodes, edges))
 
         then:
         noExceptionThrown()
@@ -105,6 +113,13 @@ class FialaBPExportSpecification extends Specification {
                 expected == created
             }
         }
+    }
+
+    def "Persistence test"() {
+        given:
+        // we have to start up the JavaFX toolkit because the
+        Platform.startup(() -> { })
+
     }
 
 }

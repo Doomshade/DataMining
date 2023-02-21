@@ -1,7 +1,10 @@
 package cz.zcu.jsmahy.datamining.export;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.inject.Inject;
 import cz.zcu.jsmahy.datamining.api.*;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
@@ -10,15 +13,31 @@ import java.util.List;
 import java.util.Optional;
 
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_RELATIONSHIPS;
-import static cz.zcu.jsmahy.datamining.export.FialaBPSerializer.*;
 
-class FialaBPDeserializerTask extends DataNodeDeserializerTask {
-    public FialaBPDeserializerTask(final InputStream in, final DataNodeFactory dataNodeFactory) {
-        super(in, dataNodeFactory);
+public class FialaBPDeserializer implements DataNodeDeserializer {
+    public static final String PREFIX = "define([],function(){return";
+    public static final String SUFFIX = ";});\r\n";
+    private final ObjectMapper objectMapper;
+
+    private final DataNodeFactory dataNodeFactory;
+
+    @Inject
+    public FialaBPDeserializer(final DataNodeFactory dataNodeFactory, final JSONDataNodeSerializationUtils utils) {
+        this.dataNodeFactory = dataNodeFactory;
+        this.objectMapper = utils.getJsonObjectMapper();
+    }
+
+    protected void panicInvalidDataFormat(String expected) throws IOException {
+        throw new IOException("Invalid data format. Expected: ".concat(expected));
     }
 
     @Override
-    protected DataNode call() throws Exception {
+    public String[] getAcceptedFileExtensions() {
+        return new String[] {"js"};
+    }
+
+    @Override
+    public DataNode deserialize(final InputStream in) throws IOException {
         // we don't allow formatted JSON because we lazy to make a lexer/parser :)
         // just assume the data file is not going to be modified
         final String prefix = new String(in.readNBytes(PREFIX.length()), StandardCharsets.UTF_8);
@@ -31,7 +50,7 @@ class FialaBPDeserializerTask extends DataNodeDeserializerTask {
         }
         // body is the json
         final String body = bodyAndSuffix.substring(0, bodyAndSuffix.length() - SUFFIX.length());
-        final FialaBPExportFormatRoot bpFormatRoot = OBJECT_MAPPER.readValue(body, FialaBPExportFormatRoot.class);
+        final FialaBPExportFormatRoot bpFormatRoot = objectMapper.readValue(body, FialaBPExportFormatRoot.class);
         final Field[] nodeFields = FialaBPExportNodeFormat.class.getDeclaredFields();
         for (Field field : nodeFields) {
             field.trySetAccessible();
@@ -41,7 +60,11 @@ class FialaBPDeserializerTask extends DataNodeDeserializerTask {
         for (final FialaBPExportNodeFormat node : bpFormatRoot.getNodes()) {
             final DataNode dataNode = dataNodeFactory.newNode(root, node.getName());
             for (Field nodeField : nodeFields) {
-                dataNode.addMetadata(nodeField.getName(), nodeField.get(node));
+                try {
+                    dataNode.addMetadata(nodeField.getName(), nodeField.get(node));
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
 
@@ -61,7 +84,11 @@ class FialaBPDeserializerTask extends DataNodeDeserializerTask {
 
             final ArbitraryDataHolder relationship = new DefaultArbitraryDataHolder();
             for (final Field field : edgeFields) {
-                relationship.addMetadata(field.getName(), field.get(edge));
+                try {
+                    relationship.addMetadata(field.getName(), field.get(edge));
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
             }
             relationships.add(relationship);
 

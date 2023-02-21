@@ -48,8 +48,10 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.util.*;
+import java.util.function.Predicate;
 
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
+import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_RDF_NODE;
 
 /**
  * <p>The controller for main UI where user builds the ontology.</p>
@@ -179,6 +181,11 @@ public class MainController implements Initializable {
             this.ontologyTreeView.refresh();
             final MultipleSelectionModel<TreeItem<DataNode>> sm = this.ontologyTreeView.getSelectionModel();
             sm.clearAndSelect(sm.getSelectedIndex());
+        }, row -> {
+            final Map.Entry<String, Object> entry = row.getItem();
+            final boolean invalidEntry = entry.getKey()
+                                              .equals("id") || entry.getValue() instanceof Map || entry.getValue() instanceof List;
+            return !invalidEntry;
         }));
 
         columns.setAll(keyColumn, valueColumn);
@@ -188,7 +195,10 @@ public class MainController implements Initializable {
         this.metadataTableView.setShowRoot(false);
         this.ontologyTreeView.getSelectionModel()
                              .selectedItemProperty()
-                             .addListener(new TreeViewAndMetadataBinder());
+                             .addListener(new TreeViewAndMetadataBinder(entry -> {
+                                 final String key = entry.getKey();
+                                 return key.equals(METADATA_KEY_RDF_NODE);
+                             }));
     }
 
     private ContextMenu createContextMenu(final ResourceBundle resources) {
@@ -247,33 +257,42 @@ public class MainController implements Initializable {
                 final OutputStream out;
                 try {
                     final String fileName = dataNodeRoot.getValue(METADATA_KEY_NAME, "<no name>");
-                    final String fileExtension = serializer.getFileExtension();
+                    String fileExtension = serializer.getFileExtension();
+                    if (fileExtension == null) {
+                        fileExtension = DataNodeSerializer.DEFAULT_FILE_EXTENSION;
+                    }
                     //noinspection resource
                     out = new FileOutputStream(String.format(FILE_NAME_FORMAT, fileName, fileExtension));
                 } catch (FileNotFoundException ex) {
                     throw new UncheckedIOException(ex);
                 }
-                final Service<Void> dataNodeExporter = new Service<>() {
+                final Service<Void> dataNodeSerializationTask = new Service<>() {
                     @Override
                     protected Task<Void> createTask() {
-                        return serializer.createSerializerTask(out, dataNodeRoot);
+                        return new Task<>() {
+                            @Override
+                            protected Void call() throws Exception {
+                                serializer.serialize(out, dataNodeRoot);
+                                return null;
+                            }
+                        };
                     }
                 };
-                dataNodeExporter.setOnRunning(ev -> services.add(dataNodeExporter));
-                dataNodeExporter.setOnSucceeded(ev -> {
-                    removedServices.add(dataNodeExporter);
-                    services.remove(dataNodeExporter);
+                dataNodeSerializationTask.setOnRunning(ev -> services.add(dataNodeSerializationTask));
+                dataNodeSerializationTask.setOnSucceeded(ev -> {
+                    removedServices.add(dataNodeSerializationTask);
+                    services.remove(dataNodeSerializationTask);
                 });
-                dataNodeExporter.setOnCancelled(ev -> {
-                    removedServices.add(dataNodeExporter);
-                    services.remove(dataNodeExporter);
+                dataNodeSerializationTask.setOnCancelled(ev -> {
+                    removedServices.add(dataNodeSerializationTask);
+                    services.remove(dataNodeSerializationTask);
                 });
-                dataNodeExporter.setOnFailed(ev -> {
-                    LOGGER.throwing(dataNodeExporter.getException());
-                    removedServices.add(dataNodeExporter);
-                    services.remove(dataNodeExporter);
+                dataNodeSerializationTask.setOnFailed(ev -> {
+                    LOGGER.throwing(dataNodeSerializationTask.getException());
+                    removedServices.add(dataNodeSerializationTask);
+                    services.remove(dataNodeSerializationTask);
                 });
-                dataNodeExporter.start();
+                dataNodeSerializationTask.start();
             }
         });
         exportToFile.setAccelerator(KeyCombination.keyCombination("ALT + E"));
@@ -370,6 +389,15 @@ public class MainController implements Initializable {
         // values deeper than 5 will be hard to display regardless of the limitation
         // if anything, an internal error occurred if the depth is >= 5
         private static final int MAX_DEPTH = 5;
+        private final Predicate<Map.Entry<String, Object>> showPredicate;
+
+        private TreeViewAndMetadataBinder(final Predicate<Map.Entry<String, Object>> showPredicate) {
+            this.showPredicate = showPredicate;
+        }
+
+        private TreeViewAndMetadataBinder() {
+            this(entry -> true);
+        }
 
         /**
          * Populates the children with the entry set of the map recursively
@@ -388,6 +416,9 @@ public class MainController implements Initializable {
             }
 
             for (final Map.Entry<String, Object> entry : entrySet) {
+                if (!showPredicate.test(entry)) {
+                    continue;
+                }
                 final Object entryValue = entry.getValue();
                 final TreeItem<Map.Entry<String, Object>> treeItem = new TreeItem<>(entry);
                 children.add(treeItem);
@@ -430,8 +461,11 @@ public class MainController implements Initializable {
             if (dataNode != null) {
                 final Set<Map.Entry<String, Object>> entrySet = dataNode.getMetadata()
                                                                         .entrySet();
-                final TreeItem<Map.Entry<String, Object>> idRow = new TreeItem<>(new AbstractMap.SimpleEntry<>("id", dataNode.getId()));
-                children.add(idRow);
+                final AbstractMap.SimpleEntry<String, Object> entry = new AbstractMap.SimpleEntry<>("id", dataNode.getId());
+                if (!showPredicate.test(entry)) {
+                    final TreeItem<Map.Entry<String, Object>> idRow = new TreeItem<>(entry);
+                    children.add(idRow);
+                }
                 addMapsRecursively(children, entrySet);
             }
         }

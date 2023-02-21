@@ -8,6 +8,7 @@ import org.apache.logging.log4j.Logger;
 import java.text.*;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 public class MetadataValueCellFactory extends TreeTableCell<Map.Entry<String, Object>, Object> {
     private static final Logger LOGGER = LogManager.getLogger(MetadataValueCellFactory.class);
@@ -66,17 +67,34 @@ public class MetadataValueCellFactory extends TreeTableCell<Map.Entry<String, Ob
     }
 
     private final Runnable onCommitEdit;
+    private final Predicate<TreeTableRow<Map.Entry<String, Object>>> startEditPredicate;
     private TextField textField;
 
     /**
      * @param onCommitEdit A runnable that's run once the edit is committed. This could be used to refresh the UI state.
      */
-    public MetadataValueCellFactory(Runnable onCommitEdit) {
+    public MetadataValueCellFactory(Runnable onCommitEdit, Predicate<TreeTableRow<Map.Entry<String, Object>>> startEditPredicate) {
         this.onCommitEdit = onCommitEdit;
+        this.startEditPredicate = startEditPredicate;
+    }
+
+    public MetadataValueCellFactory(Runnable onCommitEdit) {
+        this(onCommitEdit, row -> true);
+    }
+
+    public MetadataValueCellFactory() {
+        this(() -> {
+        });
     }
 
     @Override
     public void startEdit() {
+        final TreeTableRow<Map.Entry<String, Object>> row = getTableRow();
+        if (startEditPredicate != null && !startEditPredicate.test(row)) {
+            setEditable(false);
+            return;
+        }
+
         super.startEdit();
         updateTextField();
     }
@@ -88,7 +106,9 @@ public class MetadataValueCellFactory extends TreeTableCell<Map.Entry<String, Ob
         getTableRow().getItem()
                      .setValue(newValue);
         updateTextAndTooltip(newValue);
-        onCommitEdit.run();
+        if (onCommitEdit != null) {
+            onCommitEdit.run();
+        }
     }
 
     @Override
@@ -160,6 +180,7 @@ public class MetadataValueCellFactory extends TreeTableCell<Map.Entry<String, Ob
             resetState();
             return;
         }
+
 
         if (isEditing()) {
             if (textField != null) {
