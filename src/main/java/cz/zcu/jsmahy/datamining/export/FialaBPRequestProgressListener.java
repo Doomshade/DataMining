@@ -1,11 +1,16 @@
 package cz.zcu.jsmahy.datamining.export;
 
+import com.google.inject.Inject;
+import cz.zcu.jsmahy.datamining.Main;
 import cz.zcu.jsmahy.datamining.api.*;
+import cz.zcu.jsmahy.datamining.util.SearchDialog;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.concurrent.Service;
 import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.TreeItem;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
@@ -31,6 +36,10 @@ public class FialaBPRequestProgressListener implements RequestProgressListener {
     private final ObjectProperty<Property> endDate = new SimpleObjectProperty<>();
     private final ObjectProperty<TreeItem<DataNode>> treeRoot = new SimpleObjectProperty<>();
     private final ObjectProperty<QueryData> queryData = new SimpleObjectProperty<>();
+    @Inject
+    private SparqlEndpointAgent<?> sparqlEndpointAgent;
+    @Inject
+    private SparqlQueryServiceHolder serviceHolder;
 
     private void findTreeItem(DataNode dataNode, TreeItem<DataNode> currTreeItem, AtomicReference<TreeItem<DataNode>> ref) {
         for (final TreeItem<DataNode> child : currTreeItem.getChildren()) {
@@ -210,8 +219,33 @@ public class FialaBPRequestProgressListener implements RequestProgressListener {
     }
 
     @Override
-    public void onSearchDone() {
-
+    public void onSearchDone(final DataNode dataNodeRoot) {
+        Platform.runLater(() -> {
+            assert dataNodeRoot.isRoot();
+            final Alert continuePrompt = new Alert(Alert.AlertType.CONFIRMATION);
+            continuePrompt.initOwner(Main.getPrimaryStage());
+            continuePrompt.setTitle("Pokračovat");
+            continuePrompt.setHeaderText("Přejete si pokračovat v hledání?");
+            continuePrompt.setContentText("Potvrďte prosím, zda si přejete pokračovat v hledání");
+            continuePrompt.showAndWait()
+                          .ifPresent(buttonType -> {
+                              if (buttonType == ButtonType.OK) {
+                                  final ResourceBundle lang = ResourceBundle.getBundle("lang");
+                                  final SearchDialog dialog = new SearchDialog(lang.getString("search-subject"), lang.getString("subject-to-search"));
+                                  dialog.showAndWait()
+                                        .ifPresent(searchValue -> {
+                                            final String query = searchValue.replaceAll(" ", "_");
+                                            if (query.isBlank()) {
+                                                // TODO: show an alert
+                                                return;
+                                            }
+                                            final Service<?> service = sparqlEndpointAgent.createBackgroundQueryService(query, dataNodeRoot);
+                                            serviceHolder.bindQueryService(service);
+                                            service.restart();
+                                        });
+                              }
+                          });
+        });
     }
 
     @Override

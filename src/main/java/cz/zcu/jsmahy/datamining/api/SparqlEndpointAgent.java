@@ -24,7 +24,7 @@ public class SparqlEndpointAgent<R> {
      * @param sparqlEndpointTaskProvider the task provider that's called when creating a new {@link Service}
      *
      * @see DataMiningModule
-     * @see #createBackgroundService(String, DataNode)
+     * @see #createBackgroundQueryService(String, DataNode)
      */
     @Inject
     @SuppressWarnings("unchecked, rawtypes")
@@ -43,7 +43,7 @@ public class SparqlEndpointAgent<R> {
      * @throws NullPointerException     if any argument is null
      * @throws IllegalArgumentException if the query is blank or the data node is not a root
      */
-    public Service<R> createBackgroundService(final String query, final DataNode dataNodeRoot) throws NullPointerException, IllegalArgumentException {
+    public Service<R> createBackgroundQueryService(final String query, final DataNode dataNodeRoot) throws NullPointerException, IllegalArgumentException {
         requireNonNull(query);
         requireNonNull(dataNodeRoot);
         if (query.isBlank()) {

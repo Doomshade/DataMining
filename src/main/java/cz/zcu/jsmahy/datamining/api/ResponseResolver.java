@@ -21,19 +21,16 @@ public interface ResponseResolver<D> {
      * </p>
      * <p>An example async (different thread) implementation:</p>
      * <pre>{@code
-     * public class UserAssistedAmbiguitySolver<T extends RDFNode> implements AmbiguitySolver<T, Void> {
+     * public class UserAssistedAmbiguitySolver implements ResponseResolver<Collection<RDFNode>> {
      *     @Override
-     *     public DataNodeReferenceHolder<T> resolveRequest(ObservableList<DataNode<T>> list, SparqlEndpointAgent<T, Void> requestHandler) {
-     *         DataNodeReferenceHolder<T> ref = new DataNodeReferenceHolder<>();
+     *     public void resolve(ObservableList<DataNode<T>> list, SparqlEndpointAgent<T, Void> requestHandler) {
      *         Platform.runLater(() -> {
      *           final Dialog<DataNode<T>> dialog = ...
      *           final List<DataNode<T>> result = dialog.showAndWait()
      *                                                 .orElse(null);
-     *           ref.set(result);
-     *           ref.finish();
+     *           markResponseReady();
      *           requestHandler.unlockDialogPane();
      *         });
-     *         return ref;
      *     }
      * }
      * }

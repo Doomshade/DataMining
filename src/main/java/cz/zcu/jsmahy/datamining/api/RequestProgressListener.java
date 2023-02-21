@@ -87,7 +87,7 @@ public interface RequestProgressListener {
     /**
      * Called when the search is finished.
      */
-    void onSearchDone();
+    void onSearchDone(final DataNode dataNodeRoot);
 
     /**
      * Called when a new root is created. This data node root is then used in the following search handled by {@link SparqlEndpointTask}.

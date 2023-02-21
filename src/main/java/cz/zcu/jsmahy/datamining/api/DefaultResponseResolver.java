@@ -19,11 +19,19 @@ public abstract class DefaultResponseResolver<D> implements ResponseResolver<D> 
     private final ReadOnlyBooleanWrapper responseProperty = new ReadOnlyBooleanWrapper(false);
 
     @Override
+    public final void resolve(final D inputMetadata, final SparqlEndpointTask<?> requestHandler) throws IllegalStateException {
+        result.clearMetadata();
+        resolveInternal(inputMetadata, requestHandler);
+    }
+
+    @Override
     public final ArbitraryDataHolder getResponse() throws IllegalStateException {
         if (!hasResponseReady()) {
             throw new IllegalStateException("Response not ready yet.");
         }
         synchronized (lock) {
+            final ArbitraryDataHolder result = this.result;
+            // reset the response to false -- after this call we no longer have a response
             responseProperty.set(false);
             return result;
         }
@@ -43,4 +51,6 @@ public abstract class DefaultResponseResolver<D> implements ResponseResolver<D> 
     public void markResponseReady() {
         responseProperty.set(true);
     }
+
+    protected abstract void resolveInternal(final D inputMetadata, final SparqlEndpointTask<?> requestHandler);
 }

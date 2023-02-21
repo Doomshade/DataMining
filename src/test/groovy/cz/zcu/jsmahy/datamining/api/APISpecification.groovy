@@ -67,6 +67,14 @@ class APISpecification extends Specification {
         this.endpointAgent = injector.getInstance(SparqlEndpointAgent.class)
     }
 
+    def "Should throw IAE if the query is blank"() {
+        when:
+        new DefaultSparqlEndpointTask(" ", nodeFactory.newRoot("Root"), config, Mock(RequestProgressListener))
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
     def "Should throw NPE when passing null reference when trying to create a new data node"() {
         when:
         nodeFactory.newNode(null)
@@ -300,7 +308,7 @@ class APISpecification extends Specification {
 
     def "Should throw IAE if either query (#query) and tree item (#treeItem) is null"() {
         when:
-        endpointAgent.createBackgroundService(query, treeItem)
+        endpointAgent.createBackgroundQueryService(query, treeItem)
 
         then:
         thrown(NullPointerException)
@@ -313,7 +321,7 @@ class APISpecification extends Specification {
 
     def "Should throw IAE if either query (#query) and tree item (#treeItem) is null (2)"() {
         when:
-        endpointAgent.createBackgroundService(query, treeItem).start()
+        endpointAgent.createBackgroundQueryService(query, treeItem).start()
 
         then:
         thrown(NullPointerException)
@@ -327,7 +335,7 @@ class APISpecification extends Specification {
 
     def "Should throw IAE if query is empty"() {
         when:
-        endpointAgent.createBackgroundService("", _ as DataNode)
+        endpointAgent.createBackgroundQueryService("", _ as DataNode)
         then:
         thrown(IllegalArgumentException)
     }
@@ -336,7 +344,7 @@ class APISpecification extends Specification {
         def node = Mock(DataNode)
         node.isRoot() >> false
         when:
-        endpointAgent.createBackgroundService("queryTest", node)
+        endpointAgent.createBackgroundQueryService("queryTest", node)
         then:
         thrown(IllegalArgumentException)
     }
@@ -347,7 +355,7 @@ class APISpecification extends Specification {
         def root = Mock(DataNode)
         root.isRoot() >> true
         when:
-        endpointAgent.createBackgroundService("queryTest", root)
+        endpointAgent.createBackgroundQueryService("queryTest", root)
         then:
         noExceptionThrown()
     }
@@ -356,7 +364,7 @@ class APISpecification extends Specification {
     def "Should create a task via task provider when background service is started"() {
         given:
         Platform.startup {}
-        def svc = endpointAgent.createBackgroundService("queryTest", _ as DataNode)
+        def svc = endpointAgent.createBackgroundQueryService("queryTest", _ as DataNode)
         when:
         svc.start()
 

@@ -1,6 +1,7 @@
 package cz.zcu.jsmahy.datamining.api;
 
 import com.google.inject.AbstractModule;
+import cz.zcu.jsmahy.datamining.app.controller.MainController;
 
 import static com.google.inject.Scopes.SINGLETON;
 
@@ -49,5 +50,7 @@ public class DataMiningModule extends AbstractModule {
         bind(DataNodeFactory.class).in(SINGLETON);
         bind(ApplicationConfiguration.class).to(DefaultApplicationConfiguration.class);
         bind(JSONDataNodeSerializationUtils.class).in(SINGLETON);
+        bind(MainController.class).asEagerSingleton();
+        bind(SparqlQueryServiceHolder.class).to(MainController.class);
     }
 }

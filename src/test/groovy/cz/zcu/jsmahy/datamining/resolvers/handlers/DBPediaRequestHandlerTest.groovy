@@ -25,7 +25,7 @@ class DBPediaRequestHandlerTest extends Specification {
 
     def "Should throw IAE if either query (#query) and tree item (#treeItem) is null"() {
         when:
-        endpointAgent.createBackgroundService(query, treeItem).start()
+        endpointAgent.createBackgroundQueryService(query, treeItem).start()
 
         then:
         thrown(NullPointerException)

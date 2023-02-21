@@ -8,7 +8,6 @@ import cz.zcu.jsmahy.datamining.api.SparqlEndpointTaskProvider;
 import cz.zcu.jsmahy.datamining.resolvers.MultipleItemChoiceResolver;
 import cz.zcu.jsmahy.datamining.resolvers.OntologyPathPredicateResolver;
 import cz.zcu.jsmahy.datamining.resolvers.StartAndEndDateResolver;
-import cz.zcu.jsmahy.datamining.util.DialogHelper;
 
 import static com.google.inject.Scopes.SINGLETON;
 
@@ -21,8 +20,6 @@ import static com.google.inject.Scopes.SINGLETON;
  */
 public class DBPediaModule extends AbstractModule {
     protected void configure() {
-        bind(DialogHelper.class).in(SINGLETON);
-
         // the main request handler with its progress listener
         bind(SparqlEndpointTaskProvider.class).to(DBPediaEndpointTaskProvider.class)
                                               .in(SINGLETON);

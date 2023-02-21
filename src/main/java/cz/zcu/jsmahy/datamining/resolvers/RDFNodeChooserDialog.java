@@ -13,7 +13,6 @@ import javafx.collections.ObservableSet;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.scene.control.*;
-import javafx.util.Callback;
 import org.apache.jena.ontology.OntModelSpec;
 import org.apache.jena.rdf.model.*;
 import org.apache.logging.log4j.LogManager;
@@ -24,7 +23,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-class RDFNodeChooserDialog {
+public class RDFNodeChooserDialog {
     public static final Predicate<String> IS_DBPEDIA_SITE = uri -> uri.contains("dbpedia");
 
     private static final Logger LOGGER = LogManager.getLogger(RDFNodeChooserDialog.class);
@@ -42,34 +41,13 @@ class RDFNodeChooserDialog {
     private final ObservableSet<Service<String>> services = FXCollections.synchronizedObservableSet(FXCollections.observableSet());
 
     /**
-     * @param statements              The statements to display
-     * @param uriPredicate            The predicate for the given URI in each cell. The predicate gets called for each cell in the {@code propertyColumn} (the first column) and if
-     *                                {@link Predicate#test(Object)} returns {@code true} it will attempt to look for the label of the property.
-     * @param title
-     * @param headerText
-     * @param valueColumnValueFactory the value column cell value factory
-     */
-    RDFNodeChooserDialog(final Collection<Statement> statements,
-                         final Predicate<String> uriPredicate,
-                         final String title,
-                         final String headerText,
-                         final Callback<TableColumn.CellDataFeatures<Statement, String>, ObservableValue<String>> valueColumnValueFactory) {
-        this(statements, uriPredicate, title, headerText, valueColumnValueFactory, null);
-    }
-
-    /**
-     * @param statements              The statements to display
-     * @param uriPredicate            The predicate for the given URI in each cell. The predicate gets called for each cell in the {@code propertyColumn} (the first column) and if
-     *                                {@link Predicate#test(Object)} returns {@code true} it will attempt to look for the label of the property.
+     * @param statements   The statements to display
+     * @param uriPredicate The predicate for the given URI in each cell. The predicate gets called for each cell in the {@code propertyColumn} (the first column) and if {@link Predicate#test(Object)}
+     *                     returns {@code true} it will attempt to look for the label of the property.
      * @param title
      * @param headerText
      */
-    RDFNodeChooserDialog(final Collection<Statement> statements,
-                         final Predicate<String> uriPredicate,
-                         final String title,
-                         final String headerText,
-                         final Callback<TableColumn.CellDataFeatures<Statement, String>, ObservableValue<String>> valueColumnValueFactory,
-                         final Callback<TableColumn<Statement, String>, TableCell<Statement, String>> valueColumnCellFactory) {
+    public RDFNodeChooserDialog(final Collection<Statement> statements, final Predicate<String> uriPredicate, final String title, final String headerText) {
         this.uriPredicate = uriPredicate;
         this.content = new TableView<>();
         this.content.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
@@ -81,15 +59,14 @@ class RDFNodeChooserDialog {
         this.dialog.setHeaderText(headerText);
         // TODO: perhaps add tooltip with the URI to the property someday :)
         final TableColumn<Statement, String> propertyColumn = new TableColumn<>("Přísudek");
-        propertyColumn.setCellValueFactory(features -> cellValueFactoryCallback(features, features.getValue()
-                                                                                                  .getPredicate()));
+        propertyColumn.setCellValueFactory(features -> cellValueFactoryCallback(features,
+                                                                                features.getValue()
+                                                                                        .getPredicate()));
 
         final TableColumn<Statement, String> valueColumn = new TableColumn<>("Předmět");
-        valueColumn.setCellValueFactory(features -> cellValueFactoryCallback(features, features.getValue()
-                                                                                               .getObject()));
-        if (valueColumnCellFactory != null) {
-            valueColumn.setCellFactory(valueColumnCellFactory);
-        }
+        valueColumn.setCellValueFactory(features -> cellValueFactoryCallback(features,
+                                                                             features.getValue()
+                                                                                     .getObject()));
 
         final ObservableList<TableColumn<Statement, ?>> columns = this.content.getColumns();
         columns.add(propertyColumn);

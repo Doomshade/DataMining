@@ -43,7 +43,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
     private static final Property PROPERTY_DBO_ABSTRACT = ResourceFactory.createProperty("https://dbpedia.org/ontology/abstract");
     private static final Property PROPERTY_REDIRECT = ResourceFactory.createProperty("http://dbpedia.org/ontology/wikiPageRedirects");
     private final DataNodeFactory dataNodeFactory;
-    private final ResponseResolver<Collection<RDFNode>> ambiguousResultResolver;
+    private final ResponseResolver<Collection<Statement>> ambiguousResultResolver;
     private final ResponseResolver<Collection<Statement>> ontologyPathPredicateResolver;
     private final ResponseResolver<Collection<Statement>> startAndEndDateResolver;
     private final Collection<String> usedURIs = new HashSet<>();
@@ -150,7 +150,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         search(inputMetadata, selector, null);
         LOGGER.info("Done searching");
 //            dataNodeRoot.iterate(((dataNode, integer) -> System.out.println(dataNode)));
-        progressListener.onSearchDone();
+        progressListener.onSearchDone(dataNodeRoot);
 
         return null;
 
@@ -358,17 +358,19 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         final List<Statement> statements = model.listStatements(selector)
                                                 .toList();
         statements.sort(STATEMENT_COMPARATOR);
-        final List<RDFNode> foundDataList = new ArrayList<>();
+        final List<Statement> foundDataList = new ArrayList<>();
         // for each child: read the child into the model if it's a URI
         // redirect if possible
         // check for requirements of the child
         // if the requirements are ok, continue to the next child
-        for (final Statement stmt : statements) {
+        for (Statement stmt : statements) {
             RDFNode object = stmt.getObject();
             if (object.isURIResource()) {
                 model.read(object.asResource()
                                  .getURI());
                 object = redirectIfPossible(object.asResource(), model);
+                // update the statement
+                stmt = model.createStatement(stmt.getSubject(), stmt.getPredicate(), object);
             }
 
             if (!meetsRequirements(inputMetadata, object)) {
@@ -376,7 +378,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
             }
 
             LOGGER.debug("Found {}", object);
-            foundDataList.add(object);
+            foundDataList.add(stmt);
         }
 
         // no nodes found, stop searching
@@ -387,8 +389,8 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         // only one found, that means it's going linearly
         // we can continue searching
         if (foundDataList.size() == 1) {
-            final RDFNode first = foundDataList.get(0);
-            searchFurther(inputMetadata, first, curr);
+            final Statement first = foundDataList.get(0);
+            searchFurther(inputMetadata, first.getObject(), curr);
             return;
         }
 
@@ -423,10 +425,11 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
 
         final List<DataNode> currDataNodeChildren = new ArrayList<>();
         // WARN: Deleted handling for multiple references as it might not even be in the final version.
-        for (final RDFNode rdfNode : foundDataList) {
+        for (final Statement stmt : foundDataList) {
+            final RDFNode object = stmt.getObject();
             final DataNode child = dataNodeFactory.newNode(curr);
-            child.addMetadata(DataNode.METADATA_KEY_RDF_NODE, rdfNode);
-            setDataNodeNameFromRDFNode(child, rdfNode);
+            child.addMetadata(DataNode.METADATA_KEY_RDF_NODE, object);
+            setDataNodeNameFromRDFNode(child, object);
             currDataNodeChildren.add(child);
         }
         progressListener.onAddMultipleDataNodes(curr, currDataNodeChildren, chosenNextRDFNode);

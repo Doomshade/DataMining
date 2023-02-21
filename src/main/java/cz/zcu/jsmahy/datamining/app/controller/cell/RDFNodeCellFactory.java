@@ -1,16 +1,14 @@
 package cz.zcu.jsmahy.datamining.app.controller.cell;
 
-import cz.zcu.jsmahy.datamining.api.DataNode;
-import cz.zcu.jsmahy.datamining.api.DataNodeFactory;
-import cz.zcu.jsmahy.datamining.api.RequestProgressListener;
-import cz.zcu.jsmahy.datamining.api.SparqlEndpointAgent;
-import cz.zcu.jsmahy.datamining.app.controller.MainController;
-import cz.zcu.jsmahy.datamining.util.DialogHelper;
+import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.util.RDFNodeUtil;
+import cz.zcu.jsmahy.datamining.util.SearchDialog;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.StringBinding;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Service;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
@@ -40,8 +38,7 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
     private TextField textField;
 
     public RDFNodeCellFactory(final ResourceBundle resources,
-                              final MainController mainController,
-                              final DialogHelper dialogHelper,
+                              final SparqlQueryServiceHolder serviceHolder,
                               final DataNodeFactory nodeFactory,
                               final SparqlEndpointAgent<?> requestHandler,
                               final RequestProgressListener progressListener,
@@ -54,12 +51,12 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
 
             final ContextMenu contextMenu = new ContextMenu();
 
-            final MenuItem searchItem = buildSearchItem(resources, dialogHelper, requestHandler, mainController);
+            final MenuItem searchItem = buildSearchItem(resources, requestHandler, serviceHolder);
             final MenuItem addRestrictionItem = buildAddRestrictionItem(resources);
 //            final MenuItem addItem = buildAddItem(resources);
             final MenuItem editItem = buildEditItem(resources);
             final MenuItem deleteItem = buildDeleteItem(resources, progressListener, selectedItemSupplier);
-            final MenuItem newLineItem = buildNewLineItem(resources, nodeFactory, requestHandler, mainController, progressListener);
+            final MenuItem newLineItem = buildNewLineItem(resources, nodeFactory, requestHandler, serviceHolder, progressListener);
             final MenuItem continueLineItem = buildContinueLineItem(resources);
             final ObservableList<MenuItem> items = contextMenu.getItems();
             if (getItem().isRoot()) {
@@ -102,7 +99,7 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
     private MenuItem buildNewLineItem(final ResourceBundle resources,
                                       final DataNodeFactory nodeFactory,
                                       final SparqlEndpointAgent<?> requestHandler,
-                                      final MainController mainController,
+                                      final SparqlQueryServiceHolder serviceHolder,
                                       final RequestProgressListener progressListener) {
         final MenuItem menuItem = new MenuItem(resources.getString("create-new-line"));
         menuItem.setOnAction(event -> {
@@ -122,14 +119,14 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
                 return;
             }
 
-            final Service<?> service = requestHandler.createBackgroundService(query.get(), newDataNodeRoot);
-            mainController.bindQueryService(service);
+            final Service<?> service = requestHandler.createBackgroundQueryService(query.get(), newDataNodeRoot);
+            serviceHolder.bindQueryService(service);
             service.restart();
         });
         return menuItem;
     }
 
-    private MenuItem buildSearchItem(final ResourceBundle resources, final DialogHelper dialogHelper, final SparqlEndpointAgent<?> sparqlEndpointAgent, final MainController mainController) {
+    private MenuItem buildSearchItem(final ResourceBundle resources, final SparqlEndpointAgent<?> sparqlEndpointAgent, final SparqlQueryServiceHolder serviceHolder) {
         final MenuItem menuItem = new MenuItem();
         if (getItem() != null && getItem().isRoot() && !getItem().getChildren()
                                                                  .isEmpty()) {
@@ -138,19 +135,23 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
         } else {
             menuItem.setText(resources.getString("search"));
         }
-        menuItem.setOnAction(event -> dialogHelper.textInputDialog(resources.getString("subject-to-search"), resources.getString("search-subject"), searchValue -> {
-            getTreeItem().setExpanded(true);
-            assert getItem().isRoot();
-            final String query = searchValue.replaceAll(" ", "_");
-            if (query.isBlank()) {
-                // TODO: show an alert
-                return;
-            }
-            final Service<?> service = sparqlEndpointAgent.createBackgroundService(query, getItem());
-            mainController.bindQueryService(service);
-            service.setOnFailed(e -> LOGGER.throwing(service.getException()));
-            service.restart();
-        }));
+        final EventHandler<ActionEvent> actionEventEventHandler = event -> {
+            final SearchDialog dialog = new SearchDialog(resources.getString("search-subject"), resources.getString("subject-to-search"));
+            dialog.showAndWait()
+                  .ifPresent(searchValue -> {
+                      getTreeItem().setExpanded(true);
+                      assert getItem().isRoot();
+                      final String query = searchValue.replaceAll(" ", "_");
+                      if (query.isBlank()) {
+                          // TODO: show an alert
+                          return;
+                      }
+                      final Service<?> service = sparqlEndpointAgent.createBackgroundQueryService(query, getItem());
+                      serviceHolder.bindQueryService(service);
+                      service.restart();
+                  });
+        };
+        menuItem.setOnAction(actionEventEventHandler);
         menuItem.setAccelerator(KeyCombination.keyCombination("CTRL + H"));
         return menuItem;
     }

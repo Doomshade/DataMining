@@ -3,13 +3,14 @@ package cz.zcu.jsmahy.datamining.app.controller;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import cz.zcu.jsmahy.datamining.Main;
 import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.app.controller.cell.MetadataValueCellFactory;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
 import cz.zcu.jsmahy.datamining.dbpedia.DBPediaModule;
 import cz.zcu.jsmahy.datamining.export.FialaBPModule;
-import cz.zcu.jsmahy.datamining.util.DialogHelper;
 import cz.zcu.jsmahy.datamining.util.RDFNodeUtil;
+import cz.zcu.jsmahy.datamining.util.SearchDialog;
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
@@ -60,7 +61,7 @@ import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_RDF_NODE;
  * @author Jakub Šmrha
  * @version 1.0
  */
-public class MainController implements Initializable {
+public class MainController implements Initializable, SparqlQueryServiceHolder {
     public static final String FILE_NAME_FORMAT = "%s.%s";
     // this could be loaded as a service someday :)
     // we'll basically ask for a module implementation to provide
@@ -81,31 +82,34 @@ public class MainController implements Initializable {
     @FXML
     private ProgressIndicator progressIndicator;
     private DataNodeFactory nodeFactory;
-    private DialogHelper dialogHelper;
     private final EventHandler<ActionEvent> createNewLineAction = e -> {
         final ResourceBundle lang = ResourceBundle.getBundle("lang");
-        dialogHelper.textInputDialog(lang.getString("create-new-line"), "Název linie", lineName -> {
-            if (lineName.isBlank()) {
-                Platform.runLater(() -> {
-                    final Alert alert = new Alert(Alert.AlertType.ERROR);
-                    alert.setTitle("Invalid line");
-                    alert.setHeaderText("Empty string");
-                    alert.setContentText("Please fill in a non-blank value.");
-                    alert.show();
-                });
-                return;
-            }
-            final DataNode dataNode = nodeFactory.newRoot(lineName);
-            ontologyTreeView.getRoot()
-                            .getChildren()
-                            .add(new TreeItem<>(dataNode));
-        });
+        final SearchDialog dialog = new SearchDialog(lang.getString("create-new-line-title"), lang.getString("create-new-line"));
+        dialog.showAndWait()
+              .ifPresent(lineName -> {
+                  if (lineName.isBlank()) {
+                      Platform.runLater(() -> {
+                          final Alert alert = new Alert(Alert.AlertType.ERROR);
+                          alert.initOwner(Main.getPrimaryStage());
+                          alert.setTitle("Invalid line");
+                          alert.setHeaderText("Empty string");
+                          alert.setContentText("Please fill in a non-blank value.");
+                          alert.show();
+                      });
+                      return;
+                  }
+                  final DataNode dataNode = nodeFactory.newRoot(lineName);
+                  ontologyTreeView.getRoot()
+                                  .getChildren()
+                                  .add(new TreeItem<>(dataNode));
+              });
 
     };
     @FXML
     private TreeTableView<Map.Entry<String, Object>> metadataTableView;
     private SparqlEndpointAgent<Void> requestHandler;
     private Injector injector;
+    private boolean bound = false;
 
     private static ObservableValue<Object> valueColumnFactory(final TreeTableColumn.CellDataFeatures<Map.Entry<String, Object>, Object> features) {
         // need to map values better
@@ -120,7 +124,6 @@ public class MainController implements Initializable {
         this.injector = Guice.createInjector(MODULES);
         this.nodeFactory = injector.getInstance(DataNodeFactory.class);
         this.requestHandler = injector.getInstance(SparqlEndpointAgent.class);
-        this.dialogHelper = injector.getInstance(DialogHelper.class);
 
         // sets up menu bar
         final MenuBar menuBar = createMenuBar(resources);
@@ -152,7 +155,6 @@ public class MainController implements Initializable {
                         .set(ontologyTreeView.getRoot());
         this.ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory(resources,
                                                                           this,
-                                                                          dialogHelper,
                                                                           nodeFactory,
                                                                           requestHandler,
                                                                           progressListener,
@@ -197,7 +199,7 @@ public class MainController implements Initializable {
                              .selectedItemProperty()
                              .addListener(new TreeViewAndMetadataBinder(entry -> {
                                  final String key = entry.getKey();
-                                 return key.equals(METADATA_KEY_RDF_NODE);
+                                 return !key.equals(METADATA_KEY_RDF_NODE);
                              }));
     }
 
@@ -343,17 +345,25 @@ public class MainController implements Initializable {
         return menuItem;
     }
 
+    @Override
     public void bindQueryService(final Service<?> service) {
+        service.setOnFailed(e -> LOGGER.throwing(service.getException()));
+        service.setOnSucceeded(e -> LOGGER.info("Service query finished successfully"));
+        service.setOnCancelled(e -> LOGGER.warn("Service was cancelled unexpectedly"));
         bindProperties(service.runningProperty(), service.progressProperty());
     }
 
     public synchronized void bindProperties(ObservableValue<? extends Boolean> runningProperty, ObservableValue<? extends Number> progressProperty) {
+//        if (bound) {
+//            throw new IllegalStateException("A query service is already bound.");
+//        }
         this.rootPane.disableProperty()
                      .bind(runningProperty);
         this.progressIndicator.visibleProperty()
                               .bind(runningProperty);
         this.progressIndicator.progressProperty()
                               .bind(progressProperty);
+        this.bound = true;
     }
 
     /**
@@ -382,6 +392,16 @@ public class MainController implements Initializable {
         final String url = String.format(WIKI_URL, formattedItem);
         LOGGER.trace("Loading web page with URL {}", url);
         engine.load(url);
+    }
+
+    public void unbindQueryService() {
+        this.rootPane.disableProperty()
+                     .unbind();
+        this.progressIndicator.visibleProperty()
+                              .unbind();
+        this.progressIndicator.progressProperty()
+                              .unbind();
+        this.bound = false;
     }
 
     private class TreeViewAndMetadataBinder implements ChangeListener<TreeItem<DataNode>> {
