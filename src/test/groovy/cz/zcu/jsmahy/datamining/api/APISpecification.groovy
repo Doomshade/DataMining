@@ -448,15 +448,6 @@ class APISpecification extends Specification {
 
     def "Deserializer test"() {
         given:
-        nodeFactory.newRoot("")
-        nodeFactory.newRoot("")
-        nodeFactory.newRoot("")
-        nodeFactory.newRoot("")
-        nodeFactory.newRoot("")
-        nodeFactory.newRoot("")
-        nodeFactory.newRoot("")
-        nodeFactory.newRoot("")
-
         def inFile = new File("test.json")
         def deserializer = new JSONDataNodeDeserializer(utils)
 
