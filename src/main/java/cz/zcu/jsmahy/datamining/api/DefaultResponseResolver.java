@@ -38,7 +38,7 @@ public abstract class DefaultResponseResolver<D> implements ResponseResolver<D> 
     }
 
     @Override
-    public ReadOnlyBooleanProperty hasResponseReadyProperty() {
+    public final ReadOnlyBooleanProperty hasResponseReadyProperty() {
         return responseProperty.getReadOnlyProperty();
     }
 

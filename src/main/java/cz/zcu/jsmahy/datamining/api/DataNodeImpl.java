@@ -1,7 +1,6 @@
 package cz.zcu.jsmahy.datamining.api;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -27,7 +26,7 @@ final class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode 
     /**
      * Using implementation because of Jackson. Jackson needs a default empty constructor, so we make a wrapper of... the existing wrapper... because that one does not permit empty lists...
      */
-    private final ObservableListWrapperWrapper<DataNode> children = new ObservableListWrapperWrapper<>(FXCollections.observableArrayList());
+    private final ObservableListWrapperWrapper<DataNode> children = new ObservableListWrapperWrapper<>();
     // the parent could be removed from its parent's children, thus losing a reference to it
     //  R
     //  ├── A

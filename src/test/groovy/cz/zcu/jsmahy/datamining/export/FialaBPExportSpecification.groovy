@@ -1,12 +1,11 @@
 package cz.zcu.jsmahy.datamining.export
 
-
 import com.google.inject.Guice
+import com.sun.javafx.application.PlatformImpl
 import cz.zcu.jsmahy.datamining.api.DataNode
 import cz.zcu.jsmahy.datamining.api.DataNodeFactory
 import cz.zcu.jsmahy.datamining.api.JSONDataNodeSerializationUtils
 import cz.zcu.jsmahy.datamining.api.Mocks
-import javafx.application.Platform
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -118,7 +117,7 @@ class FialaBPExportSpecification extends Specification {
     def "Persistence test"() {
         given:
         // we have to start up the JavaFX toolkit because the
-        Platform.startup(() -> { })
+        PlatformImpl.startup(() -> { }, false)
 
     }
 

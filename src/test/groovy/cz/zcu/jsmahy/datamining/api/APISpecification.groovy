@@ -2,12 +2,12 @@ package cz.zcu.jsmahy.datamining.api
 
 import com.google.inject.Guice
 import com.google.inject.Injector
+import com.sun.javafx.application.PlatformImpl
 import javafx.application.Platform
 import javafx.event.Event
 import javafx.event.EventDispatchChain
 import javafx.event.EventType
 import org.yaml.snakeyaml.parser.ParserException
-import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -46,7 +46,6 @@ class APISpecification extends Specification {
         def taskProvider = Mock(SparqlEndpointTaskProvider)
         def task = Mock(SparqlEndpointTask)
         task.call() >> {
-            Thread.sleep(30_000)
             null
         }
         // need to mock dispatch chain because some internals use the dispatch event method and it does not expect it
@@ -70,6 +69,14 @@ class APISpecification extends Specification {
     def "Should throw IAE if the query is blank"() {
         when:
         new DefaultSparqlEndpointTask(" ", nodeFactory.newRoot("Root"), config, Mock(RequestProgressListener))
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
+    def "Should throw IAE if the data node is not root"() {
+        when:
+        new DefaultSparqlEndpointTask(" ", nodeFactory.newNode(nodeFactory.newRoot("Root")), config, Mock(RequestProgressListener))
 
         then:
         thrown(IllegalArgumentException)
@@ -360,13 +367,25 @@ class APISpecification extends Specification {
         noExceptionThrown()
     }
 
-    @Ignore("Requires JavaFX Platform")
     def "Should create a task via task provider when background service is started"() {
         given:
-        Platform.startup {}
-        def svc = endpointAgent.createBackgroundQueryService("queryTest", _ as DataNode)
+        PlatformImpl.startup(() -> { }, false)
+        def svc = endpointAgent.createBackgroundQueryService("queryTest", nodeFactory.newRoot("Root"))
         when:
-        svc.start()
+        svc.restart()
+        def running = false
+        def start = System.currentTimeSeconds()
+        // need to do this on the FX UI thread, #isRunning calls #checkThread
+        Platform.runLater(() -> {
+            while (!svc.running && System.currentTimeSeconds() - start < 5) {
+                // no-op
+            }
+            running = true
+        })
+        // spinlock for at most 5 seconds
+        while (!running && System.currentTimeSeconds() - start < 5) {
+            // no-op
+        }
 
         then:
         noExceptionThrown()
@@ -421,6 +440,7 @@ class APISpecification extends Specification {
         serializer.serialize(new FileOutputStream(outFile), getStubRoot())
 
         then:
+        serializer.fileExtension == "json" // just for the coverage
         noExceptionThrown()
     }
 
@@ -443,6 +463,56 @@ class APISpecification extends Specification {
         println node
 
         then:
+        deserializer.acceptedFileExtensions[0] == 'json' // just for the coverage
         noExceptionThrown()
+    }
+
+    def "Response resolver test"() {
+        given:
+        def responseResolver = new DefaultResponseResolver() {
+            @Override
+            protected void resolveInternal(final Object inputMetadata, final SparqlEndpointTask requestHandler) {
+                result.addMetadata("TestKey", "TestValue")
+                markResponseReady()
+                requestHandler.unlockDialogPane()
+            }
+        }
+        def task = Mock(SparqlEndpointTask)
+        task.unlockDialogPane() >> {} // do nothing
+
+        when:
+        responseResolver.resolve(_ as Object, task)
+
+        then:
+        responseResolver.hasResponseReady()
+        responseResolver.hasResponseReadyProperty().get()
+
+        when:
+        def response = responseResolver.getResponse()
+
+        then:
+        notThrown(IllegalStateException) // there is a response
+        response.hasMetadataKey("TestKey")
+        response.getValue("TestKey").isPresent()
+    }
+
+    def "Should throw ISE if resolve was not called"() {
+        given:
+        def responseResolver = new DefaultResponseResolver() {
+            @Override
+            protected void resolveInternal(final Object inputMetadata, final SparqlEndpointTask requestHandler) {
+                result.addMetadata("TestKey", "TestValue")
+                markResponseReady()
+                requestHandler.unlockDialogPane()
+            }
+        }
+        def task = Mock(SparqlEndpointTask)
+        task.unlockDialogPane() >> {} // do nothing
+
+        when:
+        responseResolver.getResponse()
+
+        then:
+        thrown(IllegalStateException)
     }
 }
