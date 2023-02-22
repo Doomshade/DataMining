@@ -8,6 +8,7 @@ import javafx.event.Event
 import javafx.event.EventDispatchChain
 import javafx.event.EventType
 import org.yaml.snakeyaml.parser.ParserException
+import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -367,6 +368,7 @@ class APISpecification extends Specification {
         noExceptionThrown()
     }
 
+    @Ignore("Requires JavaFX Runtime")
     def "Should create a task via task provider when background service is started"() {
         given:
         PlatformImpl.startup(() -> { }, false)

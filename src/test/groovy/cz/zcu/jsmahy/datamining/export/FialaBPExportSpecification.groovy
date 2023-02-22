@@ -6,6 +6,7 @@ import cz.zcu.jsmahy.datamining.api.DataNode
 import cz.zcu.jsmahy.datamining.api.DataNodeFactory
 import cz.zcu.jsmahy.datamining.api.JSONDataNodeSerializationUtils
 import cz.zcu.jsmahy.datamining.api.Mocks
+import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -114,6 +115,7 @@ class FialaBPExportSpecification extends Specification {
         }
     }
 
+    @Ignore("Requires JavaFX Runtime")
     def "Persistence test"() {
         given:
         // we have to start up the JavaFX toolkit because the
