@@ -1,14 +1,11 @@
 package cz.zcu.jsmahy.datamining.app.controller;
 
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Module;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import cz.zcu.jsmahy.datamining.Main;
 import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.app.controller.cell.MetadataValueCellFactory;
 import cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory;
-import cz.zcu.jsmahy.datamining.dbpedia.DBPediaModule;
-import cz.zcu.jsmahy.datamining.export.FialaBPModule;
 import cz.zcu.jsmahy.datamining.util.RDFNodeUtil;
 import cz.zcu.jsmahy.datamining.util.SearchDialog;
 import javafx.application.Platform;
@@ -25,7 +22,6 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Service;
-import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
@@ -43,15 +39,10 @@ import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
-import java.io.UncheckedIOException;
 import java.net.URL;
 import java.util.*;
 import java.util.function.Predicate;
 
-import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_RDF_NODE;
 
 /**
@@ -61,14 +52,8 @@ import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_RDF_NODE;
  * @author Jakub Šmrha
  * @version 1.0
  */
+@Singleton
 public class MainController implements Initializable, SparqlQueryServiceHolder {
-    public static final String FILE_NAME_FORMAT = "%s.%s";
-    // this could be loaded as a service someday :)
-    // we'll basically ask for a module implementation to provide
-    // this is VERY not needed
-    private static final Module[] MODULES = new Module[] {
-            new DataMiningModule(), new DBPediaModule(), new FialaBPModule()
-    };
     private static final String WIKI_URL = "https://wikipedia.org/wiki/%s";
     private static final Logger LOGGER = LogManager.getLogger(MainController.class);
     @FXML
@@ -81,6 +66,7 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
     private WebView wikiPageWebView;
     @FXML
     private ProgressIndicator progressIndicator;
+    @Inject
     private DataNodeFactory nodeFactory;
     private final EventHandler<ActionEvent> createNewLineAction = e -> {
         final ResourceBundle lang = ResourceBundle.getBundle("lang");
@@ -107,9 +93,17 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
     };
     @FXML
     private TreeTableView<Map.Entry<String, Object>> metadataTableView;
+    @Inject
     private SparqlEndpointAgent<Void> requestHandler;
-    private Injector injector;
+    @Inject
+    private RequestProgressListener progressListener;
+    @Inject
+    private DataNodeSerializer serializer;
     private boolean bound = false;
+
+    public MainController() {
+
+    }
 
     private static ObservableValue<Object> valueColumnFactory(final TreeTableColumn.CellDataFeatures<Map.Entry<String, Object>, Object> features) {
         // need to map values better
@@ -118,13 +112,10 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
                                                   .getValue());
     }
 
+
     @Override
     @SuppressWarnings("unchecked")
     public void initialize(final URL location, final ResourceBundle resources) {
-        this.injector = Guice.createInjector(MODULES);
-        this.nodeFactory = injector.getInstance(DataNodeFactory.class);
-        this.requestHandler = injector.getInstance(SparqlEndpointAgent.class);
-
         // sets up menu bar
         final MenuBar menuBar = createMenuBar(resources);
         this.rootPane.setTop(menuBar);
@@ -150,7 +141,6 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
                 event.consume();
             }
         });
-        final RequestProgressListener progressListener = injector.getInstance(RequestProgressListener.class);
         progressListener.treeRootProperty()
                         .set(ontologyTreeView.getRoot());
         this.ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory(resources,
@@ -253,48 +243,8 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
                                                            .divide((double) dataNodeRoots.size());
             bindProperties(runningProperty, progressProperty);
 
-            final DataNodeSerializer serializer = injector.getInstance(DataNodeSerializer.class);
             for (final TreeItem<DataNode> root : dataNodeRoots) {
-                final DataNode dataNodeRoot = root.getValue();
-                final OutputStream out;
-                try {
-                    final String fileName = dataNodeRoot.getValue(METADATA_KEY_NAME, "<no name>");
-                    String fileExtension = serializer.getFileExtension();
-                    if (fileExtension == null) {
-                        fileExtension = DataNodeSerializer.DEFAULT_FILE_EXTENSION;
-                    }
-                    //noinspection resource
-                    out = new FileOutputStream(String.format(FILE_NAME_FORMAT, fileName, fileExtension));
-                } catch (FileNotFoundException ex) {
-                    throw new UncheckedIOException(ex);
-                }
-                final Service<Void> dataNodeSerializationTask = new Service<>() {
-                    @Override
-                    protected Task<Void> createTask() {
-                        return new Task<>() {
-                            @Override
-                            protected Void call() throws Exception {
-                                serializer.serialize(out, dataNodeRoot);
-                                return null;
-                            }
-                        };
-                    }
-                };
-                dataNodeSerializationTask.setOnRunning(ev -> services.add(dataNodeSerializationTask));
-                dataNodeSerializationTask.setOnSucceeded(ev -> {
-                    removedServices.add(dataNodeSerializationTask);
-                    services.remove(dataNodeSerializationTask);
-                });
-                dataNodeSerializationTask.setOnCancelled(ev -> {
-                    removedServices.add(dataNodeSerializationTask);
-                    services.remove(dataNodeSerializationTask);
-                });
-                dataNodeSerializationTask.setOnFailed(ev -> {
-                    LOGGER.throwing(dataNodeSerializationTask.getException());
-                    removedServices.add(dataNodeSerializationTask);
-                    services.remove(dataNodeSerializationTask);
-                });
-                dataNodeSerializationTask.start();
+                serializer.exportRoot(root.getValue(), services, removedServices);
             }
         });
         exportToFile.setAccelerator(KeyCombination.keyCombination("ALT + E"));

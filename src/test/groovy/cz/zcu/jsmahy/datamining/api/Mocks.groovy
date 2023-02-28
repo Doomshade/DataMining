@@ -9,10 +9,12 @@ class Mocks {
     Module module() {
         def config = mockFactory.Mock(ApplicationConfiguration.class)
         def taskProvider = mockFactory.Mock(SparqlEndpointTaskProvider.class)
-        module(config, taskProvider)
+        def requestProgressListener = mockFactory.Mock(RequestProgressListener.class)
+        def dataNodeSerializer = mockFactory.Mock(DataNodeSerializer.class)
+        module(config, taskProvider, requestProgressListener, dataNodeSerializer)
     }
 
-    Module module(ApplicationConfiguration config, SparqlEndpointTaskProvider<?> taskProvider) {
+    Module module(ApplicationConfiguration config, SparqlEndpointTaskProvider<?> taskProvider, RequestProgressListener requestProgressListener, DataNodeSerializer dataNodeSerializer) {
         new DataMiningModule() {
             @Override
             protected void configure() {
@@ -23,6 +25,8 @@ class Mocks {
                 // don't ask me how this works exactly because I don't know myself, but leave it as is so the test run
                 bind(DefaultApplicationConfiguration.class).toInstance(config)
                 bind(SparqlEndpointTaskProvider.class).toInstance(taskProvider)
+                bind(RequestProgressListener.class).toInstance(requestProgressListener)
+                bind(DataNodeSerializer.class).toInstance(dataNodeSerializer)
             }
         }
     }

@@ -5,14 +5,14 @@ import cz.zcu.jsmahy.datamining.api.DataNodeDeserializer;
 import cz.zcu.jsmahy.datamining.api.DataNodeSerializer;
 import cz.zcu.jsmahy.datamining.api.RequestProgressListener;
 
-import static com.google.inject.Scopes.SINGLETON;
-
 public class FialaBPModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(RequestProgressListener.class).to(FialaBPRequestProgressListener.class)
-                                           .in(SINGLETON);
-        bind(DataNodeSerializer.class).to(FialaBPSerializer.class);
-        bind(DataNodeDeserializer.class).to(FialaBPDeserializer.class);
+                                           .asEagerSingleton();
+        bind(DataNodeSerializer.class).to(FialaBPSerializer.class)
+                                      .asEagerSingleton();
+        bind(DataNodeDeserializer.class).to(FialaBPDeserializer.class)
+                                        .asEagerSingleton();
     }
 }
