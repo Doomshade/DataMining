@@ -40,6 +40,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.net.URL;
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -112,6 +113,22 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
                                                   .getValue());
     }
 
+    private static void alertExportSuccess() {
+        final Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setHeaderText("");
+        alert.setContentText("Vše úspěšně exportováno.");
+        alert.show();
+    }
+
+    private static void alertExportFailed(final ObservableList<DataNode> dataNodeRoots) {
+        final Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setHeaderText("");
+        alert.setContentText(MessageFormat.format("Nepodařilo se vše exportovat: ''{0}''.",
+                                                  Arrays.toString(dataNodeRoots.stream()
+                                                                               .map(x -> x.getValue(DataNode.METADATA_KEY_NAME, "<no name>"))
+                                                                               .toArray())));
+        alert.show();
+    }
 
     @Override
     @SuppressWarnings("unchecked")
@@ -152,7 +169,8 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
                                                                                                 .getSelectedItems()
                                                                                                 .stream()
                                                                                                 .map(TreeItem::getValue)
-                                                                                                .toList()));
+                                                                                                .toList(),
+                                                                          serializer));
 
 
         final ContextMenu contextMenu = createContextMenu(resources);
@@ -203,18 +221,15 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
         final MenuBar menuBar = new MenuBar();
         final String lineMenuText = resources.getString("line");
         final Menu lineMenu = new Menu(lineMenuText);
-        final MenuItem newLineMenuItem = new MenuItem();
-        final String newLineMenuText = resources.getString("create-new-line");
-        newLineMenuItem.setText(newLineMenuText);
-        newLineMenuItem.setAccelerator(KeyCombination.keyCombination("CTRL + N"));
-        newLineMenuItem.setOnAction(createNewLineAction);
+        final MenuItem newLineMenuItem = createAddNewLineMenuItem(resources);
         lineMenu.getItems()
                 .addAll(newLineMenuItem);
 
         final Menu fileMenu = new Menu(resources.getString("file"));
         fileMenu.setMnemonicParsing(true);
 
-        final MenuItem exportToFile = new MenuItem(resources.getString("export"));
+        final String newLineMenuText = resources.getString("create-new-line");
+        final MenuItem exportToFile = new MenuItem(resources.getString("export-all"));
         exportToFile.setOnAction(e -> {
             final ObservableList<TreeItem<DataNode>> dataNodeRoots = ontologyTreeView.getRoot()
                                                                                      .getChildren();
@@ -237,6 +252,7 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
 
             final ObservableList<Service<?>> services = FXCollections.observableArrayList();
             final ObservableList<Service<?>> removedServices = FXCollections.observableArrayList();
+            final ObservableList<DataNode> failedNodes = FXCollections.observableArrayList();
             final BooleanBinding runningProperty = Bindings.size(services)
                                                            .greaterThan(0);
             final DoubleBinding progressProperty = Bindings.size(removedServices)
@@ -244,7 +260,12 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
             bindProperties(runningProperty, progressProperty);
 
             for (final TreeItem<DataNode> root : dataNodeRoots) {
-                serializer.exportRoot(root.getValue(), services, removedServices);
+                serializer.exportRoot(root.getValue(), services, removedServices, failedNodes);
+            }
+            if (!failedNodes.isEmpty()) {
+                alertExportFailed(failedNodes);
+            } else {
+                alertExportSuccess();
             }
         });
         exportToFile.setAccelerator(KeyCombination.keyCombination("ALT + E"));

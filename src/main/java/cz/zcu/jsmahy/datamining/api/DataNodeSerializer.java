@@ -36,10 +36,10 @@ public interface DataNodeSerializer {
         }
     }
 
-    private static void alertFileExists(final AtomicReference<Response> ref, final String filename) {
+    private static void alertFileExists(final AtomicReference<Response> ref, final String lineName) {
         final Alert alert = new Alert(Alert.AlertType.WARNING);
         alert.setHeaderText("");
-        alert.setContentText(MessageFormat.format("Přejete si smazat {0}?", filename));
+        alert.setContentText(MessageFormat.format("Přejete si přepsat ''{0}''?", lineName));
         final ObservableList<ButtonType> buttonTypes = alert.getButtonTypes();
         buttonTypes.clear();
         buttonTypes.addAll(ButtonType.YES, ButtonType.NO);
@@ -54,21 +54,78 @@ public interface DataNodeSerializer {
         }
     }
 
+    private static void alertExportSuccess(final DataNode dataNodeRoot, final File exportedFile) {
+        final Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setHeaderText("");
+        alert.setContentText(MessageFormat.format("Úspěšně exportováno ''{0}''. Soubor: ''{1}''", dataNodeRoot.getValue(METADATA_KEY_NAME, "<no name>"), exportedFile));
+        alert.show();
+    }
+
+    private static void alertExportFailed(final DataNode dataNodeRoot) {
+        alertExportFailed(dataNodeRoot, null);
+    }
+
+    private static void alertExportFailed(final DataNode dataNodeRoot, final Throwable throwable) {
+        final Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setHeaderText("");
+        alert.setContentText(MessageFormat.format("Nepodařilo se exportovat ''{0}''.", dataNodeRoot.getValue(METADATA_KEY_NAME, "<no name>")));
+        if (throwable != null) {
+            alert.setContentText(alert.getContentText()
+                                      .concat("Výjimka: \n" + throwable));
+        }
+        alert.show();
+    }
+
+    private static void alertCouldNotCreateFolder(final File folder) {
+        final Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setHeaderText("");
+        alert.setContentText(MessageFormat.format("Nepodařilo se vytvořit adresář ''{0}'' (bez výjimky)", folder));
+        alert.showAndWait();
+    }
+
+    private static void alertCouldNotGetCwd(final File folder) {
+        final Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setHeaderText("");
+        alert.setContentText(MessageFormat.format("Nepodařilo se vybrat aktuální adresář ''{0}''. Něco je špatně...", folder));
+        alert.showAndWait();
+    }
+
     /**
      * Exports the root.
      *
      * @param dataNodeRoot     the root
      * @param runningServices  the running services ref. if either ref is null no progress is added
      * @param finishedServices the finished services ref
+     * @param failedNodes      the failed services
      */
-    default void exportRoot(final DataNode dataNodeRoot, @Nullable final ObservableList<Service<?>> runningServices, @Nullable final ObservableList<Service<?>> finishedServices) {
+    default void exportRoot(final DataNode dataNodeRoot,
+                            @Nullable final ObservableList<Service<?>> runningServices,
+                            @Nullable final ObservableList<Service<?>> finishedServices,
+                            @Nullable final ObservableList<DataNode> failedNodes) {
         // yeah... we actually don't really need it to run on the application thread
         // but this makes it much easier to build alerts with responses
         if (!Platform.isFxApplicationThread()) {
             throw new IllegalStateException("Root export must be called on JavaFX application thread but was: " + Thread.currentThread());
         }
 
+        File folder = new File("export");
+        if (!folder.isDirectory()) {
+            if (!folder.mkdirs()) {
+                alertCouldNotCreateFolder(folder);
+                try {
+                    folder = Paths.get("")
+                                  .toFile();
+                } catch (Exception ex) {
+                    alertCouldNotGetCwd(folder);
+                    Platform.exit();
+                    System.exit(1);
+                    throw new RuntimeException(ex);
+                }
+            }
+        }
+
         final OutputStream out;
+        final File file;
         try {
             final String nodeName = dataNodeRoot.getValue(METADATA_KEY_NAME, "<no name>");
             String fileExtension = getFileExtension();
@@ -89,11 +146,11 @@ public interface DataNodeSerializer {
                 return;
             }
 
-            final File file = new File(filename);
+            file = new File(folder, filename);
             if (file.exists()) {
                 // residuum after some multithreading madness
                 final AtomicReference<Response> ref = new AtomicReference<>();
-                alertFileExists(ref, filename);
+                alertFileExists(ref, nodeName);
 
                 final Response response = ref.get();
                 if (response == Response.NO) {
@@ -107,7 +164,7 @@ public interface DataNodeSerializer {
             }
 
             //noinspection resource
-            out = new FileOutputStream(filename);
+            out = new FileOutputStream(file);
         } catch (FileNotFoundException ex) {
             throw new UncheckedIOException(ex);
         }
@@ -125,7 +182,9 @@ public interface DataNodeSerializer {
         };
         dataNodeSerializationTask.setOnFailed(ev -> LOGGER.throwing(dataNodeSerializationTask.getException()));
 
-        if (runningServices == null || finishedServices == null) {
+        if (runningServices == null || finishedServices == null || failedNodes == null) {
+            dataNodeSerializationTask.start();
+            dataNodeSerializationTask.setOnSucceeded(ev -> alertExportSuccess(dataNodeRoot, file));
             return;
         }
         dataNodeSerializationTask.setOnRunning(ev -> runningServices.add(dataNodeSerializationTask));
@@ -134,25 +193,27 @@ public interface DataNodeSerializer {
             runningServices.remove(dataNodeSerializationTask);
         });
         dataNodeSerializationTask.setOnCancelled(ev -> {
+            alertExportFailed(dataNodeRoot);
             finishedServices.add(dataNodeSerializationTask);
             runningServices.remove(dataNodeSerializationTask);
         });
         dataNodeSerializationTask.setOnFailed(ev -> {
             dataNodeSerializationTask.getOnFailed()
                                      .handle(ev);
+            alertExportFailed(dataNodeRoot, dataNodeSerializationTask.getException());
+            failedNodes.add(dataNodeRoot);
             finishedServices.add(dataNodeSerializationTask);
             runningServices.remove(dataNodeSerializationTask);
         });
-        dataNodeSerializationTask.start();
     }
 
     /**
-     * Calls {@link #exportRoot(DataNode, ObservableList, ObservableList)} with both lists as {@code null}.
+     * Calls {@link #exportRoot(DataNode, ObservableList, ObservableList, ObservableList)} with all lists as {@code null}.
      *
-     * @see #exportRoot(DataNode, ObservableList, ObservableList)
+     * @see #exportRoot(DataNode, ObservableList, ObservableList, ObservableList)
      */
     default void exportRoot(final DataNode dataNodeRoot) {
-        exportRoot(dataNodeRoot, null, null);
+        exportRoot(dataNodeRoot, null, null, null);
     }
 
     /**
@@ -165,7 +226,7 @@ public interface DataNodeSerializer {
     void serialize(OutputStream out, DataNode root) throws IOException;
 
     /**
-     * @return The file extension. If this is {@code null} the extension defaults to {@link DataNodeSerializer#DEFAULT_FILE_EXTENSION}
+     * @return The file extension. If this is {@code null} you may default the extension to {@link DataNodeSerializer#DEFAULT_FILE_EXTENSION}.
      */
     String getFileExtension();
 

@@ -42,7 +42,8 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
                               final DataNodeFactory nodeFactory,
                               final SparqlEndpointAgent<?> requestHandler,
                               final RequestProgressListener progressListener,
-                              final Supplier<Collection<DataNode>> selectedItemSupplier) {
+                              final Supplier<Collection<DataNode>> selectedItemSupplier,
+                              final DataNodeSerializer serializer) {
         emptyProperty().addListener((obs, wasEmpty, isNowEmpty) -> {
             if (isNowEmpty) {
                 setContextMenu(null);
@@ -54,13 +55,13 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
             final MenuItem searchItem = buildSearchItem(resources, requestHandler, serviceHolder);
             final MenuItem addRestrictionItem = buildAddRestrictionItem(resources);
 //            final MenuItem addItem = buildAddItem(resources);
-            final MenuItem editItem = buildEditItem(resources);
+            final MenuItem exportItem = buildExportItem(resources, serializer);
             final MenuItem deleteItem = buildDeleteItem(resources, progressListener, selectedItemSupplier);
             final MenuItem newLineItem = buildNewLineItem(resources, nodeFactory, requestHandler, serviceHolder, progressListener);
             final MenuItem continueLineItem = buildContinueLineItem(resources);
             final ObservableList<MenuItem> items = contextMenu.getItems();
             if (getItem().isRoot()) {
-                items.addAll(searchItem, addRestrictionItem, editItem, deleteItem);
+                items.addAll(searchItem, addRestrictionItem, exportItem, deleteItem);
             } else {
                 items.addAll(newLineItem, continueLineItem, deleteItem);
             }
@@ -156,10 +157,13 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
         return menuItem;
     }
 
-    private MenuItem buildEditItem(final ResourceBundle resources) {
-        final MenuItem menuItem = new MenuItem(resources.getString("edit"));
-        menuItem.setOnAction(event -> getTreeView().edit(getTreeView().getSelectionModel()
-                                                                      .getSelectedItem()));
+    private MenuItem buildExportItem(final ResourceBundle resources, final DataNodeSerializer serializer) {
+        final MenuItem menuItem = new MenuItem(resources.getString("export"));
+        menuItem.setOnAction(event -> {
+            final DataNode item = getItem();
+            assert item.isRoot();
+            serializer.exportRoot(item);
+        });
         menuItem.setAccelerator(KeyCombination.keyCombination("CTRL + E"));
         return menuItem;
     }
