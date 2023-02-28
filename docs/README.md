@@ -13,11 +13,5 @@
     - Windows cmd: `gradlew run`
     - Linux bash / Windows PowerShell: `./gradlew run`
 
-## Tools used
-
-- [JavaFX 17](https://openjfx.io/)
-- [JFoenix](https://github.com/sshahine/JFoenix)
-- [Apache Jena](https://jena.apache.org/)
-
 ---
-<div style="text-align: right;"><i>Jakub Šmrha's Bachelor's work</i></div>
+_This is a project for Bachelor's work_
