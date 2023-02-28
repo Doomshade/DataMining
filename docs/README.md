@@ -1,7 +1,4 @@
-<div style="text-align: center;">
-<h1>Automatická těžba dat z veřejných zdrojů pro vizualizaci</h1>
-<i>Automated data mining from public sources for visualisation</i>
-</div>
+# Automated data mining from public sources for visualisation
 
 ![build](https://github.com/Doomshade/DataMining/actions/workflows/gradle.yml/badge.svg)
 [![JDK-17+](https://upload.wikimedia.org/wikipedia/commons/b/bd/Blue_JDK_17%2B_Shield_Badge.svg)](https://adoptium.net)
