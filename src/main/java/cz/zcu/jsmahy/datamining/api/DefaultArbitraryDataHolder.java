@@ -1,6 +1,7 @@
 package cz.zcu.jsmahy.datamining.api;
 
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import org.jetbrains.annotations.Contract;
 
 import java.util.*;
@@ -12,6 +13,7 @@ import java.util.*;
  * @since 1.0
  */
 @EqualsAndHashCode
+@ToString
 public class DefaultArbitraryDataHolder implements ArbitraryDataHolder {
     protected final Map<String, Object> metadata;
 
@@ -71,10 +73,5 @@ public class DefaultArbitraryDataHolder implements ArbitraryDataHolder {
     @Override
     public void clearMetadata() {
         this.metadata.clear();
-    }
-
-    @Override
-    public String toString() {
-        return metadata.toString();
     }
 }

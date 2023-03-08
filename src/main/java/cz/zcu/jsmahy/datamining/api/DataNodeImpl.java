@@ -19,7 +19,8 @@ import java.util.function.BiConsumer;
 @EqualsAndHashCode(callSuper = false,
                    doNotUseGetters = true)
 @ToString(doNotUseGetters = true,
-          exclude = "parent")
+          exclude = "parent",
+          callSuper = true)
 final class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
     private static final Logger LOGGER = LogManager.getLogger(DataNodeImpl.class);
     private static long ID_SEQ = 0;

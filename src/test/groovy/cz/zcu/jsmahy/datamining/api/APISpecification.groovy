@@ -432,6 +432,45 @@ class APISpecification extends Specification {
         p1
     }
 
+//    def "Persistence test"() {
+//        given:
+//        def serializedRoot = nodeFactory.newRoot("Test root")
+//        def deserializedRoot
+//
+//        nodeFactory.newNode(serializedRoot, "A")
+//        def b = nodeFactory.newNode(serializedRoot, "B")
+//        b.addMetadata("key", "value")
+//
+//        // only did this because the linter complained when we made it in a single method lol
+//        def inner2 = Map.of("C", new GregorianCalendar())
+//        def inner = Map.of("B", inner2)
+//        def value = Map.of("A", inner)
+//        b.addMetadata("key", value)
+//        nodeFactory.newNode(serializedRoot, "C")
+//        nodeFactory.newNode(serializedRoot, "D")
+//
+//        def lock = new Object()
+//        def file = new File("test.json")
+//        if (!file.exists()) {
+//            file.createNewFile()
+//        }
+//
+//        def serializer = new JSONDataNodeSerializer(utils)
+//        def deserializer = new JSONDataNodeDeserializer(utils)
+//
+//        when:
+//        synchronized (lock) {
+//            serializer.serialize(new FileOutputStream(outFile), getStubRoot())
+//            serializer.call()
+//            deserializedRoot = deserializer.call()
+//        }
+//
+//        println serializedRoot
+//        println deserializedRoot
+//        then:
+//        serializedRoot.toString() == deserializedRoot.toString()
+//    }
+
     def "Serializer Test"() {
         given:
         def outFile = new File("test.json")
