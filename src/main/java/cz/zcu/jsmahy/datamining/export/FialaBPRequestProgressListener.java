@@ -45,9 +45,7 @@ public class FialaBPRequestProgressListener implements RequestProgressListener {
         for (final TreeItem<DataNode> child : currTreeItem.getChildren()) {
             final long childId = child.getValue()
                                       .getId();
-            LOGGER.trace("Checking ID {}", childId);
             if (childId == dataNode.getId()) {
-                LOGGER.trace("Found ID {}. Terminating.", childId);
                 ref.set(child);
                 return;
             }
@@ -130,7 +128,7 @@ public class FialaBPRequestProgressListener implements RequestProgressListener {
         // TODO: let user set this stereotype, but default to person
         curr.addMetadata(METADATA_KEY_STEREOTYPE, METADATA_DEFAULT_STEREOTYPE);
         // TODO: let user choose the date type, but default to day
-        curr.addMetadata(METADATA_KEY_PROPERTIES, METADATA_DEFAULT_PROPERTIES);
+        curr.addMetadata(METADATA_KEY_PROPERTIES, new HashMap<>(METADATA_DEFAULT_PROPERTIES));
         // add relationships
         if (prev != null) {
             final List<ArbitraryDataHolder> relationships = curr.getValue(METADATA_KEY_RELATIONSHIPS, new ArrayList<>());

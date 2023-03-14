@@ -129,9 +129,10 @@ public class MetadataValueCellFactory extends TreeTableCell<Map.Entry<String, Ob
 
     private void alertInvalidValue() {
         final Alert alert = new Alert(Alert.AlertType.ERROR);
+        // TODO: Resource bundle
         alert.setTitle("Invalid value");
         alert.setHeaderText("Could not convert the value");
-        alert.setContentText("The value you provided could not be converted to the original type. Make sure you follow the pattern");
+        alert.setContentText("The value you provided could not be converted to the original type. Make sure you follow the value pattern!");
         alert.show();
     }
 

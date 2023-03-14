@@ -45,6 +45,7 @@ import java.util.*;
 import java.util.function.Predicate;
 
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_RDF_NODE;
+import static cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory.SEARCH_ACCELERATOR;
 
 /**
  * <p>The controller for main UI where user builds the ontology.</p>
@@ -55,8 +56,12 @@ import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_RDF_NODE;
  */
 @Singleton
 public class MainController implements Initializable, SparqlQueryServiceHolder {
+    public static final KeyCombination NEW_LINE_ACCELERATOR = KeyCombination.keyCombination("CTRL + N");
+    public static final KeyCombination EXPORT_ALL_ACCELERATOR = KeyCombination.keyCombination("ALT + E");
     private static final String WIKI_URL = "https://wikipedia.org/wiki/%s";
     private static final Logger LOGGER = LogManager.getLogger(MainController.class);
+    @FXML
+    private Label leftPanePlaceholder;
     @FXML
     private HBox leftPane;
     @FXML
@@ -100,11 +105,6 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
     private RequestProgressListener progressListener;
     @Inject
     private DataNodeSerializer serializer;
-    private boolean bound = false;
-
-    public MainController() {
-
-    }
 
     private static ObservableValue<Object> valueColumnFactory(final TreeTableColumn.CellDataFeatures<Map.Entry<String, Object>, Object> features) {
         // need to map values better
@@ -158,8 +158,8 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
                 event.consume();
             }
         });
-        progressListener.treeRootProperty()
-                        .set(ontologyTreeView.getRoot());
+        this.progressListener.treeRootProperty()
+                             .set(ontologyTreeView.getRoot());
         this.ontologyTreeView.setCellFactory(lv -> new RDFNodeCellFactory(resources,
                                                                           this,
                                                                           nodeFactory,
@@ -203,12 +203,33 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
         VBox.setVgrow(ontologyTreeView, Priority.ALWAYS);
         this.metadataTableView.setRoot(new TreeItem<>());
         this.metadataTableView.setShowRoot(false);
+
         this.ontologyTreeView.getSelectionModel()
                              .selectedItemProperty()
                              .addListener(new TreeViewAndMetadataBinder(entry -> {
                                  final String key = entry.getKey();
                                  return !key.equals(METADATA_KEY_RDF_NODE);
                              }));
+        final BooleanBinding emptyTreeProperty = Bindings.isEmpty(ontologyTreeView.getRoot()
+                                                                                  .getChildren());
+        this.ontologyTreeView.disableProperty()
+                             .bind(emptyTreeProperty);
+
+        this.leftPanePlaceholder.visibleProperty()
+                                .bind(emptyTreeProperty);
+        final Label metadataPlaceholder = new Label("Vyberte prvek ze seznamu");
+        this.metadataTableView.setPlaceholder(metadataPlaceholder);
+        this.ontologyTreeView.getRoot()
+                             .getChildren()
+                             .addListener((InvalidationListener) observable -> metadataTableView.refresh());
+        metadataPlaceholder.textProperty()
+                           .bind(Bindings.createStringBinding(() -> {
+                               if (emptyTreeProperty.get()) {
+                                   return null;
+                               }
+                               return "Vyberte prvek ze seznamu";
+                           }, emptyTreeProperty));
+        this.leftPanePlaceholder.setText("Zmáčkněte " + NEW_LINE_ACCELERATOR.getDisplayText() + " pro novou linii");
     }
 
     private ContextMenu createContextMenu(final ResourceBundle resources) {
@@ -238,11 +259,8 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
                     final Alert alert = new Alert(Alert.AlertType.ERROR);
                     alert.setTitle(resources.getString("nothing-to-export-dialog-title"));
                     alert.setHeaderText(resources.getString("nothing-to-export-dialog-header"));
-                    final StringExpression content = Bindings.format(resources.getString("nothing-to-export-dialog-content"),
-                                                                     newLineMenuItem.getAccelerator()
-                                                                                    .getName(),
-                                                                     lineMenuText,
-                                                                     newLineMenuText);
+                    final StringExpression content =
+                            Bindings.format(resources.getString("nothing-to-export-dialog-content"), NEW_LINE_ACCELERATOR.getName(), lineMenuText, newLineMenuText);
                     alert.contentTextProperty()
                          .bind(content);
                     alert.show();
@@ -268,7 +286,7 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
                 alertExportSuccess();
             }
         });
-        exportToFile.setAccelerator(KeyCombination.keyCombination("ALT + E"));
+        exportToFile.setAccelerator(EXPORT_ALL_ACCELERATOR);
         fileMenu.getItems()
                 .addAll(exportToFile);
 
@@ -279,13 +297,11 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
             alert.setTitle(resources.getString("tool-usage"));
             alert.setHeaderText(resources.getString("tool-usage-header"));
             final StringExpression expr = Bindings.format(resources.getString("tool-usage-content"),
-                                                          newLineMenuItem.getAccelerator()
-                                                                         .getName(),
+                                                          NEW_LINE_ACCELERATOR.getName(),
                                                           lineMenuText,
                                                           newLineMenuText,
                                                           resources.getString("search"),
-                                                          KeyCombination.keyCombination("CTRL + H") // hard coded key combination, this could change. too bad!
-                                                                        .getName());
+                                                          SEARCH_ACCELERATOR.getName());
             alert.contentTextProperty()
                  .bind(expr);
 
@@ -311,7 +327,7 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
     private MenuItem createAddNewLineMenuItem(final ResourceBundle resources) {
         final MenuItem menuItem = new MenuItem();
         menuItem.setText(resources.getString("create-new-line"));
-        menuItem.setAccelerator(KeyCombination.keyCombination("CTRL + N"));
+        menuItem.setAccelerator(NEW_LINE_ACCELERATOR);
         menuItem.setOnAction(createNewLineAction);
         return menuItem;
     }
@@ -334,12 +350,11 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
                               .bind(runningProperty);
         this.progressIndicator.progressProperty()
                               .bind(progressProperty);
-        this.bound = true;
     }
 
     /**
-     * Callback for {@link SelectionModel#selectedItemProperty()} in the ontology list view. Displays the selected item in Wikipedia. The selected item must not be a root of any kind ({@link TreeItem}
-     * root nor {@link DataNode#isRoot()}
+     * Callback for {@link SelectionModel#selectedItemProperty()} in the ontology list view. Displays the selected item in Wikipedia. The selected item must not be a root of
+     * any kind ({@link TreeItem} root nor {@link DataNode#isRoot()}
      *
      * @param observable the observable that was invalidated. not used, it's here just because of the signature of {@link InvalidationListener#invalidated(Observable)} method
      */
@@ -363,16 +378,6 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
         final String url = String.format(WIKI_URL, formattedItem);
         LOGGER.trace("Loading web page with URL {}", url);
         engine.load(url);
-    }
-
-    public void unbindQueryService() {
-        this.rootPane.disableProperty()
-                     .unbind();
-        this.progressIndicator.visibleProperty()
-                              .unbind();
-        this.progressIndicator.progressProperty()
-                              .unbind();
-        this.bound = false;
     }
 
     private class TreeViewAndMetadataBinder implements ChangeListener<TreeItem<DataNode>> {
@@ -406,6 +411,7 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
                 return;
             }
 
+            final Map<Map<?, ?>, Boolean> seenMaps = new WeakHashMap<>();
             for (final Map.Entry<String, Object> entry : entrySet) {
                 if (!showPredicate.test(entry)) {
                     continue;
@@ -415,9 +421,34 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
                 children.add(treeItem);
 
                 // the entry is a Map<String, ?>, add the node to the newly created tree item
-                if (entryValue instanceof Map<?, ?> map && !map.isEmpty() && map.keySet()
-                                                                                .iterator()
-                                                                                .next() instanceof String) {
+                if (entryValue instanceof Map<?, ?> map) {
+                    if (!seenMaps.containsKey(map)) {
+                        seenMaps.put(map, false);
+                        // This is an ass way of checking the type of the K/V
+                        // Unfortunately there isn't a better way
+                        if (map.isEmpty()) {
+                            try {
+                                ((Map<String, Object>) map).put("", new Object());
+
+                                // if we get here the type is ok
+                                seenMaps.put(map, true);
+                            } catch (Exception ignored) {
+                                // type mismatch
+                            }
+                        } else {
+                            // The map has an entry, just check the key for a String value
+                            seenMaps.put(map,
+                                         map.keySet()
+                                            .iterator()
+                                            .next() instanceof String);
+                        }
+                    }
+
+                    if (!seenMaps.get(map)) {
+                        LOGGER.trace("Invalid map found, skipping. Map: {}", map);
+                        continue;
+                    }
+
                     LOGGER.trace("Found map value. Adding {} recursively to {}'s children", map, treeItem);
                     addMapsRecursively(treeItem.getChildren(), ((Map<String, Object>) map).entrySet(), depth + 1);
                 }
@@ -453,10 +484,10 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
                 final Set<Map.Entry<String, Object>> entrySet = dataNode.getMetadata()
                                                                         .entrySet();
                 final AbstractMap.SimpleEntry<String, Object> entry = new AbstractMap.SimpleEntry<>("id", dataNode.getId());
-                if (!showPredicate.test(entry)) {
-                    final TreeItem<Map.Entry<String, Object>> idRow = new TreeItem<>(entry);
-                    children.add(idRow);
-                }
+//                if (!showPredicate.test(entry)) {
+                final TreeItem<Map.Entry<String, Object>> idRow = new TreeItem<>(entry);
+                children.add(idRow);
+//                }
                 addMapsRecursively(children, entrySet);
             }
         }

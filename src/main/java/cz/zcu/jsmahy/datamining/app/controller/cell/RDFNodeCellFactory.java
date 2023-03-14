@@ -34,6 +34,10 @@ import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_URI;
  * @since 1.0
  */
 public class RDFNodeCellFactory extends TreeCell<DataNode> {
+    public static final KeyCombination SEARCH_ACCELERATOR = KeyCombination.keyCombination("CTRL + H");
+    public static final KeyCombination CONTINUE_LINE_ACCELERATOR = KeyCombination.keyCombination("CTRL + T");
+    public static final KeyCombination EXPORT_SINGLE_ACCELERATOR = KeyCombination.keyCombination("CTRL + E");
+    public static final KeyCombination ADD_RESTRICTION_ACCELERATOR = KeyCombination.keyCombination("CTRL + R");
     private static final Logger LOGGER = LogManager.getLogger(RDFNodeCellFactory.class);
     private TextField textField;
 
@@ -93,7 +97,7 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
         menuItem.setOnAction(event -> {
 
         });
-        menuItem.setAccelerator(KeyCombination.keyCombination("CTRL + T"));
+        menuItem.setAccelerator(CONTINUE_LINE_ACCELERATOR);
         return menuItem;
     }
 
@@ -153,7 +157,7 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
                   });
         };
         menuItem.setOnAction(actionEventEventHandler);
-        menuItem.setAccelerator(KeyCombination.keyCombination("CTRL + H"));
+        menuItem.setAccelerator(SEARCH_ACCELERATOR);
         return menuItem;
     }
 
@@ -164,7 +168,7 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
             assert item.isRoot();
             serializer.exportRoot(item);
         });
-        menuItem.setAccelerator(KeyCombination.keyCombination("CTRL + E"));
+        menuItem.setAccelerator(EXPORT_SINGLE_ACCELERATOR);
         return menuItem;
     }
 
@@ -173,7 +177,7 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
         menuItem.textProperty()
                 .bind(Bindings.format(resources.getString("ontology-prompt-add-restriction"), textProperty()));
 
-        menuItem.setAccelerator(KeyCombination.keyCombination("CTRL + R"));
+        menuItem.setAccelerator(ADD_RESTRICTION_ACCELERATOR);
         return menuItem;
     }
 
@@ -251,9 +255,13 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
 
             ////////////////////////////////////////////
             for (final DataNode selectedItem : selectedDataNodes) {
-                selectedItem.getParent()
-                            .getChildren()
-                            .remove(selectedItem);
+                // remove this item from its parent only for non-root data nodes
+                // root data nodes don't have a parent
+                if (!selectedItem.isRoot()) {
+                    selectedItem.getParent()
+                                .getChildren()
+                                .remove(selectedItem);
+                }
             }
             progressListener.onDeleteDataNodes(selectedDataNodes);
         });

@@ -50,12 +50,8 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
 
     @Inject
     @SuppressWarnings("unchecked, rawtypes")
-    public DBPediaEndpointTask(final String query,
-                               final DataNode dataNodeRoot,
-                               final ApplicationConfiguration config,
-                               final RequestProgressListener progressListener,
-                               final DataNodeFactory dataNodeFactory,
-                               final @Named("userAssisted") ResponseResolver ambiguousResultResolver,
+    public DBPediaEndpointTask(final String query, final DataNode dataNodeRoot, final ApplicationConfiguration config, final RequestProgressListener progressListener,
+                               final DataNodeFactory dataNodeFactory, final @Named("userAssisted") ResponseResolver ambiguousResultResolver,
                                final @Named("ontologyPathPredicate") ResponseResolver ontologyPathPredicateResolver,
                                final @Named("date") ResponseResolver startAndEndDateResolver) {
         super(query, dataNodeRoot, config, progressListener);
@@ -97,7 +93,11 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
             } else {
                 throw new ClassCastException("Inner date type is of unknown value: " + value);
             }
-            LOGGER.trace("Setting {} date (inner type: {}, actual date: {}) to {}", isStartDate ? "start" : "end", value, calendar, curr.getValue(METADATA_KEY_NAME, "<no name>"));
+            LOGGER.trace("Setting {} date (inner type: {}, actual date: {}) to {}",
+                         isStartDate ? "start" : "end",
+                         value,
+                         calendar,
+                         curr.getValue(METADATA_KEY_NAME, "<no name>"));
             if (isStartDate) {
                 curr.addMetadata(METADATA_KEY_START_DATE, calendar);
             } else {
@@ -119,7 +119,11 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         final QueryData inputMetadata = new QueryData();
         try {
             LOGGER.info("Requesting {} for initial information.", query);
+            long start = System.currentTimeMillis();
+            LOGGER.trace("Querying {}", query);
             model.read(query);
+            long end = System.currentTimeMillis() - start;
+            LOGGER.trace("Querying {} took {}ms", query, end);
             inputMetadata.setCurrentModel(model);
         } catch (HttpException e) {
             throw LOGGER.throwing(e);
@@ -366,10 +370,30 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         for (Statement stmt : statements) {
             RDFNode object = stmt.getObject();
             if (object.isURIResource()) {
-                model.read(object.asResource()
-                                 .getURI());
+                LOGGER.trace("Object is a URI resource, querying the resource");
+                long start = System.currentTimeMillis();
+                final String uri = object.asResource()
+                                         .getURI();
+                LOGGER.trace("Querying {}", uri);
+                model.read(uri);
+                long end = System.currentTimeMillis() - start;
+                LOGGER.trace("Querying {} took {}ms", uri, end);
+
+                final RDFNode priorToRedirect = object;
+                start = System.currentTimeMillis();
                 object = redirectIfPossible(object.asResource(), model);
-                // update the statement
+                end = System.currentTimeMillis() - start;
+                // If the objects do not equal we redirected to a different place
+                if (priorToRedirect != object) {
+                    final String actualUri = object.isURIResource() ?
+                                             " to " + object.asResource()
+                                                            .getURI() :
+                                             "";
+                    LOGGER.trace("Redirecting{} took {}ms", actualUri, end);
+                }
+
+                // Update the statement because we (possibly) received a new object
+                // TODO: This could be in the "if" above, but I don't wanna touch this code just in case
                 stmt = model.createStatement(stmt.getSubject(), stmt.getPredicate(), object);
             }
 
@@ -450,7 +474,13 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         }
         final Model model = inputMetadata.getCurrentModel();
         final Resource resource = (Resource) next;
+
+        long start = System.currentTimeMillis();
+        LOGGER.trace("Querying {}", resource.getURI());
         model.read(resource.getURI());
+        long end = System.currentTimeMillis() - start;
+        LOGGER.trace("Querying {} took {}ms", resource.getURI(), end);
+
         final boolean hasBeenVisited = !usedURIs.add(resource.getURI());
         if (!hasBeenVisited) {
             final Selector sel = new SimpleSelector(resource, inputMetadata.getOntologyPathPredicate(), (RDFNode) null);

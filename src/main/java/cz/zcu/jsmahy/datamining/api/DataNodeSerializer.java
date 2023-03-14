@@ -98,10 +98,8 @@ public interface DataNodeSerializer {
      * @param finishedServices the finished services ref
      * @param failedNodes      the failed services
      */
-    default void exportRoot(final DataNode dataNodeRoot,
-                            @Nullable final ObservableList<Service<?>> runningServices,
-                            @Nullable final ObservableList<Service<?>> finishedServices,
-                            @Nullable final ObservableList<DataNode> failedNodes) {
+    default void exportRoot(final DataNode dataNodeRoot, @Nullable final ObservableList<Service<?>> runningServices,
+                            @Nullable final ObservableList<Service<?>> finishedServices, @Nullable final ObservableList<DataNode> failedNodes) {
         // yeah... we actually don't really need it to run on the application thread
         // but this makes it much easier to build alerts with responses
         if (!Platform.isFxApplicationThread()) {
@@ -183,28 +181,28 @@ public interface DataNodeSerializer {
         dataNodeSerializationTask.setOnFailed(ev -> LOGGER.throwing(dataNodeSerializationTask.getException()));
 
         if (runningServices == null || finishedServices == null || failedNodes == null) {
-            dataNodeSerializationTask.start();
             dataNodeSerializationTask.setOnSucceeded(ev -> alertExportSuccess(dataNodeRoot, file));
-            return;
+        } else {
+            dataNodeSerializationTask.setOnRunning(ev -> runningServices.add(dataNodeSerializationTask));
+            dataNodeSerializationTask.setOnSucceeded(ev -> {
+                finishedServices.add(dataNodeSerializationTask);
+                runningServices.remove(dataNodeSerializationTask);
+            });
+            dataNodeSerializationTask.setOnCancelled(ev -> {
+                alertExportFailed(dataNodeRoot);
+                finishedServices.add(dataNodeSerializationTask);
+                runningServices.remove(dataNodeSerializationTask);
+            });
+            dataNodeSerializationTask.setOnFailed(ev -> {
+                dataNodeSerializationTask.getOnFailed()
+                                         .handle(ev);
+                alertExportFailed(dataNodeRoot, dataNodeSerializationTask.getException());
+                failedNodes.add(dataNodeRoot);
+                finishedServices.add(dataNodeSerializationTask);
+                runningServices.remove(dataNodeSerializationTask);
+            });
         }
-        dataNodeSerializationTask.setOnRunning(ev -> runningServices.add(dataNodeSerializationTask));
-        dataNodeSerializationTask.setOnSucceeded(ev -> {
-            finishedServices.add(dataNodeSerializationTask);
-            runningServices.remove(dataNodeSerializationTask);
-        });
-        dataNodeSerializationTask.setOnCancelled(ev -> {
-            alertExportFailed(dataNodeRoot);
-            finishedServices.add(dataNodeSerializationTask);
-            runningServices.remove(dataNodeSerializationTask);
-        });
-        dataNodeSerializationTask.setOnFailed(ev -> {
-            dataNodeSerializationTask.getOnFailed()
-                                     .handle(ev);
-            alertExportFailed(dataNodeRoot, dataNodeSerializationTask.getException());
-            failedNodes.add(dataNodeRoot);
-            finishedServices.add(dataNodeSerializationTask);
-            runningServices.remove(dataNodeSerializationTask);
-        });
+        dataNodeSerializationTask.start();
     }
 
     /**

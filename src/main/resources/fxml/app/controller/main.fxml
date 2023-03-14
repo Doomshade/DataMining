@@ -2,6 +2,7 @@
 
 <?import com.jfoenix.controls.JFXTreeView?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.control.TreeTableView?>
 <?import javafx.scene.layout.*?>
@@ -27,11 +28,14 @@
         </center>
         <left>
             <HBox fx:id="leftPane">
-                <JFXTreeView fx:id="ontologyTreeView">
-                    <BorderPane.margin>
-                        <Insets top="5" bottom="5" left="5" right="5"/>
-                    </BorderPane.margin>
-                </JFXTreeView>
+                <StackPane>
+                    <JFXTreeView fx:id="ontologyTreeView">
+                        <BorderPane.margin>
+                            <Insets top="5" bottom="5" left="5" right="5"/>
+                        </BorderPane.margin>
+                    </JFXTreeView>
+                    <Label fx:id="leftPanePlaceholder"/>
+                </StackPane>
                 <TreeTableView fx:id="metadataTableView">
                     <BorderPane.margin>
                         <Insets top="5" bottom="5" left="5" right="5"/>

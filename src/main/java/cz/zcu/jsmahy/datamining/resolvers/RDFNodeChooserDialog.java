@@ -6,6 +6,7 @@ import com.google.common.cache.Weigher;
 import cz.zcu.jsmahy.datamining.Main;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -42,8 +43,8 @@ public class RDFNodeChooserDialog {
 
     /**
      * @param statements   The statements to display
-     * @param uriPredicate The predicate for the given URI in each cell. The predicate gets called for each cell in the {@code propertyColumn} (the first column) and if {@link Predicate#test(Object)}
-     *                     returns {@code true} it will attempt to look for the label of the property.
+     * @param uriPredicate The predicate for the given URI in each cell. The predicate gets called for each cell in the {@code propertyColumn} (the first column) and if
+     *                     {@link Predicate#test(Object)} returns {@code true} it will attempt to look for the label of the property.
      * @param title
      * @param headerText
      */
@@ -63,10 +64,20 @@ public class RDFNodeChooserDialog {
                                                                                 features.getValue()
                                                                                         .getPredicate()));
 
+        // TODO: We aren't using the callback because it's slow. Add an option to enable it!
+        // cellValueFactoryCallback(features, features.getValue().getObject())
         final TableColumn<Statement, String> valueColumn = new TableColumn<>("Předmět");
-        valueColumn.setCellValueFactory(features -> cellValueFactoryCallback(features,
-                                                                             features.getValue()
-                                                                                     .getObject()));
+        valueColumn.setCellValueFactory(features -> {
+            final RDFNode object = features.getValue()
+                                           .getObject();
+            final String val = object.isLiteral() ?
+                               object.asLiteral()
+                                     .getValue()
+                                     .toString() :
+                               object.toString();
+            return new ReadOnlyStringWrapper(val.substring(val.lastIndexOf('/') + 1)
+                                                .replaceAll("_", " "));
+        });
 
         final ObservableList<TableColumn<Statement, ?>> columns = this.content.getColumns();
         columns.add(propertyColumn);
@@ -157,7 +168,7 @@ public class RDFNodeChooserDialog {
 
                         final String str = val.getString();
                         modelCache.put(uri, str);
-                        LOGGER.trace("URI: {}, STR: {}", uri, str);
+                        LOGGER.trace("\tURI: {},\tSTR: {}", uri, str);
                         return str;
                     }
                 };

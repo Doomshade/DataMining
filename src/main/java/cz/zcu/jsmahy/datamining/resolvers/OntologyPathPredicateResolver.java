@@ -24,7 +24,7 @@ public class OntologyPathPredicateResolver extends DefaultResponseResolver<Colle
 
             // once we receive the response notify the thread under the request handler's monitor
             // that we got a response from the user
-            // the thread waits otherwise for another 5 seconds
+            // the thread otherwise waits for another 5 seconds
             markResponseReady();
             requestHandler.unlockDialogPane();
         });
