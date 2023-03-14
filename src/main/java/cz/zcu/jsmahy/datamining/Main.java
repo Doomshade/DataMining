@@ -24,12 +24,12 @@ import java.util.jar.JarFile;
  * @since 1.0
  */
 public class Main extends Application {
-    private static final String TOP_LEVEL_DIRECTORY = "frontend";
-    private static final String FRONTEND_DIR = "/".concat(Main.class.getPackage()
-                                                                    .getName()
-                                                                    .replaceAll("\\.", "/"))
-                                                  .concat("/")
-                                                  .concat(TOP_LEVEL_DIRECTORY);
+    public static final String TOP_LEVEL_DIRECTORY = "frontend";
+    public static final String FRONTEND_DIR = "/".concat(Main.class.getPackage()
+                                                                   .getName()
+                                                                   .replaceAll("\\.", "/"))
+                                                 .concat("/")
+                                                 .concat(TOP_LEVEL_DIRECTORY);
     // no need to make this a singleton
     private static final SceneManager SCENE_MANAGER = new SceneManager();
     private static final Logger LOGGER = LogManager.getLogger(Main.class);
@@ -119,7 +119,7 @@ public class Main extends Application {
         assert toplevelDir.isDirectory();
         assert frontEndDir.isDirectory();
 
-        copyFolder(frontEndDir.toPath(), toplevelDir.toPath(), StandardCopyOption.COPY_ATTRIBUTES);
+        copyFolder(frontEndDir.toPath(), toplevelDir.toPath());
     }
 
     public void copyFolder(Path source, Path target, CopyOption... options) throws IOException {
@@ -134,10 +134,13 @@ public class Main extends Application {
 
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                Files.copy(file,
-                           target.resolve(source.relativize(file)
-                                                .toString()),
-                           options);
+                final Path newTarget = target.resolve(source.relativize(file)
+                                                            .toString());
+                if (newTarget.toFile()
+                             .exists()) {
+                    return FileVisitResult.CONTINUE;
+                }
+                Files.copy(file, newTarget, options);
                 return FileVisitResult.CONTINUE;
             }
         });

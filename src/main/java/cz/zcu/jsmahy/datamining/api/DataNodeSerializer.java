@@ -90,6 +90,10 @@ public interface DataNodeSerializer {
         alert.showAndWait();
     }
 
+    default void exportRoot(final File targetFile, final DataNode dataNodeRoot) {
+        exportRoot(targetFile, dataNodeRoot, null, null, null);
+    }
+
     /**
      * Exports the root.
      *
@@ -122,49 +126,53 @@ public interface DataNodeSerializer {
             }
         }
 
-        final OutputStream out;
         final File file;
-        try {
-            final String nodeName = dataNodeRoot.getValue(METADATA_KEY_NAME, "<no name>");
-            String fileExtension = getFileExtension();
-            if (fileExtension == null) {
-                fileExtension = DEFAULT_FILE_EXTENSION;
-            }
-            final String filename = String.format(FILE_NAME_FORMAT, nodeName, fileExtension);
+        final String nodeName = dataNodeRoot.getValue(METADATA_KEY_NAME, "<no name>");
+        String fileExtension = getFileExtension();
+        if (fileExtension == null) {
+            fileExtension = DEFAULT_FILE_EXTENSION;
+        }
+        final String filename = String.format(FILE_NAME_FORMAT, nodeName, fileExtension);
 
-            // validate the file name
-            try {
-                Paths.get(filename);
-            } catch (InvalidPathException ex) {
-                final AtomicReference<Response> ref = new AtomicReference<>();
-                alertInvalidFileName(ref, filename, nodeName);
-                if (ref.get() == Response.INVALID_RESPONSE) {
-                    LOGGER.error("Invalid response received.");
-                }
+        // validate the file name
+        try {
+            Paths.get(filename);
+        } catch (InvalidPathException ex) {
+            final AtomicReference<Response> ref = new AtomicReference<>();
+            alertInvalidFileName(ref, filename, nodeName);
+            if (ref.get() == Response.INVALID_RESPONSE) {
+                LOGGER.error("Invalid response received.");
+            }
+            return;
+        }
+
+        file = new File(folder, filename);
+        if (file.exists()) {
+            // residuum after some multithreading madness
+            final AtomicReference<Response> ref = new AtomicReference<>();
+            alertFileExists(ref, nodeName);
+
+            final Response response = ref.get();
+            if (response == Response.NO) {
                 return;
             }
-
-            file = new File(folder, filename);
-            if (file.exists()) {
-                // residuum after some multithreading madness
-                final AtomicReference<Response> ref = new AtomicReference<>();
-                alertFileExists(ref, nodeName);
-
-                final Response response = ref.get();
-                if (response == Response.NO) {
-                    return;
-                }
-                if (response == Response.INVALID_RESPONSE) {
-                    LOGGER.error("Invalid response received.");
-                    return;
-                }
-                assert response == Response.YES;
+            if (response == Response.INVALID_RESPONSE) {
+                LOGGER.error("Invalid response received.");
+                return;
             }
+            assert response == Response.YES;
+        }
+        exportRoot(file, dataNodeRoot, runningServices, finishedServices, failedNodes);
+    }
 
-            //noinspection resource
-            out = new FileOutputStream(file);
-        } catch (FileNotFoundException ex) {
-            throw new UncheckedIOException(ex);
+    default void exportRoot(final File targetFile, final DataNode dataNodeRoot, final @Nullable ObservableList<Service<?>> runningServices,
+                            final @Nullable ObservableList<Service<?>> finishedServices, final @Nullable ObservableList<DataNode> failedNodes) {
+        final OutputStream out;
+        try {
+            // noinspection resource
+            out = new FileOutputStream(targetFile);
+        } catch (FileNotFoundException e) {
+            throw new UncheckedIOException(e);
         }
         final Service<Void> dataNodeSerializationTask = new Service<>() {
             @Override
@@ -181,19 +189,41 @@ public interface DataNodeSerializer {
         dataNodeSerializationTask.setOnFailed(ev -> LOGGER.throwing(dataNodeSerializationTask.getException()));
 
         if (runningServices == null || finishedServices == null || failedNodes == null) {
-            dataNodeSerializationTask.setOnSucceeded(ev -> alertExportSuccess(dataNodeRoot, file));
+            dataNodeSerializationTask.setOnSucceeded(ev -> {
+                try {
+                    out.close();
+                } catch (IOException e) {
+                    LOGGER.throwing(e);
+                }
+                alertExportSuccess(dataNodeRoot, targetFile);
+            });
         } else {
             dataNodeSerializationTask.setOnRunning(ev -> runningServices.add(dataNodeSerializationTask));
             dataNodeSerializationTask.setOnSucceeded(ev -> {
+                try {
+                    out.close();
+                } catch (IOException e) {
+                    LOGGER.throwing(e);
+                }
                 finishedServices.add(dataNodeSerializationTask);
                 runningServices.remove(dataNodeSerializationTask);
             });
             dataNodeSerializationTask.setOnCancelled(ev -> {
+                try {
+                    out.close();
+                } catch (IOException e) {
+                    LOGGER.throwing(e);
+                }
                 alertExportFailed(dataNodeRoot);
                 finishedServices.add(dataNodeSerializationTask);
                 runningServices.remove(dataNodeSerializationTask);
             });
             dataNodeSerializationTask.setOnFailed(ev -> {
+                try {
+                    out.close();
+                } catch (IOException e) {
+                    LOGGER.throwing(e);
+                }
                 dataNodeSerializationTask.getOnFailed()
                                          .handle(ev);
                 alertExportFailed(dataNodeRoot, dataNodeSerializationTask.getException());

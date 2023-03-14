@@ -9,18 +9,18 @@ import cz.zcu.jsmahy.datamining.api.JSONDataNodeSerializationUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+import static cz.zcu.jsmahy.datamining.Main.TOP_LEVEL_DIRECTORY;
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_RELATIONSHIPS;
 import static cz.zcu.jsmahy.datamining.export.FialaBPMetadataKeys.*;
 
 public class FialaBPSerializer implements DataNodeSerializer {
+    private static final String DATA_JS = "fiala-bp/src/data/data.js";
     private static final String PREFIX = "define([],function(){return";
     private static final String SUFFIX = ";});\r\n";
     private static final Logger LOGGER = LogManager.getLogger(FialaBPSerializer.class);
@@ -42,6 +42,23 @@ public class FialaBPSerializer implements DataNodeSerializer {
         // the calendar class will automatically remove the offset once we set the timezone (or rather once we get the value after setting the timezone)
         calendar.add(Calendar.MILLISECOND, tz.getOffset(calendar.getTimeInMillis()));
         calendar.setTimeZone(TimeZone.getTimeZone("UTC"));
+    }
+
+    @Override
+    public void exportRoot(final DataNode dataNodeRoot) {
+        // this exports to "export" folder
+        DataNodeSerializer.super.exportRoot(dataNodeRoot);
+        final File targetFile = new File(TOP_LEVEL_DIRECTORY, DATA_JS);
+        if (!targetFile.exists()) {
+            try {
+                if (targetFile.createNewFile()) {
+                    throw new IOException("Failed to create file " + targetFile);
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        exportRoot(targetFile, dataNodeRoot);
     }
 
     @Override
@@ -112,7 +129,8 @@ public class FialaBPSerializer implements DataNodeSerializer {
 
         // we need to remove the timezone from the value and keep the date before setting it if the date precision is "day"
         // this is due to Jackson removing the timezone and adding/subtracting the amount of hours
-        // for example, if the time was 00:00 and the timezone was +1hr (i.e. 00:00:+01:00) or more, then the date gets rolled back to the previous one with 23:00 on the clock (23:00:+00:00)
+        // for example, if the time was 00:00 and the timezone was +1hr (i.e. 00:00:+01:00) or more, then the date gets rolled back to the previous one with 23:00 on the
+        // clock (23:00:+00:00)
         // this is very likely unwanted because for birthdays we usually know the date, but not the exact hour, and so we default
         // the time of birth to 00:00 in the timezone of the state the person was born in
         // to solve this we basically add the time zone value and remove the timezone. the date is then recalculated internally in Calendar
