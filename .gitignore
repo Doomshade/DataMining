@@ -9,6 +9,8 @@ pom.xml
 *.json
 *.js
 *.datanode
+frontend
+export
 !src/**/resources/**
 # Ignore Gradle GUI config
 gradle-app.setting

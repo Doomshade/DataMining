@@ -9,6 +9,9 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.*;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Enumeration;
 import java.util.ResourceBundle;
 import java.util.jar.JarEntry;
@@ -21,6 +24,12 @@ import java.util.jar.JarFile;
  * @since 1.0
  */
 public class Main extends Application {
+    private static final String TOP_LEVEL_DIRECTORY = "frontend";
+    private static final String FRONTEND_DIR = "/".concat(Main.class.getPackage()
+                                                                    .getName()
+                                                                    .replaceAll("\\.", "/"))
+                                                  .concat("/")
+                                                  .concat(TOP_LEVEL_DIRECTORY);
     // no need to make this a singleton
     private static final SceneManager SCENE_MANAGER = new SceneManager();
     private static final Logger LOGGER = LogManager.getLogger(Main.class);
@@ -74,17 +83,63 @@ public class Main extends Application {
     @Override
     public void start(final Stage stage) throws Exception {
         Main.stage = stage;
-        // unpack the jar
-        try {
-            extractResourcesToTempFolder();
-        } catch (IOException | URISyntaxException e) {
-            LOGGER.throwing(e);
-        }
+        // TODO: Unpack the jar
+//        try {
+//            extractResourcesToTempFolder();
+//        } catch (IOException | URISyntaxException e) {
+//            LOGGER.throwing(e);
+//        }
+        // TODO: We presume the project is built with gradle, so the sources are unbundled
+        // Copy the JS sources if they don't exist
+        copyResources();
         final ResourceBundle resourceBundle = ResourceBundle.getBundle("lang");
         stage.setTitle(resourceBundle.getString("stage-title"));
         final Scene scene = SCENE_MANAGER.getScene(FXMLScene.MAIN);
         stage.setScene(scene);
         stage.setMaximized(true);
         stage.show();
+    }
+
+    private void copyResources() throws URISyntaxException, IOException {
+        final URL frontEndDirURL = getClass().getResource(FRONTEND_DIR);
+        if (frontEndDirURL == null) {
+            throw new IOException("Could not find dir \"%s\" in resources.");
+        }
+        final File frontEndDir = new File(frontEndDirURL.toURI());
+        if (!frontEndDir.isDirectory()) {
+            throw new IOException("\"%s\" is not a directory.");
+        }
+        final File toplevelDir = new File(TOP_LEVEL_DIRECTORY);
+        if (!toplevelDir.isDirectory()) {
+            if (!toplevelDir.mkdirs()) {
+                throw new IOException("Failed to create directory " + TOP_LEVEL_DIRECTORY);
+            }
+        }
+
+        assert toplevelDir.isDirectory();
+        assert frontEndDir.isDirectory();
+
+        copyFolder(frontEndDir.toPath(), toplevelDir.toPath(), StandardCopyOption.COPY_ATTRIBUTES);
+    }
+
+    public void copyFolder(Path source, Path target, CopyOption... options) throws IOException {
+        Files.walkFileTree(source, new SimpleFileVisitor<>() {
+
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                Files.createDirectories(target.resolve(source.relativize(dir)
+                                                             .toString()));
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                Files.copy(file,
+                           target.resolve(source.relativize(file)
+                                                .toString()),
+                           options);
+                return FileVisitResult.CONTINUE;
+            }
+        });
     }
 }
