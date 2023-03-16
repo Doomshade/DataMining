@@ -330,13 +330,13 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
     }
 
     private void initializeDataNode(final DataNode dataNode, final RDFNode node, final QueryData inputMetadata) {
-        dataNode.addMetadata(DataNode.METADATA_KEY_RDF_NODE, node);
+        dataNode.addMetadata(METADATA_KEY_RDF_NODE, node);
         setDataNodeNameFromRDFNode(dataNode, node);
         if (node instanceof Resource resource) {
             // TODO: this does not work
             final Statement dboAbstract = resource.getProperty(PROPERTY_DBO_ABSTRACT);
             if (dboAbstract != null) {
-                dataNode.addMetadata(DataNode.METADATA_KEY_DESCRIPTION,
+                dataNode.addMetadata(METADATA_KEY_DESCRIPTION,
                                      dboAbstract.getSubject()
                                                 .getLocalName());
             }
@@ -452,7 +452,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         for (final Statement stmt : foundDataList) {
             final RDFNode object = stmt.getObject();
             final DataNode child = dataNodeFactory.newNode(curr);
-            child.addMetadata(DataNode.METADATA_KEY_RDF_NODE, object);
+            child.addMetadata(METADATA_KEY_RDF_NODE, object);
             setDataNodeNameFromRDFNode(child, object);
             currDataNodeChildren.add(child);
         }

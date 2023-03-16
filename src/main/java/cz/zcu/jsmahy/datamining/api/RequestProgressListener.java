@@ -2,9 +2,11 @@ package cz.zcu.jsmahy.datamining.api;
 
 import javafx.beans.property.ObjectProperty;
 import javafx.scene.control.TreeItem;
+import javafx.scene.web.WebView;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.List;
 
@@ -86,8 +88,10 @@ public interface RequestProgressListener {
 
     /**
      * Called when the search is finished.
+     *
+     * @param dataNodeRoot the data node root of the search result
      */
-    void onSearchDone(final DataNode dataNodeRoot);
+    void onSearchDone(DataNode dataNodeRoot);
 
     /**
      * Called when a new root is created. This data node root is then used in the following search handled by {@link SparqlEndpointTask}.
@@ -95,4 +99,13 @@ public interface RequestProgressListener {
      * @param newDataNodeRoot the new data node root
      */
     void onCreateNewRoot(DataNode newDataNodeRoot);
+
+    /**
+     * Called once the display of the data is requested. Currently, only browser is supported.
+     *
+     * @param dataNodeRoot              the data node root of the data
+     * @param webView                   the web engine to display the data to
+     * @param topLevelFrontendDirectory the "frontend" directory
+     */
+    void onDisplayRequest(DataNode dataNodeRoot, WebView webView, final File topLevelFrontendDirectory);
 }

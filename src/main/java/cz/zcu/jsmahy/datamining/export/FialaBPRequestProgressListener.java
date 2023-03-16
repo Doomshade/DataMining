@@ -12,11 +12,13 @@ import javafx.concurrent.Service;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.TreeItem;
+import javafx.scene.web.WebView;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -253,6 +255,13 @@ public class FialaBPRequestProgressListener implements RequestProgressListener {
         assert treeRoot != null;         // and the tree root should be set
         treeRoot.getChildren()
                 .add(new TreeItem<>(newDataNodeRoot));
+    }
+
+    @Override
+    public void onDisplayRequest(final DataNode dataNodeRoot, final WebView webView, final File topLevelFrontendDirectory) {
+        final File fialaBPIndexFile = new File(topLevelFrontendDirectory, "fiala-bp/src/index.html");
+        webView.getEngine()
+               .load("file://" + fialaBPIndexFile.getAbsolutePath());
     }
 
     private void deleteDataNode(final DataNode dataNode) {

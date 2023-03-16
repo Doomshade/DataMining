@@ -56,6 +56,7 @@ class APISpecification extends Specification {
         task.buildEventDispatchChain(_ as EventDispatchChain) >> dispatchChain
         taskProvider.newTask(_ as String, _ as DataNode) >> task
 
+
         injector = Guice.createInjector(mocks.module(config, taskProvider, Mock(RequestProgressListener), Mock(DataNodeSerializer)))
         nodeFactory = Spy(injector.getInstance(DataNodeFactory))
         utils = Spy(injector.getInstance(JSONDataNodeSerializationUtils))

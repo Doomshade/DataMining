@@ -2,19 +2,24 @@ package cz.zcu.jsmahy.datamining.export;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
-import cz.zcu.jsmahy.datamining.api.ArbitraryDataHolder;
-import cz.zcu.jsmahy.datamining.api.DataNode;
-import cz.zcu.jsmahy.datamining.api.DataNodeSerializer;
-import cz.zcu.jsmahy.datamining.api.JSONDataNodeSerializationUtils;
+import cz.zcu.jsmahy.datamining.api.*;
+import javafx.collections.ObservableList;
+import javafx.concurrent.Service;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
-import static cz.zcu.jsmahy.datamining.Main.TOP_LEVEL_DIRECTORY;
+import static cz.zcu.jsmahy.datamining.Main.TOP_LEVEL_FRONTEND_DIRECTORY_NAME;
+import static cz.zcu.jsmahy.datamining.api.Alerts.alertFileExists;
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_RELATIONSHIPS;
 import static cz.zcu.jsmahy.datamining.export.FialaBPMetadataKeys.*;
@@ -45,20 +50,21 @@ public class FialaBPSerializer implements DataNodeSerializer {
     }
 
     @Override
-    public void exportRoot(final DataNode dataNodeRoot) {
-        // this exports to "export" folder
-        DataNodeSerializer.super.exportRoot(dataNodeRoot);
-        final File targetFile = new File(TOP_LEVEL_DIRECTORY, DATA_JS);
+    public void exportRoot(final DataNode dataNodeRoot,
+                           @Nullable final ObservableList<Service<?>> runningServices,
+                           @Nullable final ObservableList<Service<?>> finishedServices,
+                           @Nullable final ObservableList<DataNode> failedNodes) throws IOException {
+        // this exports to "frontend/fiala-bp/src/data.js"
+        final File targetFile = new File(TOP_LEVEL_FRONTEND_DIRECTORY_NAME, DATA_JS);
         if (!targetFile.exists()) {
-            try {
-                if (targetFile.createNewFile()) {
-                    throw new IOException("Failed to create file " + targetFile);
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+            if (targetFile.createNewFile()) {
+                throw new IOException("Failed to create file " + targetFile);
             }
+        } else {
+            final AtomicReference<SerializationResponse> ref = new AtomicReference<>();
+            alertFileExists(ref, targetFile.getPath());
         }
-        exportRoot(targetFile, dataNodeRoot);
+        exportRoot(targetFile, dataNodeRoot, runningServices, finishedServices, failedNodes);
     }
 
     @Override

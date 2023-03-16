@@ -2,6 +2,7 @@ package cz.zcu.jsmahy.datamining.app.controller;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.google.inject.name.Named;
 import cz.zcu.jsmahy.datamining.Main;
 import cz.zcu.jsmahy.datamining.api.*;
 import cz.zcu.jsmahy.datamining.app.controller.cell.MetadataValueCellFactory;
@@ -39,6 +40,7 @@ import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.util.*;
@@ -57,6 +59,7 @@ import static cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory.SE
 @Singleton
 public class MainController implements Initializable, SparqlQueryServiceHolder {
     public static final KeyCombination NEW_LINE_ACCELERATOR = KeyCombination.keyCombination("CTRL + N");
+    public static final KeyCombination DISPLAY_DATA_ACCELERATOR = KeyCombination.keyCombination("CTRL + D");
     public static final KeyCombination EXPORT_ALL_ACCELERATOR = KeyCombination.keyCombination("ALT + E");
     private static final String WIKI_URL = "https://wikipedia.org/wiki/%s";
     private static final Logger LOGGER = LogManager.getLogger(MainController.class);
@@ -104,7 +107,12 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
     @Inject
     private RequestProgressListener progressListener;
     @Inject
-    private DataNodeSerializer serializer;
+    private DataNodeSerializer customSerializer;
+
+    @Inject
+    @Named("builtin")
+    private DataNodeSerializer builtinSerializer;
+
 
     private static ObservableValue<Object> valueColumnFactory(final TreeTableColumn.CellDataFeatures<Map.Entry<String, Object>, Object> features) {
         // need to map values better
@@ -170,7 +178,8 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
                                                                                                 .stream()
                                                                                                 .map(TreeItem::getValue)
                                                                                                 .toList(),
-                                                                          serializer));
+                                                                          customSerializer,
+                                                                          builtinSerializer));
 
 
         final ContextMenu contextMenu = createContextMenu(resources);
@@ -243,8 +252,9 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
         final String lineMenuText = resources.getString("line");
         final Menu lineMenu = new Menu(lineMenuText);
         final MenuItem newLineMenuItem = createAddNewLineMenuItem(resources);
+        final MenuItem displayDataMenuItem = createDisplayDataMenuItem(resources);
         lineMenu.getItems()
-                .addAll(newLineMenuItem);
+                .addAll(newLineMenuItem, displayDataMenuItem);
 
         final Menu fileMenu = new Menu(resources.getString("file"));
         fileMenu.setMnemonicParsing(true);
@@ -259,8 +269,7 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
                     final Alert alert = new Alert(Alert.AlertType.ERROR);
                     alert.setTitle(resources.getString("nothing-to-export-dialog-title"));
                     alert.setHeaderText(resources.getString("nothing-to-export-dialog-header"));
-                    final StringExpression content =
-                            Bindings.format(resources.getString("nothing-to-export-dialog-content"), NEW_LINE_ACCELERATOR.getName(), lineMenuText, newLineMenuText);
+                    final StringExpression content = Bindings.format(resources.getString("nothing-to-export-dialog-content"), NEW_LINE_ACCELERATOR.getName(), lineMenuText, newLineMenuText);
                     alert.contentTextProperty()
                          .bind(content);
                     alert.show();
@@ -278,7 +287,11 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
             bindProperties(runningProperty, progressProperty);
 
             for (final TreeItem<DataNode> root : dataNodeRoots) {
-                serializer.exportRoot(root.getValue(), services, removedServices, failedNodes);
+                try {
+                    customSerializer.exportRoot(root.getValue(), services, removedServices, failedNodes);
+                } catch (IOException ex) {
+                    LOGGER.throwing(ex);
+                }
             }
             if (!failedNodes.isEmpty()) {
                 alertExportFailed(failedNodes);
@@ -324,6 +337,27 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
         return menuBar;
     }
 
+    private MenuItem createDisplayDataMenuItem(final ResourceBundle resources) {
+        final MenuItem menuItem = new MenuItem();
+        menuItem.setText(resources.getString("display-line"));
+        menuItem.setAccelerator(DISPLAY_DATA_ACCELERATOR);
+        menuItem.setOnAction(e -> {
+            final TreeItem<DataNode> selectedItem = ontologyTreeView.getSelectionModel()
+                                                                    .getSelectedItem();
+            if (selectedItem != null) {
+                // TODO: Implement
+                DataNode dataNode = selectedItem.getValue();
+                if (!dataNode.isRoot()) {
+                    dataNode = dataNode.findRoot()
+                                       .orElseThrow(IllegalStateException::new);
+                }
+            }
+
+            progressListener.onDisplayRequest(null, this.wikiPageWebView, Main.TOP_LEVEL_FRONTEND_DIRECTORY);
+        });
+        return menuItem;
+    }
+
     private MenuItem createAddNewLineMenuItem(final ResourceBundle resources) {
         final MenuItem menuItem = new MenuItem();
         menuItem.setText(resources.getString("create-new-line"));
@@ -353,8 +387,8 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
     }
 
     /**
-     * Callback for {@link SelectionModel#selectedItemProperty()} in the ontology list view. Displays the selected item in Wikipedia. The selected item must not be a root of
-     * any kind ({@link TreeItem} root nor {@link DataNode#isRoot()}
+     * Callback for {@link SelectionModel#selectedItemProperty()} in the ontology list view. Displays the selected item in Wikipedia. The selected item must not be a root of any kind ({@link TreeItem}
+     * root nor {@link DataNode#isRoot()}
      *
      * @param observable the observable that was invalidated. not used, it's here just because of the signature of {@link InvalidationListener#invalidated(Observable)} method
      */
@@ -373,7 +407,7 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
         }
 
         final DataNode dataNode = selectedItem.getValue();
-        final RDFNode rdfNode = dataNode.getValueUnsafe("rdfNode");
+        final RDFNode rdfNode = dataNode.getValueUnsafe(METADATA_KEY_RDF_NODE);
         final String formattedItem = RDFNodeUtil.formatRDFNode(rdfNode);
         final String url = String.format(WIKI_URL, formattedItem);
         LOGGER.trace("Loading web page with URL {}", url);

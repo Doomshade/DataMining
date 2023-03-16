@@ -17,6 +17,7 @@ import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.ResourceBundle;
@@ -47,7 +48,8 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
                               final SparqlEndpointAgent<?> requestHandler,
                               final RequestProgressListener progressListener,
                               final Supplier<Collection<DataNode>> selectedItemSupplier,
-                              final DataNodeSerializer serializer) {
+                              final DataNodeSerializer customSerializer,
+                              final DataNodeSerializer builtinSerializer) {
         emptyProperty().addListener((obs, wasEmpty, isNowEmpty) -> {
             if (isNowEmpty) {
                 setContextMenu(null);
@@ -59,7 +61,7 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
             final MenuItem searchItem = buildSearchItem(resources, requestHandler, serviceHolder);
             final MenuItem addRestrictionItem = buildAddRestrictionItem(resources);
 //            final MenuItem addItem = buildAddItem(resources);
-            final MenuItem exportItem = buildExportItem(resources, serializer);
+            final MenuItem exportItem = buildExportItem(resources, customSerializer, builtinSerializer);
             final MenuItem deleteItem = buildDeleteItem(resources, progressListener, selectedItemSupplier);
             final MenuItem newLineItem = buildNewLineItem(resources, nodeFactory, requestHandler, serviceHolder, progressListener);
             final MenuItem continueLineItem = buildContinueLineItem(resources);
@@ -161,12 +163,21 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
         return menuItem;
     }
 
-    private MenuItem buildExportItem(final ResourceBundle resources, final DataNodeSerializer serializer) {
+    private MenuItem buildExportItem(final ResourceBundle resources, final DataNodeSerializer customSerializer, final DataNodeSerializer builtinSerializer) {
         final MenuItem menuItem = new MenuItem(resources.getString("export"));
         menuItem.setOnAction(event -> {
             final DataNode item = getItem();
             assert item.isRoot();
-            serializer.exportRoot(item);
+            try {
+                customSerializer.exportRoot(item);
+            } catch (IOException e) {
+                LOGGER.throwing(e);
+            }
+            try {
+                builtinSerializer.exportRoot(item);
+            } catch (IOException e) {
+                LOGGER.throwing(e);
+            }
         });
         menuItem.setAccelerator(EXPORT_SINGLE_ACCELERATOR);
         return menuItem;
