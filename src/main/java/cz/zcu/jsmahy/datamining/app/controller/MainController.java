@@ -60,6 +60,7 @@ import static cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory.SE
 public class MainController implements Initializable, SparqlQueryServiceHolder {
     public static final KeyCombination NEW_LINE_ACCELERATOR = KeyCombination.keyCombination("CTRL + N");
     public static final KeyCombination DISPLAY_DATA_ACCELERATOR = KeyCombination.keyCombination("CTRL + D");
+    public static final KeyCombination IMPORT_DATA_ACCELERATOR = KeyCombination.keyCombination("CTRL + I");
     public static final KeyCombination EXPORT_ALL_ACCELERATOR = KeyCombination.keyCombination("ALT + E");
     private static final String WIKI_URL = "https://wikipedia.org/wiki/%s";
     private static final Logger LOGGER = LogManager.getLogger(MainController.class);
@@ -108,10 +109,16 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
     private RequestProgressListener progressListener;
     @Inject
     private DataNodeSerializer customSerializer;
-
     @Inject
     @Named("builtin")
     private DataNodeSerializer builtinSerializer;
+//
+//    @Inject
+//    private DataNodeDeserializer customDeserializer;
+//
+//    @Inject
+//    @Named("builtin")
+//    private DataNodeDeserializer builtinDeserializer;
 
 
     private static ObservableValue<Object> valueColumnFactory(final TreeTableColumn.CellDataFeatures<Map.Entry<String, Object>, Object> features) {
@@ -341,6 +348,27 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
         final MenuItem menuItem = new MenuItem();
         menuItem.setText(resources.getString("display-line"));
         menuItem.setAccelerator(DISPLAY_DATA_ACCELERATOR);
+        menuItem.setOnAction(e -> {
+            final TreeItem<DataNode> selectedItem = ontologyTreeView.getSelectionModel()
+                                                                    .getSelectedItem();
+            if (selectedItem != null) {
+                // TODO: Implement
+                DataNode dataNode = selectedItem.getValue();
+                if (!dataNode.isRoot()) {
+                    dataNode = dataNode.findRoot()
+                                       .orElseThrow(IllegalStateException::new);
+                }
+            }
+
+            progressListener.onDisplayRequest(null, this.wikiPageWebView, Main.TOP_LEVEL_FRONTEND_DIRECTORY);
+        });
+        return menuItem;
+    }
+
+    private MenuItem createImportMenuItem(final ResourceBundle resources) {
+        final MenuItem menuItem = new MenuItem();
+        menuItem.setText(resources.getString("display-line"));
+        menuItem.setAccelerator(IMPORT_DATA_ACCELERATOR);
         menuItem.setOnAction(e -> {
             final TreeItem<DataNode> selectedItem = ontologyTreeView.getSelectionModel()
                                                                     .getSelectedItem();
