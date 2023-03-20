@@ -34,11 +34,12 @@ public final class RDFNodeSerialization {
 
         @Override
         public void serialize(final T value, final JsonGenerator gen, final SerializerProvider provider) throws IOException {
-            gen.writeStartObject();
             final String rdfNodeType = value instanceof Resource ? RDFNODE_TYPE_RESOURCE : value instanceof Literal ? RDFNODE_TYPE_LITERAL : "";
             if (rdfNodeType.isEmpty()) {
                 throw new IllegalStateException("RDFNode is not a Resource nor a Literal.");
             }
+
+            gen.writeStartObject();
             gen.writeStringField(FIELDNAME_TYPE, rdfNodeType);
             if (value instanceof Resource) {
                 gen.writeObjectField(FIELDNAME_DATA,

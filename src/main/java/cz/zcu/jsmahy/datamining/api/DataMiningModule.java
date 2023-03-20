@@ -53,9 +53,11 @@ public class DataMiningModule extends AbstractModule {
         bind(JSONDataNodeSerializationUtils.class).in(SINGLETON);
         bind(SparqlQueryServiceHolder.class).to(MainController.class);
         bind(DataNodeSerializer.class).annotatedWith(Names.named("builtin"))
-                                      .to(JSONDataNodeSerializer.class);
-//        bind(DataNodeDeserializer.class).annotatedWith(Names.named("builtin"))
-//                                        .to(JSONDataNodeDeserializer.class);
+                                      .to(JSONDataNodeSerializer.class)
+                                      .asEagerSingleton();
+        bind(DataNodeDeserializer.class).annotatedWith(Names.named("builtin"))
+                                        .to(JSONDataNodeDeserializer.class)
+                                        .asEagerSingleton();
 //        bind(MainController.class).asEagerSingleton();
     }
 }

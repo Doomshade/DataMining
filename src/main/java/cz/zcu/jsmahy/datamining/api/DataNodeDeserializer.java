@@ -3,7 +3,16 @@ package cz.zcu.jsmahy.datamining.api;
 import java.io.IOException;
 import java.io.InputStream;
 
-public interface DataNodeDeserializer {
+/**
+ * The {@link DataNode} deserializer. For now, we only permit the built-in JSON deserializer as there is no reason to deserialize one's own serialized data.
+ *
+ * @author Jakub Šmrha
+ * @since 1.0
+ */
+public sealed interface DataNodeDeserializer permits JSONDataNodeDeserializer {
+    /**
+     * @return The file extensions this deserializers accept.
+     */
     String[] getAcceptedFileExtensions();
 
     /**

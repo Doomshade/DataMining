@@ -4,7 +4,6 @@ import javafx.beans.property.ObjectProperty;
 import javafx.scene.control.TreeItem;
 import javafx.scene.web.WebView;
 import org.apache.jena.rdf.model.Property;
-import org.apache.jena.rdf.model.RDFNode;
 
 import java.io.File;
 import java.util.Collection;
@@ -49,13 +48,19 @@ public interface RequestProgressListener {
     ObjectProperty<QueryData> queryDataProperty();
 
     /**
+     * Called when relationships are required to be added to the data nodes. This will likely be called prior to {@link #onAddNewDataNodes(List)}, but is not required to.
+     *
+     * @param previousDataNode the previous data node
+     * @param currentDataNode  the current data node
+     */
+    void onAddRelationship(DataNode previousDataNode, DataNode currentDataNode);
+
+    /**
      * Called when a new data node is created. This callback should create a new tree item under the tree root with the given data and return the tree new tree item.
      *
-     * @param root             the corresponding tree root for the data node
-     * @param previousDataNode
-     * @param newDataNode      the new data node
+     * @param dataNodes the new data node
      */
-    void onAddNewDataNode(DataNode root, final DataNode previousDataNode, DataNode newDataNode);
+    void onAddNewDataNodes(List<DataNode> dataNodes);
 
     /**
      * <p>Called when a data node is deleted. This callback should remove a tree item under the tree root, and cleanup any metadata, such as relationships, pointing to this node.</p>
@@ -74,9 +79,8 @@ public interface RequestProgressListener {
      *
      * @param dataNodesParent the parent node of the data nodes
      * @param dataNodes       the data nodes
-     * @param chosenDataNode  the data node that the user chose to continue under
      */
-    void onAddMultipleDataNodes(DataNode dataNodesParent, List<DataNode> dataNodes, RDFNode chosenDataNode);
+    void onAddMultipleDataNodes(DataNode dataNodesParent, List<DataNode> dataNodes);
 
     /**
      * Called when an invalid query is passed. The cause is usually the resource not existing.

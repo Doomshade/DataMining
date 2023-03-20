@@ -20,9 +20,9 @@ import static cz.zcu.jsmahy.datamining.api.Alerts.*;
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
 
 public class JSONDataNodeSerializer implements DataNodeSerializer {
+    public static final File EXPORT_FOLDER = new File("export");
     private final BooleanProperty processedNodes = new SimpleBooleanProperty(false);
     private final ObjectMapper jsonObjectMapper;
-
 
     @Inject
     public JSONDataNodeSerializer(JSONDataNodeSerializationUtils utils) {
@@ -48,7 +48,7 @@ public class JSONDataNodeSerializer implements DataNodeSerializer {
             throw new IllegalStateException("Root export must be called on JavaFX application thread but was: " + Thread.currentThread());
         }
 
-        File folder = new File("export");
+        File folder = EXPORT_FOLDER;
         if (!folder.isDirectory()) {
             if (!folder.mkdirs()) {
                 // we could not create the export folder, try to get the current working directory
@@ -90,7 +90,7 @@ public class JSONDataNodeSerializer implements DataNodeSerializer {
         if (file.exists()) {
             // residuum after some multithreading madness
             final AtomicReference<SerializationResponse> ref = new AtomicReference<>();
-            alertFileExists(ref, nodeName);
+            alertFileExists(ref, file.getPath());
 
             final SerializationResponse response = ref.get();
             if (response == SerializationResponse.NO) {

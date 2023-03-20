@@ -14,7 +14,6 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.TreeItem;
 import javafx.scene.web.WebView;
 import org.apache.jena.rdf.model.Property;
-import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,6 +37,7 @@ public class FialaBPRequestProgressListener implements RequestProgressListener {
     private final ObjectProperty<Property> endDate = new SimpleObjectProperty<>();
     private final ObjectProperty<TreeItem<DataNode>> treeRoot = new SimpleObjectProperty<>();
     private final ObjectProperty<QueryData> queryData = new SimpleObjectProperty<>();
+
     @Inject
     private SparqlEndpointAgent<?> sparqlEndpointAgent;
     @Inject
@@ -77,9 +77,7 @@ public class FialaBPRequestProgressListener implements RequestProgressListener {
             }
             final long childId = child.getValue()
                                       .getId();
-            LOGGER.trace("Checking ID {}", childId);
             if (childId == dataNode.getId()) {
-                LOGGER.trace("Found ID {}. Terminating.", childId);
                 ref.set(child);
                 break;
             }
@@ -121,41 +119,56 @@ public class FialaBPRequestProgressListener implements RequestProgressListener {
     }
 
     @Override
-    public void onAddNewDataNode(final DataNode root, final DataNode prev, final DataNode curr) {
-        LOGGER.trace("Adding new data node '{}' to root '{}'",
-                     curr.getValue(METADATA_KEY_NAME)
-                         .orElse("<no name>"),
-                     root.getValue(METADATA_KEY_NAME)
-                         .orElse("<no name>"));
-        // TODO: let user set this stereotype, but default to person
+    public void onAddRelationship(final DataNode prev, final DataNode curr) {
+        // TODO: Let user set this stereotype, but default to person
         curr.addMetadata(METADATA_KEY_STEREOTYPE, METADATA_DEFAULT_STEREOTYPE);
-        // TODO: let user choose the date type, but default to day
+        // TODO: Let user choose the date type, but default to day
         curr.addMetadata(METADATA_KEY_PROPERTIES, new HashMap<>(METADATA_DEFAULT_PROPERTIES));
-        // add relationships
-        if (prev != null) {
-            final List<ArbitraryDataHolder> relationships = curr.getValue(METADATA_KEY_RELATIONSHIPS, new ArrayList<>());
-            // TODO: Relationship can go the opposite way
-            // for now leave it like this because we are testing doctoral advisors
-            final ArbitraryDataHolder relationship = new DefaultArbitraryDataHolder();
-            relationship.addMetadata(METADATA_KEY_FROM, curr.getId());
-            relationship.addMetadata(METADATA_KEY_TO, prev.getId());
-            relationship.addMetadata(METADATA_KEY_NAME,
-                                     queryData.get()
-                                              .getOntologyPathPredicate()
-                                              .getLocalName());
 
-            // TODO: User input
-            relationship.addMetadata(METADATA_KEY_STEREOTYPE, DEFAULT_STEREOTYPE);
-            relationships.add(relationship);
-            if (!curr.hasMetadataKey(METADATA_KEY_RELATIONSHIPS)) {
-                curr.addMetadata(METADATA_KEY_RELATIONSHIPS, relationships);
-            }
+        // If the previous data node is null we can't add any relationships
+        if (prev == null) {
+            return;
         }
+
+        final List<ArbitraryDataHolder> relationships = curr.getValue(METADATA_KEY_RELATIONSHIPS, new ArrayList<>());
+        // TODO: Relationship can go the opposite way
+        // For now leave it like this
+        final ArbitraryDataHolder relationship = new DefaultArbitraryDataHolder();
+        relationship.addMetadata(METADATA_KEY_FROM, curr.getId());
+        relationship.addMetadata(METADATA_KEY_TO, prev.getId());
+        relationship.addMetadata(METADATA_KEY_NAME,
+                                 queryData.get()
+                                          .getOntologyPathPredicate()
+                                          .getLocalName());
+
+        // TODO: User input
+        relationship.addMetadata(METADATA_KEY_STEREOTYPE, DEFAULT_STEREOTYPE);
+        relationships.add(relationship);
+        if (!curr.hasMetadataKey(METADATA_KEY_RELATIONSHIPS)) {
+            curr.addMetadata(METADATA_KEY_RELATIONSHIPS, relationships);
+        }
+    }
+
+    @Override
+    public void onAddNewDataNodes(final List<DataNode> newDataNodes) {
+        // the passed list should not be null nor empty
+        assert newDataNodes != null && !newDataNodes.isEmpty();
+        final DataNode first = newDataNodes.iterator()
+                                           .next();
+        final DataNode parent = first.getParent();
+
+        // the parent should not be null as the passed data nodes should not be roots
+        assert parent != null : String.format("%s does not have a parent (it's likely root).", first);
+
+        LOGGER.trace("Adding multiple data nodes '{}' under '{}'", newDataNodes, parent);
+
         Platform.runLater(() -> {
-            final TreeItem<DataNode> parent = findTreeItem(root);
-            final TreeItem<DataNode> child = new TreeItem<>(curr);
-            parent.getChildren()
-                  .add(child);
+            final TreeItem<DataNode> treeItem = findTreeItem(parent);
+            treeItem.getChildren()
+                    .addAll(newDataNodes.stream()
+                                        .map(TreeItem::new)
+                                        .toList());
+            treeItem.setExpanded(true);
         });
     }
 
@@ -170,7 +183,7 @@ public class FialaBPRequestProgressListener implements RequestProgressListener {
     }
 
     @Override
-    public void onAddMultipleDataNodes(final DataNode dataNodesParent, final List<DataNode> dataNodes, final RDFNode chosenDataNode) {
+    public void onAddMultipleDataNodes(final DataNode dataNodesParent, final List<DataNode> dataNodes) {
         LOGGER.trace("Adding multiple data nodes '{}' under '{}'", dataNodes, dataNodesParent);
         Platform.runLater(() -> {
             final TreeItem<DataNode> treeItem = findTreeItem(dataNodesParent);

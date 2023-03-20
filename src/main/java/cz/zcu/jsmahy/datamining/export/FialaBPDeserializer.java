@@ -1,7 +1,6 @@
 package cz.zcu.jsmahy.datamining.export;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.inject.Inject;
 import cz.zcu.jsmahy.datamining.api.*;
 
 import java.io.IOException;
@@ -14,14 +13,14 @@ import java.util.Optional;
 
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_RELATIONSHIPS;
 
-public class FialaBPDeserializer implements DataNodeDeserializer {
+@Deprecated
+public class FialaBPDeserializer {
     public static final String PREFIX = "define([],function(){return";
     public static final String SUFFIX = ";});\r\n";
     private final ObjectMapper objectMapper;
 
     private final DataNodeFactory dataNodeFactory;
 
-    @Inject
     public FialaBPDeserializer(final DataNodeFactory dataNodeFactory, final JSONDataNodeSerializationUtils utils) {
         this.dataNodeFactory = dataNodeFactory;
         this.objectMapper = utils.getJsonObjectMapper();
@@ -31,12 +30,10 @@ public class FialaBPDeserializer implements DataNodeDeserializer {
         throw new IOException("Invalid data format. Expected: ".concat(expected));
     }
 
-    @Override
     public String[] getAcceptedFileExtensions() {
         return new String[] {"js"};
     }
 
-    @Override
     public DataNode deserialize(final InputStream in) throws IOException {
         // we don't allow formatted JSON because we lazy to make a lexer/parser :)
         // just assume the data file is not going to be modified

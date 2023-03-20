@@ -50,8 +50,12 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
 
     @Inject
     @SuppressWarnings("unchecked, rawtypes")
-    public DBPediaEndpointTask(final String query, final DataNode dataNodeRoot, final ApplicationConfiguration config, final RequestProgressListener progressListener,
-                               final DataNodeFactory dataNodeFactory, final @Named("userAssisted") ResponseResolver ambiguousResultResolver,
+    public DBPediaEndpointTask(final String query,
+                               final DataNode dataNodeRoot,
+                               final ApplicationConfiguration config,
+                               final RequestProgressListener progressListener,
+                               final DataNodeFactory dataNodeFactory,
+                               final @Named("userAssisted") ResponseResolver ambiguousResultResolver,
                                final @Named("ontologyPathPredicate") ResponseResolver ontologyPathPredicateResolver,
                                final @Named("date") ResponseResolver startAndEndDateResolver) {
         super(query, dataNodeRoot, config, progressListener);
@@ -93,11 +97,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
             } else {
                 throw new ClassCastException("Inner date type is of unknown value: " + value);
             }
-            LOGGER.trace("Setting {} date (inner type: {}, actual date: {}) to {}",
-                         isStartDate ? "start" : "end",
-                         value,
-                         calendar,
-                         curr.getValue(METADATA_KEY_NAME, "<no name>"));
+            LOGGER.trace("Setting {} date (inner type: {}, actual date: {}) to {}", isStartDate ? "start" : "end", value, calendar, curr.getValue(METADATA_KEY_NAME, "<no name>"));
             if (isStartDate) {
                 curr.addMetadata(METADATA_KEY_START_DATE, calendar);
             } else {
@@ -356,7 +356,8 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         final DataNode curr = dataNodeFactory.newNode(dataNodeRoot);
         final Resource subject = selector.getSubject();
         initializeDataNode(curr, subject, inputMetadata);
-        progressListener.onAddNewDataNode(dataNodeRoot, prev, curr);
+        progressListener.onAddRelationship(prev, curr);
+        progressListener.onAddNewDataNodes(List.of(curr));
 
         // list possible child nodes
         final List<Statement> statements = model.listStatements(selector)
@@ -370,6 +371,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
         for (Statement stmt : statements) {
             RDFNode object = stmt.getObject();
             if (object.isURIResource()) {
+                // Log the query time of the object
                 LOGGER.trace("Object is a URI resource, querying the resource");
                 long start = System.currentTimeMillis();
                 final String uri = object.asResource()
@@ -379,11 +381,13 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
                 long end = System.currentTimeMillis() - start;
                 LOGGER.trace("Querying {} took {}ms", uri, end);
 
+                // Log the redirect time of the object
                 final RDFNode priorToRedirect = object;
                 start = System.currentTimeMillis();
                 object = redirectIfPossible(object.asResource(), model);
                 end = System.currentTimeMillis() - start;
-                // If the objects do not equal we redirected to a different place
+
+                // If the objects do not equal we redirected, log that too
                 if (priorToRedirect != object) {
                     final String actualUri = object.isURIResource() ?
                                              " to " + object.asResource()
@@ -456,7 +460,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
             setDataNodeNameFromRDFNode(child, object);
             currDataNodeChildren.add(child);
         }
-        progressListener.onAddMultipleDataNodes(curr, currDataNodeChildren, chosenNextRDFNode);
+        progressListener.onAddNewDataNodes(currDataNodeChildren);
         searchFurther(inputMetadata, chosenNextRDFNode, curr);
     }
 

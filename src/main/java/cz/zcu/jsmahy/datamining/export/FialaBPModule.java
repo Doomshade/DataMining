@@ -1,7 +1,6 @@
 package cz.zcu.jsmahy.datamining.export;
 
 import com.google.inject.AbstractModule;
-import cz.zcu.jsmahy.datamining.api.DataNodeDeserializer;
 import cz.zcu.jsmahy.datamining.api.DataNodeSerializer;
 import cz.zcu.jsmahy.datamining.api.RequestProgressListener;
 
@@ -12,7 +11,5 @@ public class FialaBPModule extends AbstractModule {
                                            .asEagerSingleton();
         bind(DataNodeSerializer.class).to(FialaBPSerializer.class)
                                       .asEagerSingleton();
-        bind(DataNodeDeserializer.class).to(FialaBPDeserializer.class)
-                                        .asEagerSingleton();
     }
 }

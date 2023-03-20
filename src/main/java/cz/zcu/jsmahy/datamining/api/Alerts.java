@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
 import static javafx.scene.control.Alert.AlertType.*;
 
-public class Alerts {
+public final class Alerts {
     public static void alertInvalidFileName(AtomicReference<SerializationResponse> ref, String filename, String lineName) {
         final Alert alert = new Alert(ERROR);
         alert.setHeaderText("");

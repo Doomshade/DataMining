@@ -23,7 +23,6 @@ import java.util.function.BiConsumer;
           callSuper = true)
 final class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode {
     private static final Logger LOGGER = LogManager.getLogger(DataNodeImpl.class);
-    private static long ID_SEQ = 0;
     /**
      * Using implementation because of Jackson. Jackson needs a default empty constructor, so we make a wrapper of... the existing wrapper... because that one does not permit empty lists...
      */
@@ -54,20 +53,33 @@ final class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode 
     // the nodes C, D, E will be deleted in the first GC cycle, whereas the B node will be deleted in the second GC cycle
     @JsonIgnore
     private transient WeakReference<DataNode> parent;
-    // non-final to have it deserializable
+    /**
+     * The ID of this data node.
+     */
     private long id;
 
-    {
-        this.id = ID_SEQ++;
+    /**
+     * Empty constructor for Jackson.
+     */
+    DataNodeImpl() {
+        this(null, false);
     }
 
-    DataNodeImpl() {
-        this(null);
+    DataNodeImpl(boolean setId) {
+        this(null, setId);
     }
 
     DataNodeImpl(final DataNode parent) {
-        this.parent = new WeakReference<>(parent);
+        this(parent, true);
     }
+
+    DataNodeImpl(final DataNode parent, final boolean setId) {
+        this.parent = new WeakReference<>(parent);
+        if (setId) {
+            this.id = ID_SEQ.getAndIncrement();
+        }
+    }
+
 
     /**
      * Adds a child to this node.
@@ -116,22 +128,26 @@ final class DataNodeImpl extends DefaultArbitraryDataHolder implements DataNode 
 
     @Override
     public void iterate(BiConsumer<DataNode, Integer> biConsumer) {
+        iterate(biConsumer, this);
+    }
+
+    private void iterate(BiConsumer<DataNode, Integer> biConsumer, DataNode parent) {
         final ObservableList<? extends DataNode> children = this.getChildren();
         if (!children.isEmpty()) {
-            iterate(biConsumer, -1, this);
+            iterate(biConsumer, -1, parent);
         }
     }
 
-    private void iterate(BiConsumer<DataNode, Integer> biConsumer, int depth, DataNode dataNode) {
-        if (dataNode == null) {
+    private void iterate(BiConsumer<DataNode, Integer> biConsumer, int depth, DataNode parent) {
+        if (parent == null) {
             return;
         }
 
-        if (!dataNode.isRoot()) {
-            biConsumer.accept(dataNode, depth);
+        if (!parent.isRoot()) {
+            biConsumer.accept(parent, depth);
         }
 
-        final ObservableList<? extends DataNode> children = dataNode.getChildren();
+        final ObservableList<? extends DataNode> children = parent.getChildren();
         if (!children.isEmpty()) {
             depth++;
             for (final DataNode node : children) {

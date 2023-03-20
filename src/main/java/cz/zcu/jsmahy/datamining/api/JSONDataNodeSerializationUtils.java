@@ -1,39 +1,40 @@
 package cz.zcu.jsmahy.datamining.api;
 
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.util.StdDateFormat;
+import com.google.inject.Inject;
 import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.impl.LiteralImpl;
-import org.apache.jena.rdf.model.impl.ResourceImpl;
 
 public class JSONDataNodeSerializationUtils {
 
-    private final ObjectMapper JSON_OBJECT_MAPPER = new ObjectMapper();
+    public static final Version VERSION = new Version(0, 1, 0, "", "cz.zcu.jsmahy", "DataMining");
+    private final ObjectMapper jsonObjectMapper = new ObjectMapper();
 
-    {
-        JSON_OBJECT_MAPPER.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        JSON_OBJECT_MAPPER.disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
-        JSON_OBJECT_MAPPER.enable(SerializationFeature.WRITE_SELF_REFERENCES_AS_NULL);
-        JSON_OBJECT_MAPPER.enable(SerializationFeature.WRITE_DATES_WITH_CONTEXT_TIME_ZONE);
-        JSON_OBJECT_MAPPER.setDateFormat(new StdDateFormat());
-        final SimpleModule module = new SimpleModule();
+    @Inject
+    public JSONDataNodeSerializationUtils(DataNodeFactory dataNodeFactory) {
+        jsonObjectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        jsonObjectMapper.disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
+        jsonObjectMapper.enable(SerializationFeature.WRITE_SELF_REFERENCES_AS_NULL);
+        jsonObjectMapper.enable(SerializationFeature.WRITE_DATES_WITH_CONTEXT_TIME_ZONE);
+        jsonObjectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+        jsonObjectMapper.setDateFormat(new StdDateFormat());
+
+        final SimpleModule module = new SimpleModule("builtin");
         module.addSerializer(RDFNode.class, new RDFNodeSerialization.RDFNodeSerializer<>());
         module.addDeserializer(RDFNode.class, new RDFNodeSerialization.RDFNodeDeserializer<>());
-        module.addSerializer(ResourceImpl.class, new RDFNodeSerialization.RDFNodeSerializer<>());
-        module.addDeserializer(ResourceImpl.class, new RDFNodeSerialization.RDFNodeDeserializer<>());
-        module.addSerializer(LiteralImpl.class, new RDFNodeSerialization.RDFNodeSerializer<>());
-        module.addDeserializer(LiteralImpl.class, new RDFNodeSerialization.RDFNodeDeserializer<>());
-        JSON_OBJECT_MAPPER.registerModule(module);
+//        module.addDeserializer(DataNode.class, new JacksonDeserializer(dataNodeFactory));
+        jsonObjectMapper.registerModule(module);
     }
 
     /**
      * @return A copy of the {@link ObjectMapper} instance.
      */
     public ObjectMapper getJsonObjectMapper() {
-        return JSON_OBJECT_MAPPER.copy();
+        return jsonObjectMapper.copy();
     }
 
 }

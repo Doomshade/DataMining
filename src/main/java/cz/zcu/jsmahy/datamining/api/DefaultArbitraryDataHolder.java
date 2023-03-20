@@ -2,7 +2,6 @@ package cz.zcu.jsmahy.datamining.api;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import org.jetbrains.annotations.Contract;
 
 import java.util.*;
 
@@ -21,7 +20,6 @@ public class DefaultArbitraryDataHolder implements ArbitraryDataHolder {
         this(Collections.synchronizedMap(new HashMap<>()));
     }
 
-    @Contract(pure = true)
     protected DefaultArbitraryDataHolder(final Map<String, Object> delegate) {
         this.metadata = delegate;
     }

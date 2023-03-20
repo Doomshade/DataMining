@@ -1,5 +1,6 @@
 package cz.zcu.jsmahy.datamining.app.controller;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
@@ -36,17 +37,20 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
+import javafx.stage.FileChooser;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_RDF_NODE;
+import static cz.zcu.jsmahy.datamining.api.JSONDataNodeSerializer.EXPORT_FOLDER;
 import static cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory.SEARCH_ACCELERATOR;
 
 /**
@@ -112,13 +116,13 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
     @Inject
     @Named("builtin")
     private DataNodeSerializer builtinSerializer;
-//
+    //
 //    @Inject
 //    private DataNodeDeserializer customDeserializer;
 //
-//    @Inject
-//    @Named("builtin")
-//    private DataNodeDeserializer builtinDeserializer;
+    @Inject
+    @Named("builtin")
+    private DataNodeDeserializer builtinDeserializer;
 
 
     private static ObservableValue<Object> valueColumnFactory(final TreeTableColumn.CellDataFeatures<Map.Entry<String, Object>, Object> features) {
@@ -132,6 +136,13 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
         final Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setHeaderText("");
         alert.setContentText("Vše úspěšně exportováno.");
+        alert.show();
+    }
+
+    private static void alertImportFailed(final File file, final String message) {
+        final Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setHeaderText("");
+        alert.setContentText(MessageFormat.format(message, file.getPath()));
         alert.show();
     }
 
@@ -295,7 +306,7 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
 
             for (final TreeItem<DataNode> root : dataNodeRoots) {
                 try {
-                    customSerializer.exportRoot(root.getValue(), services, removedServices, failedNodes);
+                    builtinSerializer.exportRoot(root.getValue(), services, removedServices, failedNodes);
                 } catch (IOException ex) {
                     LOGGER.throwing(ex);
                 }
@@ -307,8 +318,74 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
             }
         });
         exportToFile.setAccelerator(EXPORT_ALL_ACCELERATOR);
+
+        final MenuItem importLineMenuItem = new MenuItem("Importovat linii");
+        importLineMenuItem.setOnAction(e -> {
+            final FileChooser fileChooser = new FileChooser();
+            fileChooser.setSelectedExtensionFilter(new FileChooser.ExtensionFilter("JSON formát", "*.json"));
+            fileChooser.setTitle("Vyberte linii v .json formátu pro importování");
+            fileChooser.setInitialDirectory(EXPORT_FOLDER);
+            final List<File> files = fileChooser.showOpenMultipleDialog(Main.getPrimaryStage());
+            if (files == null) {
+                return;
+            }
+
+            final List<String> validExtensions = Arrays.asList(builtinDeserializer.getAcceptedFileExtensions());
+            for (final File file : files) {
+                synchronized (this) {
+                    final String fileName = file.getName();
+                    final String extension = fileName.substring(fileName.lastIndexOf('.') + 1);
+                    if (!validExtensions.contains(extension)) {
+                        alertImportFailed(file, "{0} má neplatný formát. Podporované formáty:\n" + String.join(", ", validExtensions));
+                        continue;
+                    }
+                    try (InputStream in = new BufferedInputStream(new FileInputStream(file))) {
+                        final DataNode deserializedRoot = builtinDeserializer.deserialize(in);
+                        if (deserializedRoot == null) {
+                            continue;
+                        }
+                        if (!deserializedRoot.isRoot()) {
+                            throw new IllegalStateException("Deserialized data node is not root!");
+                        }
+
+                        // We now need to modify the ID stored in the file because the ID also identifies the TreeItems, and we could already have created/imported data node items with such ID
+                        // To solve this we modify the stored ID to be greater than the current ID sequence. The current ID sequence will be modified at the end of this loop to match the greatest ID
+                        // generated by the new data nodes
+                        // An example:
+                        // Already in application: Root (0), Child (1), Child (2), Child (3)
+                        // Stored in file: Root (1), Child (2), Child (3)
+                        // The ID_SEQ should be 4 then
+                        // To modify the data nodes stored in file we need to add at least 3 to each data node ID. That's calculated by subtracting the ID_SEQ from the stored root ID.
+                        // At the end of import the ID_SEQ should be equal the max ID + 1.
+                        final long currentIdSeq = DataNode.ID_SEQ.get();
+                        final long seqToAdd = Math.max(0, currentIdSeq - deserializedRoot.getId());
+                        final AtomicLong maxId = new AtomicLong(Integer.MIN_VALUE);
+
+                        deserializedRoot.setId(deserializedRoot.getId() + seqToAdd);
+                        maxId.set(Math.max(maxId.get(), deserializedRoot.getId()));
+                        progressListener.onCreateNewRoot(deserializedRoot);
+                        deserializedRoot.iterate((dataNode, integer) -> {
+                            dataNode.setId(dataNode.getId() + seqToAdd);
+                            maxId.set(Math.max(maxId.get(), dataNode.getId()));
+                            progressListener.onAddNewDataNodes(List.of(dataNode));
+                        });
+
+                        // increment the ID to the next free ID
+                        maxId.incrementAndGet();
+                        DataNode.ID_SEQ.set(maxId.get());
+                    } catch (JsonParseException ex) {
+                        alertImportFailed(file, "Nepodařilo se importovat soubor '{0}' – soubor má špatný formát");
+                        LOGGER.error(ex);
+                    } catch (IOException ex) {
+                        alertImportFailed(file, "Nepodařilo se importovat soubor '{0}'");
+                        LOGGER.error(ex);
+                    }
+                }
+            }
+        });
+        importLineMenuItem.setAccelerator(IMPORT_DATA_ACCELERATOR);
         fileMenu.getItems()
-                .addAll(exportToFile);
+                .addAll(importLineMenuItem, exportToFile);
 
         final Menu helpMenu = new Menu(resources.getString("help"));
         final MenuItem usage = new MenuItem(resources.getString("tool-usage"));
@@ -348,27 +425,6 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
         final MenuItem menuItem = new MenuItem();
         menuItem.setText(resources.getString("display-line"));
         menuItem.setAccelerator(DISPLAY_DATA_ACCELERATOR);
-        menuItem.setOnAction(e -> {
-            final TreeItem<DataNode> selectedItem = ontologyTreeView.getSelectionModel()
-                                                                    .getSelectedItem();
-            if (selectedItem != null) {
-                // TODO: Implement
-                DataNode dataNode = selectedItem.getValue();
-                if (!dataNode.isRoot()) {
-                    dataNode = dataNode.findRoot()
-                                       .orElseThrow(IllegalStateException::new);
-                }
-            }
-
-            progressListener.onDisplayRequest(null, this.wikiPageWebView, Main.TOP_LEVEL_FRONTEND_DIRECTORY);
-        });
-        return menuItem;
-    }
-
-    private MenuItem createImportMenuItem(final ResourceBundle resources) {
-        final MenuItem menuItem = new MenuItem();
-        menuItem.setText(resources.getString("display-line"));
-        menuItem.setAccelerator(IMPORT_DATA_ACCELERATOR);
         menuItem.setOnAction(e -> {
             final TreeItem<DataNode> selectedItem = ontologyTreeView.getSelectionModel()
                                                                     .getSelectedItem();

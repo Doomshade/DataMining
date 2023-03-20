@@ -22,7 +22,7 @@ public class DataNodeFactory {
      * @return a data node root
      */
     public DataNode newRoot(final String rootName) {
-        final DataNode root = new DataNodeImpl();
+        final DataNode root = new DataNodeImpl(true);
         root.addMetadata(METADATA_KEY_NAME, rootName);
         return root;
     }

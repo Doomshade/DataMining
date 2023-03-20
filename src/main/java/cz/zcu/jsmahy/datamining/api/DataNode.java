@@ -1,5 +1,6 @@
 package cz.zcu.jsmahy.datamining.api;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import javafx.collections.ObservableList;
 import org.apache.jena.rdf.model.RDFNode;
@@ -7,6 +8,7 @@ import org.apache.jena.rdf.model.RDFNode;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 
 /**
@@ -50,7 +52,14 @@ import java.util.function.BiConsumer;
  * @since 1.0
  */
 @JsonDeserialize(as = DataNodeImpl.class)
+@JsonPropertyOrder(value = {"id", "children"},
+                   alphabetic = true)
 public interface DataNode extends Iterable<DataNode>, ArbitraryDataHolder {
+    /**
+     * The current ID sequence. This value should not be modified outside the implementation of this interface, and, possibly, importing of a data node.
+     */
+    AtomicLong ID_SEQ = new AtomicLong();
+
     /**
      * Corresponding value should be {@link String}
      */
@@ -91,6 +100,11 @@ public interface DataNode extends Iterable<DataNode>, ArbitraryDataHolder {
     long getId();
 
     /**
+     * @param id The ID of this data node
+     */
+    void setId(long id);
+
+    /**
      * @return The parent of this data node or {@code null} if this node is root. If this returns {@code null} it <b>should</b> be guaranteed method {@link DataNode#isRoot()} returns {@code true}.
      */
     DataNode getParent();
@@ -104,6 +118,8 @@ public interface DataNode extends Iterable<DataNode>, ArbitraryDataHolder {
 
     /**
      * @return {@code true} whether this node is root.
+     *
+     * @apiNote This data node basically should only be root when the parent is {@code null}.
      */
     boolean isRoot();
 
