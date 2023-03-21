@@ -3,8 +3,8 @@ package cz.zcu.jsmahy.datamining.api;
 import javafx.concurrent.Task;
 
 /**
- * <p>A SPARQL endpoint background task.</p>
- * <p>This abstraction exists mainly for testing purposes (it's easy to mock this class)</p>
+ * <p>A SPARQL endpoint background task. This class can be used for offline data processing as well, but it will be run in a separate thread regardless.</p>
+ * <p>This abstraction exists mainly for testing purposes (it's easy to mock this class).</p>
  * <p>To implement this task: extend {@link DefaultSparqlEndpointTask}.</p>
  *
  * @param <R> The generic type of {@link Task}

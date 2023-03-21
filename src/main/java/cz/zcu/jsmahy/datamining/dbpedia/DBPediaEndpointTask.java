@@ -16,6 +16,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.*;
 import java.util.function.Predicate;
 
+import static cz.zcu.jsmahy.datamining.api.Alerts.alertConnectionProblems;
 import static cz.zcu.jsmahy.datamining.api.DataNode.*;
 import static cz.zcu.jsmahy.datamining.resolvers.MultipleItemChoiceResolver.RESULT_KEY_CHOSEN_RDF_NODE;
 import static cz.zcu.jsmahy.datamining.resolvers.StartAndEndDateResolver.RESULT_KEY_END_DATE_PREDICATE;
@@ -126,6 +127,7 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
             LOGGER.trace("Querying {} took {}ms", query, end);
             inputMetadata.setCurrentModel(model);
         } catch (HttpException e) {
+            alertConnectionProblems(e);
             throw LOGGER.throwing(e);
         }
 

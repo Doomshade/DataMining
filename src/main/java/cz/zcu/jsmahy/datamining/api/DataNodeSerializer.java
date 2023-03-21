@@ -20,10 +20,6 @@ public interface DataNodeSerializer {
     String FILE_NAME_FORMAT = "%s.%s";
     Logger LOGGER = LogManager.getLogger(DataNodeSerializer.class);
 
-    default void exportRoot(final File targetFile, final DataNode dataNodeRoot) throws IOException {
-        exportRoot(targetFile, dataNodeRoot, null, null, null);
-    }
-
     void exportRoot(DataNode dataNodeRoot, @Nullable ObservableList<Service<?>> runningServices, @Nullable ObservableList<Service<?>> finishedServices,
                     @Nullable ObservableList<DataNode> failedNodes) throws IOException;
 

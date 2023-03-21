@@ -3,6 +3,7 @@ package cz.zcu.jsmahy.datamining.api;
 import javafx.collections.ObservableList;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import org.apache.jena.atlas.web.HttpException;
 
 import java.io.File;
 import java.text.MessageFormat;
@@ -76,6 +77,20 @@ public final class Alerts {
         final Alert alert = new Alert(ERROR);
         alert.setHeaderText("");
         alert.setContentText(MessageFormat.format("Nepodařilo se vybrat aktuální adresář ''{0}''. Něco je špatně...", folder));
+        alert.showAndWait();
+    }
+
+    public static void alertConnectionProblems(final HttpException e) {
+        final Alert alert = new Alert(ERROR);
+        alert.setHeaderText("");
+        alert.setContentText(MessageFormat.format("Nepodařilo se připojit ke koncovému bodu. Chyba (pro debug účely):\n{0}", e));
+        alert.showAndWait();
+    }
+
+    public static void alertQueryProblems(final Throwable e) {
+        final Alert alert = new Alert(ERROR);
+        alert.setHeaderText("");
+        alert.setContentText(MessageFormat.format("Nastala chyba při tvorbě linie. Chyba (pro debug účely):\n{0}", e));
         alert.showAndWait();
     }
 }

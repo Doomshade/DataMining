@@ -49,6 +49,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
+import static cz.zcu.jsmahy.datamining.api.Alerts.alertQueryProblems;
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_RDF_NODE;
 import static cz.zcu.jsmahy.datamining.api.JSONDataNodeSerializer.EXPORT_FOLDER;
 import static cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory.SEARCH_ACCELERATOR;
@@ -452,7 +453,10 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
 
     @Override
     public void bindQueryService(final Service<?> service) {
-        service.setOnFailed(e -> LOGGER.throwing(service.getException()));
+        service.setOnFailed(e -> {
+            alertQueryProblems(service.getException());
+            LOGGER.throwing(service.getException());
+        });
         service.setOnSucceeded(e -> LOGGER.info("Service query finished successfully"));
         service.setOnCancelled(e -> LOGGER.warn("Service was cancelled unexpectedly"));
         bindProperties(service.runningProperty(), service.progressProperty());
