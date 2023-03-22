@@ -50,7 +50,7 @@ dependencies {
     implementation 'org.openjfx:javafx-graphics:17+'
     implementation 'org.openjfx:javafx-fxml:17+'
     implementation 'org.openjfx:javafx-web:17+'
-    implementation 'org.openjfx:javafx-media:17+'
+    implementation 'org.openjfx:javafx-media:20+'
     implementation 'org.openjfx:javafx-swing:17+'
     implementation 'org.slf4j:slf4j-api:2.0.6'
     implementation 'org.slf4j:slf4j-simple:2.0.6'
