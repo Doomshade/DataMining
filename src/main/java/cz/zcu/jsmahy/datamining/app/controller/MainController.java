@@ -431,14 +431,19 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
                                                                     .getSelectedItem();
             if (selectedItem != null) {
                 // TODO: Implement
-                DataNode dataNode = selectedItem.getValue();
-                if (!dataNode.isRoot()) {
-                    dataNode = dataNode.findRoot()
-                                       .orElseThrow(IllegalStateException::new);
+                DataNode root = selectedItem.getValue();
+                if (!root.isRoot()) {
+                    root = root.findRoot()
+                               .orElseThrow(IllegalStateException::new);
                 }
+                assert root.isRoot();
+                try {
+                    customSerializer.exportRoot(root);
+                } catch (IOException ex) {
+                    LOGGER.throwing(ex);
+                }
+                progressListener.onDisplayRequest(null, this.wikiPageWebView, Main.TOP_LEVEL_FRONTEND_DIRECTORY);
             }
-
-            progressListener.onDisplayRequest(null, this.wikiPageWebView, Main.TOP_LEVEL_FRONTEND_DIRECTORY);
         });
         return menuItem;
     }

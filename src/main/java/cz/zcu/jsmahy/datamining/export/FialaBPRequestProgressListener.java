@@ -12,13 +12,15 @@ import javafx.concurrent.Service;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.TreeItem;
-import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import org.apache.jena.rdf.model.Property;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.awt.*;
 import java.io.File;
+import java.io.IOException;
+import java.util.List;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -274,10 +276,25 @@ public class FialaBPRequestProgressListener implements RequestProgressListener {
     @Override
     public void onDisplayRequest(final DataNode dataNodeRoot, final WebView webView, final File topLevelFrontendDirectory) {
         final File fialaBPIndexFile = new File(topLevelFrontendDirectory, "fiala-bp/src/index.html");
-        LOGGER.info("Loading Fiala BP index.html: {}", fialaBPIndexFile);
-
-        final WebEngine engine = webView.getEngine();
-        engine.load("file://" + fialaBPIndexFile.getAbsolutePath());
+//        LOGGER.info("Loading Fiala BP index.html: {}", fialaBPIndexFile);
+//        final WebEngine engine = webView.getEngine();
+        final String url = "file://" + fialaBPIndexFile.getAbsolutePath();
+//        engine.load(url);
+        if (Desktop.isDesktopSupported()) {
+            Desktop desktop = Desktop.getDesktop();
+            try {
+                desktop.browse(fialaBPIndexFile.toURI());
+            } catch (IOException e) {
+                LOGGER.error(e);
+            }
+        } else {
+            Runtime runtime = Runtime.getRuntime();
+            try {
+                runtime.exec("xdg-open " + url);
+            } catch (IOException e) {
+                LOGGER.error(e);
+            }
+        }
     }
 
     private void deleteDataNode(final DataNode dataNode) {
