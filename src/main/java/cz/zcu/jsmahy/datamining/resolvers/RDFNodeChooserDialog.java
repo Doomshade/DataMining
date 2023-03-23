@@ -26,7 +26,8 @@ import java.util.function.Predicate;
 
 public class RDFNodeChooserDialog {
     public static final Predicate<String> IS_DBPEDIA_SITE = uri -> uri.contains("dbpedia");
-
+    public static final String URI_SUFFIX = "";//" (URI)";
+    public static final String LITERAL_SUFFIX = "";//" (Literal)";
     private static final Logger LOGGER = LogManager.getLogger(RDFNodeChooserDialog.class);
     private static final Cache<String, String> modelCache = CacheBuilder.newBuilder()
                                                                         .maximumWeight(5_242_880) // 5 MiB
@@ -43,8 +44,8 @@ public class RDFNodeChooserDialog {
 
     /**
      * @param statements   The statements to display
-     * @param uriPredicate The predicate for the given URI in each cell. The predicate gets called for each cell in the {@code propertyColumn} (the first column) and if
-     *                     {@link Predicate#test(Object)} returns {@code true} it will attempt to look for the label of the property.
+     * @param uriPredicate The predicate for the given URI in each cell. The predicate gets called for each cell in the {@code propertyColumn} (the first column) and if {@link Predicate#test(Object)}
+     *                     returns {@code true} it will attempt to look for the label of the property.
      * @param title
      * @param headerText
      */
@@ -73,8 +74,10 @@ public class RDFNodeChooserDialog {
             final String val = object.isLiteral() ?
                                object.asLiteral()
                                      .getValue()
-                                     .toString() :
-                               object.toString();
+                                     .toString()
+                                     .concat(LITERAL_SUFFIX) :
+                               object.toString()
+                                     .concat(URI_SUFFIX);
             return new ReadOnlyStringWrapper(val.substring(val.lastIndexOf('/') + 1)
                                                 .replaceAll("_", " "));
         });
@@ -117,24 +120,26 @@ public class RDFNodeChooserDialog {
         final ReadOnlyObjectWrapper<String> observableValue = new ReadOnlyObjectWrapper<>();
         if (!rdfNode.isURIResource()) {
             if (!rdfNode.isLiteral()) {
-                observableValue.set(rdfNode.toString());
+                observableValue.set(rdfNode.toString()
+                                           .concat(LITERAL_SUFFIX));
             } else {
                 observableValue.set(rdfNode.asLiteral()
                                            .getValue()
-                                           .toString());
+                                           .toString()
+                                           .concat(LITERAL_SUFFIX));
             }
             return observableValue;
         }
         final Resource resource = rdfNode.asResource();
         final String uri = resource.getURI();
         if (!uriPredicate.test(uri)) {
-            observableValue.set(uri);
+            observableValue.set(uri.concat(URI_SUFFIX));
             return observableValue;
         }
 
         final String cachedItem = modelCache.getIfPresent(uri);
         if (cachedItem != null) {
-            observableValue.set(cachedItem);
+            observableValue.set(cachedItem.concat(URI_SUFFIX));
             return observableValue;
         }
 
@@ -179,7 +184,7 @@ public class RDFNodeChooserDialog {
             services.remove(bgService);
             final String value = (String) e.getSource()
                                            .getValue();
-            observableValue.setValue(value);
+            observableValue.setValue(value.concat(URI_SUFFIX));
 
             final TableView<Statement> tv = features.getTableView();
             tv.refresh();
@@ -190,7 +195,7 @@ public class RDFNodeChooserDialog {
 
         bgService.setOnFailed(e -> {
             services.remove(bgService);
-            observableValue.setValue("");
+            observableValue.setValue("<LABEL NOT FOUND>");
             LOGGER.throwing(bgService.getException());
         });
 

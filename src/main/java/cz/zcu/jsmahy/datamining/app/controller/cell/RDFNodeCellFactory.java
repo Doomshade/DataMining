@@ -64,12 +64,12 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
             final MenuItem exportItem = buildExportItem(resources, customSerializer, builtinSerializer);
             final MenuItem deleteItem = buildDeleteItem(resources, progressListener, selectedItemSupplier);
             final MenuItem newLineItem = buildNewLineItem(resources, nodeFactory, requestHandler, serviceHolder, progressListener);
-            final MenuItem continueLineItem = buildContinueLineItem(resources);
+//            final MenuItem continueLineItem = buildContinueLineItem(resources);
             final ObservableList<MenuItem> items = contextMenu.getItems();
             if (getItem().isRoot()) {
                 items.addAll(searchItem, addRestrictionItem, exportItem, deleteItem);
             } else {
-                items.addAll(newLineItem, continueLineItem, deleteItem);
+                items.addAll(newLineItem, deleteItem);
             }
             setContextMenu(contextMenu);
         });
@@ -108,7 +108,9 @@ public class RDFNodeCellFactory extends TreeCell<DataNode> {
                                       final SparqlEndpointAgent<?> requestHandler,
                                       final SparqlQueryServiceHolder serviceHolder,
                                       final RequestProgressListener progressListener) {
-        final MenuItem menuItem = new MenuItem(resources.getString("create-new-line"));
+        final MenuItem menuItem = new MenuItem();
+        menuItem.textProperty()
+                .bind(Bindings.format(resources.getString("create-new-line-from"), textProperty()));
         menuItem.setOnAction(event -> {
             final DataNode dataNode = getItem();
             final Optional<? extends DataNode> dataNodeRootOpt = dataNode.findRoot();

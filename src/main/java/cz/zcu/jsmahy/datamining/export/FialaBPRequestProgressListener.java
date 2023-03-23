@@ -12,6 +12,7 @@ import javafx.concurrent.Service;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.TreeItem;
+import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import org.apache.jena.rdf.model.Property;
 import org.apache.logging.log4j.LogManager;
@@ -273,8 +274,10 @@ public class FialaBPRequestProgressListener implements RequestProgressListener {
     @Override
     public void onDisplayRequest(final DataNode dataNodeRoot, final WebView webView, final File topLevelFrontendDirectory) {
         final File fialaBPIndexFile = new File(topLevelFrontendDirectory, "fiala-bp/src/index.html");
-        webView.getEngine()
-               .load("file://" + fialaBPIndexFile.getAbsolutePath());
+        LOGGER.info("Loading Fiala BP index.html: {}", fialaBPIndexFile);
+
+        final WebEngine engine = webView.getEngine();
+        engine.load("file://" + fialaBPIndexFile.getAbsolutePath());
     }
 
     private void deleteDataNode(final DataNode dataNode) {

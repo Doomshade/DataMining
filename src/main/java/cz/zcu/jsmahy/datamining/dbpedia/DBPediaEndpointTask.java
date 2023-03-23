@@ -106,9 +106,9 @@ public class DBPediaEndpointTask<R> extends DefaultSparqlEndpointTask<R> {
             }
         } else {
             if (isStartDate) {
-                LOGGER.error("No start date found for {}!", subject);
+                LOGGER.error("No start date {} found for {}!", dateProperty, subject);
             } else {
-                LOGGER.debug("No end date found for {}. This will be considered a 'moment'", subject);
+                LOGGER.debug("No end date {} found for {}. This will be considered a 'moment'", dateProperty, subject);
             }
         }
     }
