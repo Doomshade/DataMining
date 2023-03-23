@@ -8,14 +8,12 @@ plugins {
     id 'maven-publish'
     id 'application'
     id 'org.openjfx.javafxplugin' version '0.0.13'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
 repositories {
     mavenCentral()
-    mavenLocal()
-    maven {
-        url = uri('https://repo.maven.apache.org/maven2/')
-    }
+    gradlePluginPortal()
 }
 
 
@@ -87,7 +85,7 @@ publishing {
     }
 }
 
-mainClassName = 'cz.zcu.jsmahy.Main'
+mainClassName = 'cz.zcu.jsmahy.datamining.Main'
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
