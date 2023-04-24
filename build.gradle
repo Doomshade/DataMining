@@ -22,7 +22,7 @@ javafx {
 }
 
 application {
-    mainClass = 'cz.zcu.jsmahy.datamining.Main'
+    mainClass = 'cz.zcu.jsmahy.datamining.Main2'
     applicationDefaultJvmArgs = ["--add-opens", "java.base/jdk.internal.loader=ALL-UNNAMED",
                                  "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED",
                                  "--add-exports", "javafx.base/com.sun.javafx.collections=ALL-UNNAMED",
@@ -32,13 +32,14 @@ application {
     ]
 }
 
+
 dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
     compileOnly 'org.projectlombok:lombok:1.18.24'
     annotationProcessor 'org.jetbrains:annotations:23.0.0'
 
     implementation 'org.jetbrains:annotations:23.0.0'
-    implementation 'org.jsoup:jsoup:1.15.3'
+//    implementation 'org.jsoup:jsoup:1.15.3'
     implementation 'com.google.guava:guava:31.1-jre'
     implementation 'org.apache.logging.log4j:log4j-api:2.19.0'
     implementation 'org.apache.logging.log4j:log4j-core:2.19.0'
@@ -51,9 +52,8 @@ dependencies {
     implementation 'org.openjfx:javafx-swing:17+'
     implementation 'org.slf4j:slf4j-api:2.0.6'
     implementation 'org.slf4j:slf4j-simple:2.0.6'
-    implementation 'com.dlsc.formsfx:formsfx-core:11.5.0'
-    implementation 'org.kordamp.ikonli:ikonli-javafx:12.3.1'
-//    implementation 'org.kordamp.bootstrapfx:bootstrapfx-core:0.4.0'
+//    implementation 'com.dlsc.formsfx:formsfx-core:11.5.0'
+//    implementation 'org.kordamp.ikonli:ikonli-javafx:12.3.1'
     implementation 'com.jfoenix:jfoenix:9.0.10'
     implementation 'commons-cli:commons-cli:1.5.0'
     implementation 'org.apache.jena:jena-core:4.7.0'
@@ -84,10 +84,18 @@ publishing {
     }
 }
 
-mainClassName = 'cz.zcu.jsmahy.datamining.Main'
+mainClassName = 'cz.zcu.jsmahy.datamining.Main2'
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+}
+
+task saveDependencies(type: Copy) {
+    configurations.each {
+        if (it.isCanBeResolved())
+            from it into "gradle_dependencies"
+    }
+    from buildscript.configurations.classpath into "gradle_dependencies"
 }
 
 test {

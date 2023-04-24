@@ -49,10 +49,10 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
-import static cz.zcu.jsmahy.datamining.api.Alerts.alertQueryProblems;
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_RDF_NODE;
 import static cz.zcu.jsmahy.datamining.api.JSONDataNodeSerializer.EXPORT_FOLDER;
 import static cz.zcu.jsmahy.datamining.app.controller.cell.RDFNodeCellFactory.SEARCH_ACCELERATOR;
+import static cz.zcu.jsmahy.datamining.util.Alerts.alertQueryProblems;
 
 /**
  * <p>The controller for main UI where user builds the ontology.</p>
@@ -322,6 +322,10 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
 
         final MenuItem importLineMenuItem = new MenuItem("Importovat linii");
         importLineMenuItem.setOnAction(e -> {
+            final Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setHeaderText("");
+            alert.setContentText("Pozor! Importování není plně funkční, prosím neoznamujte o tomto chyby.");
+            alert.showAndWait();
             final FileChooser fileChooser = new FileChooser();
             fileChooser.setSelectedExtensionFilter(new FileChooser.ExtensionFilter("JSON formát", "*.json"));
             fileChooser.setTitle("Vyberte linii v .json formátu pro importování");

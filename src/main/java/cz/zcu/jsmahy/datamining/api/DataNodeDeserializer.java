@@ -7,6 +7,7 @@ import java.io.InputStream;
  * The {@link DataNode} deserializer. For now, we only permit the built-in JSON deserializer as there is no reason to deserialize one's own serialized data.
  *
  * @author Jakub Šmrha
+ * @see JSONDataNodeDeserializer
  * @since 1.0
  */
 public sealed interface DataNodeDeserializer permits JSONDataNodeDeserializer {

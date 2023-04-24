@@ -15,6 +15,12 @@ import org.apache.jena.rdf.model.ResourceFactory;
 
 import java.io.IOException;
 
+/**
+ * RDFNode serialization via Jackson.
+ *
+ * @author Jakub Šmrha
+ * @since 1.0
+ */
 public final class RDFNodeSerialization {
 
     public static final String FIELDNAME_TYPE = "type";

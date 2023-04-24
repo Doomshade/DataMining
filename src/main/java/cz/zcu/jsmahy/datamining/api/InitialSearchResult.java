@@ -1,7 +1,13 @@
 package cz.zcu.jsmahy.datamining.api;
 
+import cz.zcu.jsmahy.datamining.dbpedia.DBPediaEndpointTask;
+
 /**
- * TODO: javadoc
+ * The result enum after initial search used in {@link SparqlEndpointTask}s.
+ *
+ * @author Jakub Šmrha
+ * @see DBPediaEndpointTask
+ * @since 1.0
  */
 public enum InitialSearchResult {
     OK,

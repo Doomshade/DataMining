@@ -12,9 +12,16 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import static cz.zcu.jsmahy.datamining.api.Alerts.alertExportFailed;
-import static cz.zcu.jsmahy.datamining.api.Alerts.alertExportSuccess;
+import static cz.zcu.jsmahy.datamining.util.Alerts.alertExportFailed;
+import static cz.zcu.jsmahy.datamining.util.Alerts.alertExportSuccess;
 
+/**
+ * The {@link DataNode} serializer. A default JSON serialization implementation already exists: {@link JSONDataNodeSerializer}. For implementation details see that class.
+ *
+ * @author Jakub Šmrha
+ * @see JSONDataNodeSerializer
+ * @since 1.0
+ */
 public interface DataNodeSerializer {
     String DEFAULT_FILE_EXTENSION = "datanode";
     String FILE_NAME_FORMAT = "%s.%s";

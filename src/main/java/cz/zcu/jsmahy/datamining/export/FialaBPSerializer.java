@@ -19,10 +19,10 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static cz.zcu.jsmahy.datamining.Main.TOP_LEVEL_FRONTEND_DIRECTORY_NAME;
-import static cz.zcu.jsmahy.datamining.api.Alerts.alertFileExists;
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_RELATIONSHIPS;
 import static cz.zcu.jsmahy.datamining.export.FialaBPMetadataKeys.*;
+import static cz.zcu.jsmahy.datamining.util.Alerts.alertFileExists;
 
 public class FialaBPSerializer implements DataNodeSerializer {
     private static final String DATA_JS = "fiala-bp/src/data/data.js";

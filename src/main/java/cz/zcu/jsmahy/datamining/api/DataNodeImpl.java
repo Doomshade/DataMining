@@ -14,7 +14,12 @@ import java.util.Iterator;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
-
+/**
+ * The default implementation of {@link DataNode}.
+ *
+ * @author Jakub Šmrha
+ * @since 1.0
+ */
 @Data
 @EqualsAndHashCode(callSuper = false,
                    doNotUseGetters = true)

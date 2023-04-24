@@ -9,6 +9,12 @@ import com.fasterxml.jackson.databind.util.StdDateFormat;
 import com.google.inject.Inject;
 import org.apache.jena.rdf.model.RDFNode;
 
+/**
+ * Utilities around JSON {@link DataNode} serialization.
+ *
+ * @author Jakub Šmrha
+ * @since 1.0
+ */
 public class JSONDataNodeSerializationUtils {
 
     public static final Version VERSION = new Version(0, 1, 0, "", "cz.zcu.jsmahy", "DataMining");

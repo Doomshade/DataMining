@@ -1,5 +1,7 @@
-package cz.zcu.jsmahy.datamining.api;
+package cz.zcu.jsmahy.datamining.util;
 
+import cz.zcu.jsmahy.datamining.api.DataNode;
+import cz.zcu.jsmahy.datamining.api.SerializationResponse;
 import javafx.collections.ObservableList;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
@@ -48,7 +50,7 @@ public final class Alerts {
         final Alert alert = new Alert(INFORMATION);
         alert.setHeaderText("");
         alert.setContentText(MessageFormat.format("Úspěšně exportováno ''{0}''. Soubor: ''{1}''", dataNodeRoot.getValue(METADATA_KEY_NAME, "<no name>"), exportedFile));
-        alert.show();
+        alert.showAndWait();
     }
 
     public static void alertExportFailed(DataNode dataNodeRoot) {

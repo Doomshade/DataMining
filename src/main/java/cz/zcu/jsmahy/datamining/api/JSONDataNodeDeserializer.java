@@ -7,6 +7,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
+/**
+ * The JSON {@link DataNode} deserializer
+ *
+ * @author Jakub Šmrha
+ * @since 1.0
+ */
 final class JSONDataNodeDeserializer implements DataNodeDeserializer {
     private final ObjectMapper jsonObjectMapper;
 

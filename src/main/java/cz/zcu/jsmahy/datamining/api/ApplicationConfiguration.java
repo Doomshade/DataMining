@@ -8,6 +8,9 @@ import java.util.HashSet;
 
 /**
  * <p>Responsible for loading data from a configuration file via {@link ApplicationConfiguration#reload(Reader)}.</p>
+ *
+ * @author Jakub Šmrha
+ * @since 1.0
  */
 public interface ApplicationConfiguration extends ArbitraryDataHolder {
     // general config keys

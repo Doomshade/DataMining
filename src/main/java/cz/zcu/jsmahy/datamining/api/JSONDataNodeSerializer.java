@@ -16,8 +16,8 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static cz.zcu.jsmahy.datamining.api.Alerts.*;
 import static cz.zcu.jsmahy.datamining.api.DataNode.METADATA_KEY_NAME;
+import static cz.zcu.jsmahy.datamining.util.Alerts.*;
 
 public class JSONDataNodeSerializer implements DataNodeSerializer {
     public static final File EXPORT_FOLDER = new File("export");
