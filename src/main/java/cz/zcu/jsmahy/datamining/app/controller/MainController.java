@@ -157,6 +157,14 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
         alert.show();
     }
 
+    private static void alertNoItemSelected() {
+        final Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setHeaderText("");
+        alert.setContentText("Prosím zvolte linii ve stromové struktuře k vizualizaci.");
+        alert.show();
+
+    }
+
     @Override
     @SuppressWarnings("unchecked")
     public void initialize(final URL location, final ResourceBundle resources) {
@@ -433,21 +441,22 @@ public class MainController implements Initializable, SparqlQueryServiceHolder {
         menuItem.setOnAction(e -> {
             final TreeItem<DataNode> selectedItem = ontologyTreeView.getSelectionModel()
                                                                     .getSelectedItem();
-            if (selectedItem != null) {
-                // TODO: Implement
-                DataNode root = selectedItem.getValue();
-                if (!root.isRoot()) {
-                    root = root.findRoot()
-                               .orElseThrow(IllegalStateException::new);
-                }
-                assert root.isRoot();
-                try {
-                    customSerializer.exportRoot(root);
-                } catch (IOException ex) {
-                    LOGGER.throwing(ex);
-                }
-                progressListener.onDisplayRequest(null, this.wikiPageWebView, Main.TOP_LEVEL_FRONTEND_DIRECTORY);
+            if (selectedItem == null) {
+                alertNoItemSelected();
+                return;
             }
+            DataNode root = selectedItem.getValue();
+            if (!root.isRoot()) {
+                root = root.findRoot()
+                           .orElseThrow(IllegalStateException::new);
+            }
+            assert root.isRoot();
+            try {
+                customSerializer.exportRoot(root);
+            } catch (IOException ex) {
+                LOGGER.throwing(ex);
+            }
+            progressListener.onDisplayRequest(null, this.wikiPageWebView, Main.TOP_LEVEL_FRONTEND_DIRECTORY);
         });
         return menuItem;
     }
