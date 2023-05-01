@@ -53,7 +53,7 @@ public class Main extends Application {
 //        }
         // TODO: We presume the project is built with gradle, so the sources are unbundled
         // Copy the JS sources if they don't exist
-//        copyResources();
+        copyResources();
         final ResourceBundle resourceBundle = ResourceBundle.getBundle("lang");
         stage.setTitle(resourceBundle.getString("stage-title"));
         final Scene scene = SCENE_MANAGER.getScene(FXMLScene.MAIN);
